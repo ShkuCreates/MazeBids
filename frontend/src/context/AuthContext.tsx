@@ -10,6 +10,10 @@ interface User {
   coins: number;
   role: 'USER' | 'ADMIN';
   notifications: boolean;
+  referralCode?: string;
+  totalEarned: number;
+  totalSpent: number;
+  createdAt: string;
 }
 
 interface AuthContextType {

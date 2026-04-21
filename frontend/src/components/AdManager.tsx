@@ -69,6 +69,7 @@ export default function AdManager() {
         placement: "DASHBOARD",
         duration: "30",
         expiresAt: "",
+        reward: "0",
       });
       fetchAds();
     } catch (err) {

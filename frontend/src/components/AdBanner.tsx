@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { ExternalLink, Play, Info } from "lucide-react";
+import { ExternalLink, Play, Info, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
