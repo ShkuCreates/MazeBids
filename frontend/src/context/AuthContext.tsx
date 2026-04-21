@@ -9,6 +9,7 @@ interface User {
   avatar: string | null;
   coins: number;
   role: 'USER' | 'ADMIN';
+  notifications: boolean;
 }
 
 interface AuthContextType {
