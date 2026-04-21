@@ -12,6 +12,22 @@ client.on('error', (error) => {
   console.error('Discord bot WebSocket error:', error.message);
 });
 
+// Automatically assign role when a user joins the server
+client.on('guildMemberAdd', async (member) => {
+  const roleId = '1496042141015736422';
+  try {
+    const role = member.guild.roles.cache.get(roleId);
+    if (role) {
+      await member.roles.add(role);
+      console.log(`Automatically assigned role to new member: ${member.user.tag}`);
+    } else {
+      console.warn(`Role with ID ${roleId} not found in the server.`);
+    }
+  } catch (error) {
+    console.error(`Failed to assign auto-role to ${member.user.tag}:`, error.message);
+  }
+});
+
 process.on('unhandledRejection', (error) => {
   if (error.message?.includes('handshake')) {
     console.error('Handled Discord handshake error:', error.message);
