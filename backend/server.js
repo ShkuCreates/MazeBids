@@ -5,7 +5,6 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
 const passport = require('passport');
 const prisma = require('./lib/prisma');
 
@@ -29,12 +28,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.db', dir: './' }),
   secret: process.env.SESSION_SECRET || 'mazebids-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     httpOnly: true,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
