@@ -1,0 +1,19 @@
+.highlight-premium {
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+color: #C084FC !important;
+    text-shadow: 0 0 20px #FFD700, 0 0 30px #FFA500;
+    animation: premiumGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes premiumGlow {
+    0% { text-shadow: 0 0 10px #C084FC, 0 0 20px #D8B4FE; }
+    100% { text-shadow: 0 0 20px #C084FC, 0 0 40px #D8B4FE, 0 0 60px #8B5CF6; }
+}
+
+@keyframes heroBgPulse {
+    0% { filter: brightness(1) hue-rotate(0deg); }
+    100% { filter: brightness(1.1) hue-rotate(280deg); }
+}

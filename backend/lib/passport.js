@@ -1,0 +1,78 @@
+const passport = require('passport');
+const DiscordStrategy = require('passport-discord').Strategy;
+const prisma = require('./prisma');
+
+const crypto = require('crypto');
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id } });
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+});
+
+passport.use(new DiscordStrategy({
+    clientID: process.env.DISCORD_CLIENT_ID,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET,
+    callbackURL: process.env.DISCORD_CALLBACK_URL,
+    scope: ['identify', 'guilds', 'guilds.join']
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await prisma.user.findUnique({
+        where: { discordId: profile.id }
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            discordId: profile.id,
+            username: profile.username,
+            avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
+            coins: 100, // Welcome coins
+            totalEarned: 100,
+            referralCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
+            role: profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : 'USER'
+          }
+        });
+
+        // Log welcome transaction
+        await prisma.transaction.create({
+          data: {
+            userId: user.id,
+            amount: 100,
+            type: 'EARN',
+            description: 'Welcome Bonus'
+          }
+        });
+      } else {
+        // Update username/avatar if changed
+        const updateData = {
+          username: profile.username,
+          avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
+          role: profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : user.role
+        };
+
+        // Ensure user has a referral code if they were created before this update
+        if (!user.referralCode) {
+          updateData.referralCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+        }
+
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: updateData
+        });
+      }
+
+      return done(null, user);
+    } catch (err) {
+      return done(err, null);
+    }
+  }
+));

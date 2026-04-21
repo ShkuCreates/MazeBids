@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Auctions - MazeBids</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations-enhanced.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Inline styles removed - using styles-updated.css -->
+    <link rel="stylesheet" href="css/styles-updated.css">
+</head>
+<body>
+    <div class="auction-top-nav">
+        <a href="/" class="auction-top-nav-link"><i class="fas fa-home"></i> Home</a>
+        <a href="/earn.html" class="earn-btn" onmouseenter="soundSystem.play('hover')"><i class="fas fa-coins"></i> Earn Coins</a>
+        <div class="user-coins" id="user-coins-display"><i class="fas fa-wallet"></i><span id="coins-amount">0</span> Coins</div>
+        <button class="btn-primary" id="login-btn" onclick="discordLogin(); soundSystem.play('click');"><i class="fab fa-discord"></i> Login</button>
+    </div>
+
+    <main>
+        <section class="auctions-page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-gavel"></i> Live Auctions</h1>
+                    <p class="page-subtitle">Place your bids with earned coins to win premium products!</p>
+                </div>
+                
+                <div id="auctions-container"></div>
+
+                <div id="no-auctions" class="no-auctions-section" style="display: none;">
+                    <i class="fas fa-bell-slash"></i>
+                    <h2>No Live Auctions Right Now</h2>
+                    <p style="color: #aaa; margin-bottom: 20px;">New auctions coming soon!</p>
+                </div>
+
+                <div id="login-prompt" class="login-prompt" style="display: none;">
+                    <i class="fas fa-lock" style="font-size: 3em; color: #00d4ff; margin-bottom: 20px;"></i>
+                    <h2>Login Required</h2>
+                    <p style="color: #aaa; margin-bottom: 30px;">Login to place bids and win auctions</p>
+                    <button class="btn-primary" onclick="discordLogin(); soundSystem.play('click');"><i class="fab fa-discord"></i> Login with Discord</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/sound-system.js"></script>
+    <script src="js/ui-manager.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        const DEMO_AUCTIONS = [
+            {
+                id: 'auction-1',
+                title: 'Netflix Premium 1 Year',
+                description: 'Full Netflix Premium subscription for 12 months',
+                startingBid: 100,
+                currentBid: 250,
+                bidderName: 'CoolUser',
+                timeLeft: '2 hours',
+                image: '🎬'
+            },
+            {
+                id: 'auction-2',
+                title: 'Spotify Premium 6 Months',
+                description: 'Premium music streaming access',
+                startingBid: 80,
+                currentBid: 180,
+                bidderName: 'MusicLover',
+                timeLeft: '5 hours',
+                image: '🎵'
+            },
+            {
+                id: 'auction-3',
+                title: '$50 Amazon Gift Card',
+                description: 'Digital Amazon gift card',
+                startingBid: 200,
+                currentBid: 300,
+                bidderName: 'ShopperPro',
+                timeLeft: '1 hour 30 min',
+                image: '🛍️'
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            soundSystem.init();
+            await checkLoginAndLoadAuctions();
+            UIManager.enableScrollReveal();
+        });
+
+        async function checkLoginAndLoadAuctions() {
+            try {
+                const res = await fetch('/api/user', { credentials: 'include' });
+                const data = await res.json();
+
+                if (data.user) {
+                    document.getElementById('login-btn').innerHTML = '<i class="fas fa-check"></i> Logged In';
+                    document.getElementById('user-coins-display').style.display = 'flex';
+                    document.getElementById('login-prompt').style.display = 'none';
+                    
+                    await loadUserCoins();
+                    loadAuctions();
+                    soundSystem.play('success');
+                } else {
+                    document.getElementById('login-prompt').style.display = 'block';
+                    document.getElementById('auctions-container').innerHTML = '';
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('login-prompt').style.display = 'block';
+            }
+        }
+
+        async function loadUserCoins() {
+            try {
+                const res = await fetch('/api/user-data', { credentials: 'include' });
+                const userData = await res.json();
+                document.getElementById('coins-amount').textContent = userData.coins || 0;
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function loadAuctions() {
+            try {
+                const res = await fetch('/api/auctions');
+                let auctions = await res.json();
+                
+                if (!auctions || auctions.length === 0) {
+                    auctions = DEMO_AUCTIONS;
+                }
+                
+                if (auctions.length > 0) {
+                    displayAuctions(auctions);
+                } else {
+                    document.getElementById('no-auctions').style.display = 'block';
+                    document.getElementById('auctions-container').innerHTML = '';
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('no-auctions').style.display = 'block';
+            }
+        }
+
+        function displayAuctions(auctions) {
+            const container = document.getElementById('auctions-container');
+            container.innerHTML = auctions.map((auction, idx) => `
+                <div class="auction-card card-interactive stagger-item scroll-reveal" style="animation-delay: ${idx * 100}ms" data-auction-id="${auction.id}">
+                    <div class="auction-image">${auction.image || '🎁'}</div>
+                    <div class="auction-title">${auction.title}</div>
+                    <div class="auction-description">${auction.description}</div>
+                    
+                    <div class="auction-details">
+                        <div>
+                            <div class="bid-label">Current Bid</div>
+                            <div class="current-bid">${auction.currentBid || auction.startingBid} 💰</div>
+                            <div style="font-size: 0.85em; color: #666; margin-top: 5px;">by ${auction.bidderName || 'None'}</div>
+                        </div>
+                        <div class="time-left ${parseInt(auction.timeLeft) < 120 ? '' : 'safe'}">${auction.timeLeft}</div>
+                    </div>
+                    
+                    <div class="bid-form">
+                        <input type="number" class="bid-input" placeholder="Your bid" min="${(auction.currentBid || auction.startingBid) + 1}" data-auction-id="${auction.id}">
+                        <button class="btn-primary ripple" onclick="placeBid('${auction.id}', this)" style="flex: 0 0 auto;">
+                            <i class="fas fa-gavel"></i> Bid
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.ripple').forEach(btn => {
+                btn.addEventListener('click', UIManager.addRipple.bind(UIManager));
+                btn.addEventListener('mouseenter', () => soundSystem.play('hover'));
+            });
+        }
+
+        async function placeBid(auctionId, button) {
+            const bidInput = document.querySelector(`input[data-auction-id="${auctionId}"]`);
+            const bidAmount = parseInt(bidInput.value);
+
+            if (!bidAmount || bidAmount < 1) {
+                UIManager.shake(bidInput);
+                UIManager.showNotification('Please enter a valid bid amount', 'error');
+                return;
+            }
+
+            UIManager.disableButton(button);
+            soundSystem.play('bid');
+
+            try {
+                const res = await fetch('/api/place-bid', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ auctionId, bidAmount })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    UIManager.showNotification(`Bid placed! Balance: ${data.coins} coins`, 'success');
+                    UIManager.confetti();
+                    bidInput.value = '';
+                    await loadUserCoins();
+                    await loadAuctions();
+                } else {
+                    UIManager.showNotification(data.error, 'error');
+                    UIManager.enableButton(button);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                UIManager.showNotification('Error placing bid', 'error');
+                UIManager.enableButton(button);
+            }
+        }
+
+        function discordLogin() {
+            soundSystem.play('click');
+            window.location.href = '/auth/discord?return_to=/auctions.html';
+        }
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Auctions - MazeBids</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        .auction-top-nav { background: rgba(10, 14, 39, 0.95); padding: 20px; border-bottom: 2px solid #6b21a8; display: flex; justify-content: space-between; align-items: center; }
+        .earn-btn { display: flex; align-items: center; gap: 8px; color: #00d4ff; text-decoration: none; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .earn-btn:hover { color: #fff; }
+        .user-coins { display: flex; align-items: center; gap: 10px; font-size: 1.2em; color: #00d4ff; font-weight: bold; }
+        .auctions-page { min-height: 80vh; padding: 40px 20px; background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%); }
+        .page-header { text-align: center; margin-bottom: 50px; }
+        .page-header h1 { font-size: 3em; color: #00d4ff; text-shadow: 0 0 20px #00d4ff, 0 0 40px #0066ff; margin-bottom: 10px; }
+        .page-subtitle { color: #aaa; font-size: 1.1em; }
+        #auctions-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
+        .auction-card { background: rgba(20, 30, 60, 0.8); border: 2px solid #6b21a8; border-radius: 15px; padding: 25px; transition: all 0.3s ease; overflow: hidden; }
+        .auction-card:hover { border-color: #00d4ff; box-shadow: 0 0 30px rgba(0, 212, 255, 0.3); transform: translateY(-5px); }
+        .auction-image { width: 100%; height: 200px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 4em; }
+        .auction-title { font-size: 1.4em; color: #fff; font-weight: bold; margin-bottom: 10px; }
+        .auction-description { color: #aaa; font-size: 0.95em; margin-bottom: 15px; }
+        .auction-details { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(0, 212, 255, 0.2); }
+        .bid-info { }
+        .bid-label { color: #aaa; font-size: 0.85em; }
+        .current-bid { font-size: 1.8em; color: #00d4ff; font-weight: bold; font-family: 'Orbitron'; }
+        .bid-form { display: flex; gap: 10px; margin-bottom: 15px; }
+        .bid-input { flex: 1; padding: 12px; background: rgba(0, 212, 255, 0.1); border: 1px solid #00d4ff; border-radius: 8px; color: #fff; font-size: 1em; }
+        .bid-input::placeholder { color: #666; }
+        .bid-button { padding: 12px 25px; background: linear-gradient(135deg, #00d4ff, #0066ff); color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .bid-button:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+        .bid-button:disabled { background: #4b5563; cursor: not-allowed; color: #aaa; transform: scale(1); }
+        .time-left { color: #ff6b6b; font-weight: bold; font-size: 0.9em; }
+        .time-left.safe { color: #fbbf24; }
+        .no-auctions-section { text-align: center; padding: 60px 20px; }
+        .no-auctions-section h2 { color: #00d4ff; margin-bottom: 20px; font-size: 2em; }
+        .no-auctions-section i { font-size: 5em; color: #00d4ff; opacity: 0.5; display: block; margin-bottom: 20px; }
+        .notification { position: fixed; top: 100px; right: 20px; background: rgba(16, 185, 129, 0.95); color: white; padding: 15px 25px; border-radius: 10px; animation: slideIn 0.5s ease; z-index: 1000; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .login-prompt { text-align: center; padding: 60px 20px; }
+        .login-prompt h2 { color: #00d4ff; margin-bottom: 20px; }
+        .login-prompt button { padding: 15px 40px; background: linear-gradient(135deg, #00d4ff, #0066ff); color: black; border: none; border-radius: 10px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <!-- Top Nav -->
+    <div class="auction-top-nav">
+        <a href="/" style="color: #00d4ff; text-decoration: none; font-weight: bold;"><i class="fas fa-home"></i> Home</a>
+        <a href="/earn.html" class="earn-btn"><i class="fas fa-coins"></i> Earn Coins</a>
+        <div class="user-coins" id="user-coins-display" style="display: none;"><i class="fas fa-wallet"></i><span id="coins-amount">0</span> Coins</div>
+        <button class="discord-login-header" id="login-btn" onclick="discordLogin()" style="padding: 10px 20px;"><i class="fab fa-discord"></i> Login</button>
+    </div>
+
+    <main>
+        <section class="auctions-page">
+            <div class="container" style="max-width: 1200px; margin: 0 auto;">
+                <div class="page-header">
+                    <h1><i class="fas fa-gavel"></i> Live Auctions</h1>
+                    <p class="page-subtitle">Place your bids with earned coins to win premium products!</p>
+                </div>
+                
+                <!-- Auctions Container -->
+                <div id="auctions-container"></div>
+
+                <!-- No Auctions Notification -->
+                <div id="no-auctions" class="no-auctions-section" style="display: none;">
+                    <i class="fas fa-bell-slash"></i>
+                    <h2>No Live Auctions Right Now</h2>
+                    <p style="color: #aaa; margin-bottom: 20px;">New auctions coming soon!</p>
+                </div>
+
+                <!-- Login Required -->
+                <div id="login-prompt" class="login-prompt" style="display: none;">
+                    <i class="fas fa-lock" style="font-size: 3em; color: #00d4ff; margin-bottom: 20px;"></i>
+                    <h2>Login Required</h2>
+                    <p style="color: #aaa; margin-bottom: 30px;">Login to place bids and win auctions</p>
+                    <button onclick="discordLogin()"><i class="fab fa-discord"></i> Login with Discord</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Demo auctions
+        const DEMO_AUCTIONS = [
+            {
+                id: 'auction-1',
+                title: 'Netflix Premium 1 Year',
+                description: 'Full Netflix Premium subscription for 12 months',
+                icon: 'fas fa-play',
+                startingBid: 100,
+                currentBid: 250,
+                bidderName: 'CoolUser',
+                timeLeft: '2 hours',
+                image: '🎬'
+            },
+            {
+                id: 'auction-2',
+                title: 'Spotify Premium 6 Months',
+                description: 'Premium music streaming access',
+                icon: 'fas fa-music',
+                startingBid: 80,
+                currentBid: 180,
+                bidderName: 'MusicLover',
+                timeLeft: '5 hours',
+                image: '🎵'
+            },
+            {
+                id: 'auction-3',
+                title: '$50 Amazon Gift Card',
+                description: 'Digital Amazon gift card',
+                icon: 'fas fa-amazon',
+                startingBid: 200,
+                currentBid: 300,
+                bidderName: 'ShopperPro',
+                timeLeft: '1 hour 30 min',
+                image: '🛍️'
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkLoginAndLoadAuctions();
+        });
+
+        async function checkLoginAndLoadAuctions() {
+            try {
+                const res = await fetch('/api/user', { credentials: 'include' });
+                const data = await res.json();
+
+                if (data.user) {
+                    // Logged in
+                    document.getElementById('login-btn').innerHTML = '<i class="fas fa-check"></i> Logged In';
+                    document.getElementById('user-coins-display').style.display = 'flex';
+                    document.getElementById('login-prompt').style.display = 'none';
+                    
+                    await loadUserCoins();
+                    loadAuctions();
+                } else {
+                    // Not logged in
+                    document.getElementById('login-prompt').style.display = 'block';
+                    document.getElementById('auctions-container').innerHTML = '';
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('login-prompt').style.display = 'block';
+            }
+        }
+
+        async function loadUserCoins() {
+            try {
+                const res = await fetch('/api/user-data', { credentials: 'include' });
+                const userData = await res.json();
+                document.getElementById('coins-amount').textContent = userData.coins || 0;
+            } catch (err) {
+                console.error('Error loading coins:', err);
+            }
+        }
+
+        async function loadAuctions() {
+            try {
+                const res = await fetch('/api/auctions');
+                let auctions = await res.json();
+                
+                // Use demo if no real auctions
+                if (!auctions || auctions.length === 0) {
+                    auctions = DEMO_AUCTIONS;
+                }
+                
+                if (auctions.length > 0) {
+                    displayAuctions(auctions);
+                } else {
+                    document.getElementById('no-auctions').style.display = 'block';
+                    document.getElementById('auctions-container').innerHTML = '';
+                }
+            } catch (err) {
+                console.error('Error loading auctions:', err);
+                document.getElementById('no-auctions').style.display = 'block';
+            }
+        }
+
+        function displayAuctions(auctions) {
+            const container = document.getElementById('auctions-container');
+            container.innerHTML = auctions.map(auction => `
+                <div class="auction-card" data-auction-id="${auction.id}">
+                    <div class="auction-image">${auction.image || '🎁'}</div>
+                    <div class="auction-title">${auction.title}</div>
+                    <div class="auction-description">${auction.description}</div>
+                    
+                    <div class="auction-details">
+                        <div class="bid-info">
+                            <div class="bid-label">Current Bid</div>
+                            <div class="current-bid">${auction.currentBid || auction.startingBid} 💰</div>
+                            <div style="font-size: 0.85em; color: #666; margin-top: 5px;">Bid by: ${auction.bidderName || 'None'}</div>
+                        </div>
+                        <div class="time-left ${parseInt(auction.timeLeft) < 120 ? '' : 'safe'}">${auction.timeLeft}</div>
+                    </div>
+                    
+                    <div class="bid-form">
+                        <input type="number" class="bid-input" placeholder="Your bid" min="${(auction.currentBid || auction.startingBid) + 1}" data-auction-id="${auction.id}">
+                        <button class="bid-button" onclick="placeBid('${auction.id}')">Bid</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function placeBid(auctionId) {
+            const bidInput = document.querySelector(`input[data-auction-id="${auctionId}"]`);
+            const bidAmount = parseInt(bidInput.value);
+
+            if (!bidAmount || bidAmount < 1) {
+                showNotification('Please enter a valid bid amount', true);
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/place-bid', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ auctionId, bidAmount })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showNotification(`Bid placed! New balance: ${data.coins} coins`);
+                    bidInput.value = '';
+                    await loadUserCoins();
+                    await loadAuctions();
+                } else {
+                    showNotification(data.error, true);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showNotification('Error placing bid', true);
+            }
+        }
+
+        function showNotification(message, isError = false) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.style.background = isError ? 'rgba(239, 68, 68, 0.95)' : 'rgba(16, 185, 129, 0.95)';
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function discordLogin() {
+            window.location.href = '/auth/discord?return_to=/auctions.html';
+        }
+    </script>
+</body>
+</html>
+

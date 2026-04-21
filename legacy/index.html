@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MazeBids - Earn Free Coins, Win Premium Products</title>
+<link rel="stylesheet" href="css/styles-updated.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/animations-enhanced.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Inline styles removed - using styles-updated.css -->
+</head>
+<body>
+    <header>
+        <div class="container">
+            <img src="https://media.discordapp.net/attachments/1495155538886135889/1496103125944111104/MazeBids.png?ex=69e8aa1d&is=69e7589d&hm=b7a98d13f49a2d46c9167bcc58f850507494c85ac82e93cec62993473526ba3c&=&format=webp&quality=lossless&width=400&height=400" alt="MazeBids" class="logo">
+            <div class="header-right">
+                <nav>
+                    <a href="#hero" onclick="soundSystem.play('click')">Home</a>
+                    <a href="#video" onclick="soundSystem.play('click')">How to</a>
+                    <a href="/auctions.html" class="auction-link" onmouseenter="soundSystem.play('hover')">Auctions</a>
+                    <a href="/earn.html" class="earn-link" onmouseenter="soundSystem.play('hover')">Earn Coins</a>
+                    <a href="#social" onclick="soundSystem.play('click')">Contact Us</a>
+                </nav>
+                <button class="discord-login-header ripple" onclick="discordLogin(); soundSystem.play('click')">
+                    <i class="fab fa-discord"></i> Login
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="hero-main page-enter">
+            <div class="container">
+                <h1 class="glow-text large slide-in-up">MazeBids</h1>
+                <div class="hero-description">
+                    <h2 class="purple-glow slide-in-up" style="animation-delay: 0.1s;">Earn FREE Coins</h2>
+                    <p class="highlight-premium slide-in-up" style="animation-delay: 0.2s;">🎁 BID ON PREMIUM PRODUCTS LIKE NETFLIX ACCOUNTS, SPOTIFY PREMIUM, GIFT CARDS AND MORE! 🎁</p>
+                    <p class="highlight slide-in-up" style="animation-delay: 0.3s;">✨ No real money needed - 100% free to play and win!</p>
+                    <div class="hero-cta slide-in-up" style="animation-delay: 0.4s;">
+                        <button class="btn-primary ripple" onclick="window.location.href='/earn.html'; soundSystem.play('click');"><i class="fas fa-coins"></i> Start Earning</button>
+                        <button class="btn-secondary ripple" onclick="window.location.href='/auctions.html'; soundSystem.play('click');"><i class="fas fa-gavel"></i> View Auctions</button>
+                    </div>
+                </div>
+            </div>
+            <canvas id="particles-canvas" class="particles"></canvas>
+        </section>
+
+        <section id="social" class="social-section section">
+            <div class="container">
+                <h2 class="scroll-reveal">Join the Community <i class="fas fa-users"></i></h2>
+                <div class="social-buttons">
+                    <a href="#" class="social-btn discord-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')">
+                        <i class="fab fa-discord"></i> Join Discord Server
+                    </a>
+                    <a href="#" class="social-btn insta-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')">
+                        <i class="fab fa-instagram"></i> Follow on Instagram
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="video" class="video-section section">
+            <div class="container">
+                <h2 class="scroll-reveal">How MazeBids Works <i class="fas fa-play"></i></h2>
+                <div class="video-wrapper scroll-reveal">
+                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Demo" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+                    <p class="video-note">Demo video - replace with real MazeBids walkthrough.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="stats" class="stats-section section dark-bg">
+            <div class="container">
+                <h2 class="scroll-reveal">Our Stats <i class="fas fa-chart-bar"></i></h2>
+                <div class="stats-grid">
+                    <div class="stat-item card-interactive scroll-reveal">
+                        <i class="fas fa-users"></i>
+                        <span class="stat-number" data-target="25000">0</span>
+                        <p>Active Users</p>
+                    </div>
+                    <div class="stat-item card-interactive scroll-reveal" style="animation-delay: 0.1s;">
+                        <i class="fas fa-gavel"></i>
+                        <span class="stat-number" data-target="150">0</span>
+                        <p>Auctions Hosted</p>
+                    </div>
+                    <div class="stat-item card-interactive scroll-reveal" style="animation-delay: 0.2s;">
+                        <i class="fas fa-coins"></i>
+                        <span class="stat-number" data-target="5000000">0</span>
+                        <p>Coins Distributed</p>
+                    </div>
+                    <div class="stat-item card-interactive scroll-reveal" style="animation-delay: 0.3s;">
+                        <i class="fas fa-trophy"></i>
+                        <span class="stat-number" data-target="15000">0</span>
+                        <p>Happy Winners</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2024 MazeBids.online. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a> | 
+                    <a href="#">Terms of Service</a> | 
+                    <a href="#">Refund Policy</a> | 
+                    <a href="#">Contact</a>
+                </div>
+                <p>Exclusive Discord Login | Free to Earn & Bid | Premium Products</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/sound-system.js"></script>
+    <script src="js/ui-manager.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            soundSystem.init();
+            UIManager.enableScrollReveal();
+            
+            // Animate stat counters on scroll
+            const statNumbers = document.querySelectorAll('.stat-number');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !entry.target.dataset.animated) {
+                        const target = parseInt(entry.target.dataset.target);
+                        UIManager.animateCounter(entry.target, 0, target, 2000);
+                        entry.target.dataset.animated = 'true';
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            statNumbers.forEach(num => observer.observe(num));
+
+            // Add ripple effects to all buttons
+            document.querySelectorAll('.ripple').forEach(btn => {
+                btn.addEventListener('click', UIManager.addRipple.bind(UIManager));
+                btn.addEventListener('mouseenter', () => soundSystem.play('hover'));
+            });
+        });
+
+        function discordLogin() {
+            soundSystem.play('click');
+            window.location.href = '/auth/discord?return_to=/';
+        }
+    </script>
+</body>
+</html>

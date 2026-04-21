@@ -1,0 +1,21 @@
+{
+  "name": "mazebids",
+  "version": "1.0.0",
+  "description": "MazeBids auction site",
+  "main": "server.js",
+  "scripts": {
+      "start": "cd backend && node server.js",
+      "dev": "cd backend && nodemon server.js"
+    },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "passport": "^0.7.0",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5",
+    "cookie-parser": "^1.4.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

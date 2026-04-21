@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  discordId     String         @unique
+  username      String
+  avatar        String?
+  coins         Int            @default(0)
+  totalEarned   Int            @default(0)
+  totalSpent    Int            @default(0)
+  role          String         @default("USER") // USER, ADMIN
+  notifications Boolean        @default(false)
+  referralCode  String?        @unique
+  referredById  String?
+  referredBy    User?          @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]         @relation("Referrals")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bids          Bid[]
+  transactions  Transaction[]
+  wonAuctions   Auction[]      @relation("Winner")
+  completedTasks UserTask[]
+  redemptions   Redemption[]
+}
+
+model BonusCode {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  reward      Int
+  maxUses     Int          @default(1)
+  usedCount   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  bonusCodeId String
+  bonusCode   BonusCode @relation(fields: [bonusCodeId], references: [id])
+  redeemedAt  DateTime  @default(now())
+
+  @@unique([userId, bonusCodeId])
+}
+
+model Auction {
+  id              String         @id @default(cuid())
+  title           String
+  description     String
+  product         String         @default("Digital Product")
+  image           String?
+  startTime       DateTime
+  endTime         DateTime
+  status          String         @default("UPCOMING") // UPCOMING, ACTIVE, ENDED, CANCELLED
+  startingBid     Int            @default(0)
+  currentBid      Int            @default(0)
+  minBidIncrement Int            @default(100)
+  highestBidderId String?
+  highestBidder   User?          @relation("Winner", fields: [highestBidderId], references: [id])
+  bids            Bid[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  amount    Int
+  timestamp DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id])
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  amount      Int
+  type        String          // EARN, SPEND
+  description String
+  timestamp   DateTime        @default(now())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  reward      Int
+  type        String    // GAME, AD, QUIZ, SURVEY
+  cooldown    Int       // in minutes
+  users       UserTask[]
+}
+
+model UserTask {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  completedAt DateTime @default(now())
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   // IMAGE, VIDEO, LINK
+  contentUrl  String   // URL to image/video or target link
+  targetUrl   String?  // Optional link for image/video ads
+  placement   String   // DASHBOARD, PROFILE, AUCTIONS, EARN, WATCH_ADS
+  duration    Int?     // Duration in seconds (for video ads)
+  reward      Int      @default(0) // Reward coins for watching
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
