@@ -9,6 +9,7 @@ const passport = require('passport');
 const prisma = require('./lib/prisma');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {

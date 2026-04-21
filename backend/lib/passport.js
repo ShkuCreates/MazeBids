@@ -1,6 +1,6 @@
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
-const prisma = require('./prisma');
+const prisma = require('../prisma');
 
 const crypto = require('crypto');
 
