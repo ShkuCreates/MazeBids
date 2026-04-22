@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const passport = require('passport');
 const prisma = require('./lib/prisma');
+const PrismaSessionStore = require('./lib/sessionStore');
 
 // Debug: Log environment variables
 console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
@@ -36,6 +37,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(session({
+  store: new PrismaSessionStore(prisma),
   secret: process.env.SESSION_SECRET || 'mazebids-secret',
   resave: false,
   saveUninitialized: false,

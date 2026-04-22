@@ -5,14 +5,18 @@ const prisma = require('./prisma');
 const crypto = require('crypto');
 
 passport.serializeUser((user, done) => {
+  console.log('[PASSPORT] Serializing user:', user.id);
   done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
   try {
+    console.log('[PASSPORT] Deserializing user:', id);
     const user = await prisma.user.findUnique({ where: { id } });
+    console.log('[PASSPORT] User found:', !!user);
     done(null, user);
   } catch (err) {
+    console.error('[PASSPORT] Deserialization error:', err);
     done(err, null);
   }
 });
