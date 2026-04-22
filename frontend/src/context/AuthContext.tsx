@@ -27,6 +27,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const AUTH_BUILD_MARKER = 'frontend-auth-refresh-2026-04-22-v1';
 
 // Create axios instance with credentials
 const apiClient = axios.create({
@@ -43,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      console.log('[AUTH] Fetching user from /api/auth/me');
+      console.log('[AUTH]', AUTH_BUILD_MARKER, 'Fetching user from /api/auth/me');
       const response = await apiClient.get('/api/auth/me');
       console.log('[AUTH] User fetched:', response.data);
       setUser(response.data);
