@@ -312,7 +312,7 @@ export default function AuctionsPage() {
                         className="group/btn relative px-8 py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30"
                       >
                         <span className="relative z-10 flex items-center gap-2 uppercase">
-                          View Details
+                          {auction.status === 'ACTIVE' ? 'Bid Now' : 'View Details'}
                           <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                         </span>
                         <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity blur-lg" />

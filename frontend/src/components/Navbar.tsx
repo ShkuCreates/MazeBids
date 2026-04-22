@@ -40,7 +40,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isProtected = item.name === "Profile" || item.name === "Dashboard";
+              const isProtected = item.name === "Profile" || item.name === "Dashboard" || item.name === "Earn Coins";
               
               const handleClick = (e: React.MouseEvent) => {
                 if (loading) {

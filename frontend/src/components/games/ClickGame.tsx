@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MousePointer2, Timer, Trophy } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -27,15 +27,19 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
       finishGame();
     }
     return () => clearInterval(timer);
-  }, [gameState, timeLeft]);
+  }, [gameState, timeLeft, finishGame]);
 
-  const startGame = () => {
+  const handleClick = useCallback(() => {
+    setScore(prev => prev + 1);
+  }, []);
+
+  const startGame = useCallback(() => {
     setScore(0);
     setTimeLeft(10);
     setGameState('PLAYING');
-  };
+  }, []);
 
-  const finishGame = async () => {
+  const finishGame = useCallback(async () => {
     setGameState('FINISHED');
     try {
       await axios.post(`${API_URL}/api/tasks/complete`, {
@@ -46,7 +50,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  };
+  }, [taskId, score, refreshUser]);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
@@ -86,7 +90,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
             </div>
             
             <button
-              onClick={() => setScore(prev => prev + 1)}
+              onClick={handleClick}
               className="w-48 h-48 bg-gradient-to-b from-purple-500 to-purple-700 rounded-full mx-auto shadow-[0_0_40px_-5px_rgba(139,92,246,0.6)] active:scale-95 transition-transform flex items-center justify-center border-8 border-white/10"
             >
               <span className="text-4xl font-black select-none">CLICK!</span>
@@ -117,4 +121,4 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   );
 };
 
-export default ClickGame;
+export default React.memo(ClickGame);
