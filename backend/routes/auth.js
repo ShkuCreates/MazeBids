@@ -31,9 +31,10 @@ router.get('/discord/callback',
 );
 
 // New endpoint to verify token and create session
-router.post('/verify-token', (req, res) => {
+router.post('/verify-token', async (req, res) => {
   try {
     const { token } = req.body;
+    const prisma = require('../lib/prisma');
     
     if (!token) {
       return res.status(400).json({ message: 'No token provided' });
@@ -49,15 +50,29 @@ router.post('/verify-token', (req, res) => {
     
     console.log('[AUTH] Token verified for user:', decoded.userId);
     
-    // Manually set user in session (simulating passport login)
-    req.session.passport = { user: decoded.userId };
+    // Load user from database
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
     
-    console.log('[AUTH] Session established after token verification');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     
-    res.json({ 
-      success: true, 
-      message: 'Authenticated',
-      userId: decoded.userId
+    // Set user in session (this will be serialized by passport)
+    req.login(user, (err) => {
+      if (err) {
+        console.error('[AUTH] Login failed:', err);
+        return res.status(500).json({ message: 'Session creation failed' });
+      }
+      
+      console.log('[AUTH] Session established after token verification, user:', user.id);
+      
+      res.json({ 
+        success: true, 
+        message: 'Authenticated',
+        userId: user.id
+      });
     });
   } catch (err) {
     console.error('[AUTH] Token verification failed:', err.message);
