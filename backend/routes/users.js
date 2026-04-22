@@ -177,46 +177,6 @@ router.get('/site-stats', async (req, res) => {
   }
 });
 
-router.get('/admin-stats', requireAdmin, async (req, res) => {
-  try {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(todayStart);
-    weekStart.setDate(weekStart.getDate() - 6);
-    const monthStart = new Date(todayStart);
-    monthStart.setDate(monthStart.getDate() - 29);
-
-    const [signedInUsers, todayVisitors, weekVisitors, monthVisitors] = await Promise.all([
-      prisma.user.count(),
-      prisma.siteVisit.count({
-        where: { visitedOn: { gte: todayStart } }
-      }),
-      prisma.siteVisit.findMany({
-        where: { visitedOn: { gte: weekStart } },
-        distinct: ['visitorId'],
-        select: { visitorId: true }
-      }),
-      prisma.siteVisit.findMany({
-        where: { visitedOn: { gte: monthStart } },
-        distinct: ['visitorId'],
-        select: { visitorId: true }
-      })
-    ]);
-
-    res.json({
-      currentLiveUsers: getLiveVisitorCount(),
-      currentLiveSignedInUsers: getLiveSignedInUserCount(),
-      signedInUsers,
-      visitorsToday: todayVisitors,
-      visitorsThisWeek: weekVisitors.length,
-      visitorsThisMonth: monthVisitors.length
-    });
-  } catch (err) {
-    console.error('[ADMIN STATS] Error:', err);
-    res.status(500).json({ message: 'Failed to fetch admin stats' });
-  }
-});
-
 // Redeem Referral Code
 router.post('/redeem-referral', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });

@@ -8,8 +8,6 @@ const session = require('express-session');
 const passport = require('passport');
 const prisma = require('./lib/prisma');
 const PrismaSessionStore = require('./lib/sessionStore');
-const analyticsMiddleware = require('./lib/analyticsMiddleware');
-
 // Debug: Log environment variables
 console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
 console.log('[ENV] PORT:', process.env.PORT);
@@ -56,7 +54,6 @@ app.use(session({
 require('./lib/passport');
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(analyticsMiddleware);
 
 // Start automator after 30 second delay
 // Temporarily disabled while circuit breaker resets
