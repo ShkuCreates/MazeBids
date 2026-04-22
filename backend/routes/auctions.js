@@ -1,27 +1,6 @@
-const express = require('express');
-const router = express.Router();
-const prisma = require('../lib/prisma');
-const { sendAuctionNotification } = require('../lib/discordBot');
+const express = require('express');\nconst router = express.Router();\nconst prisma = require('../lib/prisma');\nconst cache = require('../lib/cache');\nconst { sendAuctionNotification } = require('../lib/discordBot');
 
-// Get all active auctions
-router.get('/', async (req, res) => {
-  try {
-    const auctions = await prisma.auction.findMany({
-      where: {
-        status: { in: ['ACTIVE', 'UPCOMING'] }
-      },
-      include: {
-        highestBidder: {
-          select: { username: true, avatar: true }
-        }
-      },
-      orderBy: { startTime: 'asc' }
-    });
-    res.json(auctions);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch auctions' });
-  }
-});
+// Get all active auctions\nrouter.get('/', async (req, res) => {\n  try {\n    const cacheKey = 'auctions:active';\n    let auctions = cache.get(cacheKey);\n\n    if (!auctions) {\n      auctions = await prisma.auction.findMany({\n        where: {\n          status: { in: ['ACTIVE', 'UPCOMING'] }\n        },\n        include: {\n          highestBidder: {\n            select: { username: true, avatar: true }\n          }\n        },\n        orderBy: { startTime: 'asc' }\n      });\n      cache.set(cacheKey, auctions, 30); // 30s cache\n    }\n\n    res.json(auctions);\n  } catch (err) {\n    res.status(500).json({ message: 'Failed to fetch auctions' });\n  }\n});
 
 // Get single auction
 router.get('/:id', async (req, res) => {
