@@ -40,11 +40,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production' || true, // Must be true when sameSite: 'none'
+    sameSite: 'lax', // Use 'lax' for better compatibility
     httpOnly: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    domain: process.env.NODE_ENV === 'production' ? undefined : 'localhost' // Let browser set domain in production
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
 }));
 

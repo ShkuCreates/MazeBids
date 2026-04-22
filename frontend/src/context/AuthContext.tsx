@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
+import { useSearchParams } from 'next/navigation';
 
 interface User {
   id: string;
@@ -28,15 +29,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Create axios instance with credentials
+const apiClient = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
 
   const refreshUser = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/auth/me`, { withCredentials: true });
+      console.log('[AUTH] Fetching user from /api/auth/me');
+      const response = await apiClient.get('/api/auth/me');
+      console.log('[AUTH] User fetched:', response.data);
       setUser(response.data);
     } catch (error) {
+      console.log('[AUTH] User fetch failed or not authenticated');
       setUser(null);
     } finally {
       setLoading(false);
@@ -44,8 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    refreshUser();
-  }, []);
+    const loginSuccess = searchParams?.get('login_success');
+    console.log('[AUTH] Login success param:', loginSuccess);
+    
+    // Add a small delay to ensure session is set by server
+    const timer = setTimeout(() => {
+      refreshUser();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchParams]);
 
   const login = () => {
     window.location.href = `${API_URL}/api/auth/discord`;
@@ -53,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await axios.post(`${API_URL}/api/auth/logout`, {}, { withCredentials: true });
+      await apiClient.post('/api/auth/logout');
       setUser(null);
       window.location.href = '/';
     } catch (error) {
