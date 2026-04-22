@@ -12,7 +12,8 @@ router.get('/discord/callback',
     failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed`
   }),
   (req, res) => {
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+    // Session is now established by passport, redirect to dashboard
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard?login_success=true`);
   }
 );
 
