@@ -12,12 +12,18 @@ router.get('/discord/callback',
     failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed`
   }),
   (req, res) => {
+    console.log('[AUTH] Discord callback - user authenticated:', req.user?.id);
+    console.log('[AUTH] Session ID:', req.sessionID);
+    console.log('[AUTH] Session data:', req.session);
     // Session is now established by passport, redirect to dashboard
     res.redirect(`${process.env.FRONTEND_URL}/dashboard?login_success=true`);
   }
 );
 
 router.get('/me', (req, res) => {
+  console.log('[AUTH /me] Session ID:', req.sessionID);
+  console.log('[AUTH /me] User:', req.user?.id);
+  console.log('[AUTH /me] Authenticated:', req.isAuthenticated());
   if (req.user) {
     res.json(req.user);
   } else {
