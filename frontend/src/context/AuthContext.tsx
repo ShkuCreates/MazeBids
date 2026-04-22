@@ -63,12 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('[AUTH] Verifying auth token...');
       const response = await apiClient.post('/api/auth/verify-token', { token });
-      console.log('[AUTH] Token verified, user:', response.data.userId);
+      console.log('[AUTH] Token verified, sessionId:', response.data.sessionId, 'user:', response.data.userId);
       
-      // Wait a moment for session to be established
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait longer for session to be fully established and cookie to be stored
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Now fetch the actual user data
+      // Now fetch the actual user data - browser should send cookie automatically
       return await refreshUser();
     } catch (error) {
       console.error('[AUTH] Token verification failed:', error);

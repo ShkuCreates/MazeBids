@@ -40,7 +40,7 @@ router.post('/verify-token', async (req, res) => {
       return res.status(400).json({ message: 'No token provided' });
     }
     
-    console.log('[AUTH] Verifying token...');
+    console.log('[AUTH /verify-token] Verifying token...');
     
     // Verify the JWT
     const decoded = jwt.verify(
@@ -48,7 +48,7 @@ router.post('/verify-token', async (req, res) => {
       process.env.SESSION_SECRET || 'mazebids-secret'
     );
     
-    console.log('[AUTH] Token verified for user:', decoded.userId);
+    console.log('[AUTH /verify-token] Token verified for user:', decoded.userId);
     
     // Load user from database
     const user = await prisma.user.findUnique({
@@ -59,36 +59,78 @@ router.post('/verify-token', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Set user in session (this will be serialized by passport)
-    req.login(user, (err) => {
+    // Set passport user data in session BEFORE sending response
+    req.session.passport = { user: user.id };
+    
+    // Save session explicitly and wait for it to complete
+    req.session.save((err) => {
       if (err) {
-        console.error('[AUTH] Login failed:', err);
-        return res.status(500).json({ message: 'Session creation failed' });
+        console.error('[AUTH /verify-token] Session save error:', err);
+        return res.status(500).json({ message: 'Session save failed' });
       }
       
-      console.log('[AUTH] Session established after token verification, user:', user.id);
+      console.log('[AUTH /verify-token] Session saved:', req.sessionID);
+      
+      req.session.user = { id: user.id };
+      
+      // Force set session cookie
+      res.cookie('connect.sid', req.sessionID, {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000
+      });
+      
+      console.log('[AUTH /verify-token] Session cookie explicitly set');
+      
+      // Set additional cookie header to ensure browser stores it
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       
       res.json({ 
         success: true, 
         message: 'Authenticated',
-        userId: user.id
+        userId: user.id,
+        sessionId: req.sessionID
       });
     });
   } catch (err) {
-    console.error('[AUTH] Token verification failed:', err.message);
+    console.error('[AUTH /verify-token] Error:', err.message);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 });
 
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
+  console.log('[AUTH /me] Incoming request');
   console.log('[AUTH /me] Session ID:', req.sessionID);
-  console.log('[AUTH /me] User:', req.user?.id);
+  console.log('[AUTH /me] Cookies:', req.headers.cookie);
+  console.log('[AUTH /me] Session object:', JSON.stringify(req.session, null, 2));
+  console.log('[AUTH /me] User from passport:', req.user?.id);
+  console.log('[AUTH /me] Session user:', req.session.user?.id);
   console.log('[AUTH /me] Authenticated:', req.isAuthenticated());
-  if (req.user) {
-    res.json(req.user);
-  } else {
-    res.status(401).json({ message: 'Not authenticated' });
+  
+  const userId = req.user?.id || req.session.user?.id;
+  if (userId) {
+    try {
+      const prisma = require('../lib/prisma');
+      const user = await prisma.user.findUnique({ 
+        where: { id: userId },
+        include: {
+          referrals: true,
+          redeemedCodes: true
+        }
+      });
+      if (user) {
+        res.json(user);
+        return;
+      }
+    } catch (err) {
+      console.error('[AUTH /me] User lookup error:', err);
+    }
   }
+  
+  res.status(401).json({ message: 'Not authenticated' });
 });
 
 router.post('/logout', (req, res) => {

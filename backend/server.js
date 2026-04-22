@@ -42,7 +42,7 @@ app.use(session({
   resave: false,
   saveUninitialized: true, // Save new sessions to database immediately
   cookie: {
-    secure: process.env.NODE_ENV === 'production' || true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     httpOnly: true,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -65,6 +65,7 @@ require('./lib/socket')(io);
 
 // Routes
 app.get('/', (req, res) => res.send('Mazebids API is live!'));
+app.use('/api/health', require('./routes/health'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auctions', require('./routes/auctions'));
 app.use('/api/users', require('./routes/users'));
