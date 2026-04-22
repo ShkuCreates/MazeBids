@@ -65,6 +65,7 @@ require('./lib/socket')(io);
 
 // Routes
 app.get('/', (req, res) => res.send('Mazebids API is live!'));
+app.use('/api/health', require('./routes/health'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auctions', require('./routes/auctions'));
 app.use('/api/users', require('./routes/users'));

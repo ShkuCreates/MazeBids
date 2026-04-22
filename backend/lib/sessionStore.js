@@ -1,5 +1,4 @@
 const session = require('express-session');
-const { promisify } = require('util');
 
 class PrismaSessionStore extends session.Store {
   constructor(prisma) {
@@ -8,15 +7,36 @@ class PrismaSessionStore extends session.Store {
     console.log('[SESSION STORE] Initialized with Prisma');
   }
 
+  async withRetry(operation, maxRetries = 3) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (err) {
+        lastError = err;
+        console.error(`[SESSION STORE] Retry ${attempt}/${maxRetries} failed:`, err.message);
+        
+        if (attempt < maxRetries) {
+          const delay = 1000 * Math.pow(2, attempt - 1); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    throw lastError;
+  }
+
   async get(sid, callback) {
     try {
       console.log('[SESSION STORE] GET:', sid);
       
-      // Use query directly instead of $queryRaw
-      const result = await this.prisma.$queryRawUnsafe(
-        'SELECT sess FROM "Session" WHERE sid = $1 AND expire > NOW()',
-        sid
-      );
+      const result = await this.withRetry(async () => {
+        return this.prisma.$queryRawUnsafe(
+          'SELECT sess FROM "Session" WHERE sid = $1 AND expire > NOW()',
+          sid
+        );
+      });
       
       console.log('[SESSION STORE] GET result:', result?.length, 'rows');
       
@@ -31,8 +51,8 @@ class PrismaSessionStore extends session.Store {
         callback(null, null);
       }
     } catch (err) {
-      console.error('[SESSION STORE] GET ERROR:', err.message, 'CODE:', err.code);
-      callback(null); // Return null instead of error to allow login
+      console.error('[SESSION STORE] GET final error:', err.message);
+      callback(null, null); // Memory fallback
     }
   }
 
@@ -42,51 +62,50 @@ class PrismaSessionStore extends session.Store {
       const expire = new Date(Date.now() + (sess.cookie?.maxAge || 30 * 24 * 60 * 60 * 1000));
       const sessJson = JSON.stringify(sess);
       
-      console.log('[SESSION STORE] Attempting UPDATE...');
-      
-      // Simple UPDATE first
-      const updated = await this.prisma.$executeRawUnsafe(
-        'UPDATE "Session" SET sess = $1::jsonb, expire = $2 WHERE sid = $3',
-        sessJson,
-        expire,
-        sid
-      );
-      
-      console.log('[SESSION STORE] UPDATE affected rows:', updated);
-      
-      if (updated === 0) {
-        // If no rows updated, INSERT
-        console.log('[SESSION STORE] Attempting INSERT...');
-        const inserted = await this.prisma.$executeRawUnsafe(
-          'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3)',
-          sid,
+      await this.withRetry(async () => {
+        console.log('[SESSION STORE] Attempting UPDATE...');
+        const updated = await this.prisma.$executeRawUnsafe(
+          'UPDATE "Session" SET sess = $1::jsonb, expire = $2 WHERE sid = $3',
           sessJson,
-          expire
+          expire,
+          sid
         );
-        console.log('[SESSION STORE] INSERT affected rows:', inserted);
-      }
+        console.log('[SESSION STORE] UPDATE affected rows:', updated);
+        
+        if (updated === 0) {
+          console.log('[SESSION STORE] Attempting INSERT...');
+          const inserted = await this.prisma.$executeRawUnsafe(
+            'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3)',
+            sid,
+            sessJson,
+            expire
+          );
+          console.log('[SESSION STORE] INSERT affected rows:', inserted);
+        }
+      });
       
       console.log('[SESSION STORE] SET SUCCESS: Session saved to database');
-      callback();
+      callback(null);
     } catch (err) {
-      console.error('[SESSION STORE] SET ERROR:', err.message, 'CODE:', err.code, 'META:', err.meta);
-      console.error('[SESSION STORE] Full error:', err);
-      callback(); // Don't fail the request, just log
+      console.error('[SESSION STORE] SET ERROR:', err.message);
+      callback(null); // Don't fail request
     }
   }
 
   async destroy(sid, callback) {
     try {
       console.log('[SESSION STORE] DESTROY:', sid);
-      await this.prisma.$executeRawUnsafe(
-        'DELETE FROM "Session" WHERE sid = $1',
-        sid
-      );
+      await this.withRetry(async () => {
+        await this.prisma.$executeRawUnsafe(
+          'DELETE FROM "Session" WHERE sid = $1',
+          sid
+        );
+      });
       console.log('[SESSION STORE] DESTROY: Session deleted');
-      callback();
+      callback(null);
     } catch (err) {
       console.error('[SESSION STORE] DESTROY ERROR:', err.message);
-      callback();
+      callback(null);
     }
   }
 
@@ -94,16 +113,18 @@ class PrismaSessionStore extends session.Store {
     try {
       console.log('[SESSION STORE] TOUCH:', sid);
       const expire = new Date(Date.now() + (sess.cookie?.maxAge || 30 * 24 * 60 * 60 * 1000));
-      await this.prisma.$executeRawUnsafe(
-        'UPDATE "Session" SET expire = $1 WHERE sid = $2',
-        expire,
-        sid
-      );
+      await this.withRetry(async () => {
+        await this.prisma.$executeRawUnsafe(
+          'UPDATE "Session" SET expire = $1 WHERE sid = $2',
+          expire,
+          sid
+        );
+      });
       console.log('[SESSION STORE] TOUCH: Session updated');
-      callback();
+      callback(null);
     } catch (err) {
       console.error('[SESSION STORE] TOUCH ERROR:', err.message);
-      callback();
+      callback(null);
     }
   }
 }
