@@ -2,7 +2,6 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes, ApplicationCommandOptionType, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const prisma = require('./prisma');
 const cron = require('node-cron');
-const crypto = require('crypto');
 
 const client = new Client({
   intents: [
@@ -31,144 +30,149 @@ const welcomes = [
 
 // Random statuses
 const statuses = [
-  { name: 'MazeBids Auctions', type: 0 }, // Playing
-  { name: 'your bids', type: 2 }, // Listening
-  { name: 'fast auctions', type: 3 }, // Watching
-  { name: 'to earn coins', type: 5 }, // Competing
-  { name: 'top bidders', type: 2 }, // Listening
+  { name: 'MazeBids Auctions', type: 0 },
+  { name: 'your bids', type: 2 },
+  { name: 'fast auctions', type: 3 },
+  { name: 'to earn coins', type: 5 },
+  { name: 'top bidders', type: 2 },
   { name: 'MazeBids.com', type: 0 },
-  { name: 'live auctions', type: 1 }, // Streaming
+  { name: 'live auctions', type: 1 },
   { name: 'coin grind', type: 0 },
   { name: 'Discord auctions', type: 2 }
 ];
 
-client.on('error', (error) => console.error('Discord bot WebSocket error:', error.message));
+client.on('error', (error) => console.error('Discord bot error:', error.message));
 
-// 1. Prevent invite to wrong server
+// Prevent invite to wrong server
 client.on('guildCreate', async (guild) => {
   if (guild.id !== MAIN_GUILD_ID) {
     try {
-      console.log(`Bot invited to unauthorized server: ${guild.name} (${guild.id}). Leaving...`);
-      
-      // Find inviter (approximation - recent audit log)
-      const auditLogs = await guild.fetchAuditLogs({ type: 'BOT_ADD', limit: 1 });
-      const entry = auditLogs.entries.first();
-      const inviter = entry?.executor;
-
-      if (inviter) {
-        try {
-          await inviter.send("You Can't invite me to other servers. Sorry! 😔 Use only in MazeBids main server.");
-        } catch (dmErr) {
-          console.log('Could not DM inviter');
-        }
-      }
-
+      console.log(`Unauthorized guild ${guild.name} (${guild.id}). Leaving...`);
       await guild.leave();
     } catch (err) {
-      console.error('Error handling unauthorized guild:', err);
+      console.error('Guild leave error:', err);
     }
   }
 });
 
-// 2. Welcome message
+// Welcome message
 client.on('guildMemberAdd', async (member) => {
   if (member.guild.id !== MAIN_GUILD_ID) return;
-
   try {
     const channel = await client.channels.fetch(WELCOME_CHANNEL_ID);
     const welcome = welcomes[Math.floor(Math.random() * welcomes.length)].replace('{user}', `<@${member.id}>`);
     await channel.send(welcome);
+    // Auto-role
+    const roleId = '1496042141015736422';
+    const role = member.guild.roles.cache.get(roleId);
+    if (role) await member.roles.add(role);
   } catch (err) {
-    console.error('Welcome message error:', err);
+    console.error('Welcome/auto-role error:', err);
   }
 });
 
-// 3. Daily leaderboard at 10PM IST (16:30 UTC)
+// Daily leaderboard 10PM IST
 cron.schedule('30 16 * * *', async () => {
   try {
     const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
-    
-    // Top coins
     const topCoins = await prisma.user.findMany({
       select: { username: true, coins: true, discordId: true },
       orderBy: { coins: 'desc' },
       take: 5
     });
 
-    // Top auction winners (count wonAuctions)
-    const topWinners = await prisma.user.findMany({
-      select: { username: true, discordId: true },
-      orderBy: { wonAuctions: { _count: 'desc' } },
-      take: 5
-    });
-
-    // Top consistent (most transactions)
-    const topConsistent = await prisma.user.findMany({
-      select: { username: true, discordId: true },
-      orderBy: { transactions: { _count: 'desc' } },
-      take: 5
-    });
-
     const embed = new EmbedBuilder()
-      .setTitle('🏆 Daily MazeBids Leaderboard 🏆')
-      .setDescription('**Select a category below:**')
+      .setTitle('🏆 Daily Top 5 Coin Holders 🏆')
+      .setDescription(topCoins.map((u, i) => `${i+1}. **${u.username || `User ${u.discordId}`}** - ${u.coins} coins`).join('\n') || 'No data')
       .setColor('#8b5cf6')
       .setTimestamp();
 
-    const selectMenu = new StringSelectMenuBuilder()
-      .setCustomId('leaderboard_select')
-      .setPlaceholder('Choose leaderboard type...')
-      .addOptions([
-        new StringSelectMenuOptionBuilder()
-          .setLabel('Top Coins Holders')
-          .setValue('coins'),
-        new StringSelectMenuOptionBuilder()
-          .setLabel('Top Auction Winners')
-          .setValue('winners'),
-        new StringSelectMenuOptionBuilder()
-          .setLabel('Most Consistent Users')
-          .setValue('consistent')
-      ]);
-
-    const row = new ActionRowBuilder().addComponents(selectMenu);
-
-    await channel.send({ embeds: [embed], components: [row] });
+    await channel.send({ embeds: [embed] });
   } catch (err) {
     console.error('Leaderboard cron error:', err);
   }
 }, { timezone: 'Asia/Kolkata' });
 
-// 4. Status rotation every 2 min
+// Status rotation
 setInterval(() => {
   const status = statuses[Math.floor(Math.random() * statuses.length)];
   client.user.setActivity(status.name, { type: status.type });
 }, 120000);
 
-// Existing auto-role
-client.on('guildMemberAdd', async (member) => {
-  const roleId = '1496042141015736422';
-  try {
-    const role = member.guild.roles.cache.get(roleId);
-    if (role) {
-      await member.roles.add(role);
-    }
-  } catch (error) {
-    console.error('Auto-role error:', error);
+// Slash commands
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === 'leaderboard') {
+    const topCoins = await prisma.user.findMany({
+      select: { username: true, coins: true },
+      orderBy: { coins: 'desc' },
+      take: 5
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle('🏆 Current Leaderboard 🏆')
+      .setDescription(topCoins.map((u, i) => `${i+1}. ${u.username || 'Anonymous'} - ${u.coins} coins`).join('\n'))
+      .setColor('#00d4ff')
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [embed] });
   }
+
+  // Existing commands (add them here)
 });
 
-// Existing slash commands & other logic (add /leaderboard here too)
-const commands = [
-  // existing commands...
-  {
-    name: 'leaderboard',
-    description: 'View daily leaderboards',
+async function sendAuctionNotification(discordId, auction) {
+  try {
+    const user = await client.users.fetch(discordId);
+    await user.send(`🔔 New auction: **${auction.title}** started!\nCurrent bid: ${auction.currentBid} coins`);
+  } catch (err) {
+    console.error(`Notify ${discordId} failed:`, err.message);
   }
-];
+}
 
-// Rest of existing code: registerCommands, interactionCreate, sendAuctionNotification, announceWinner, loginWithRetry...
+async function announceWinner(auction, winner) {
+  try {
+    const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
+    const embed = new EmbedBuilder()
+      .setTitle('🎉 Auction Won! 🎉')
+      .setDescription(`**${winner.username}** won **${auction.title}** with ${auction.currentBid} coins!`)
+      .setColor('#10b981')
+      .setTimestamp();
 
-// ... (append existing slash command handling, exports, etc.)
+    await channel.send({ embeds: [embed] });
+  } catch (err) {
+    console.error('Announce winner error:', err);
+  }
+}
+
+async function sendNotificationStatusUpdate(discordId, enabled) {
+  try {
+    const user = await client.users.fetch(discordId);
+    const status = enabled ? 'enabled' : 'disabled';
+    await user.send(`✅ Auction notifications **${status}**`);
+  } catch (err) {
+    console.error(`Status update DM failed:`, err.message);
+  }
+}
+
+async function loginWithRetry(retries = 5) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await client.login(process.env.DISCORD_TOKEN);
+      console.log('Discord bot logged in');
+      return;
+    } catch (err) {
+      console.error(`Login attempt ${i+1} failed:`, err.message);
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+  console.error('All login attempts failed');
+}
+
+loginWithRetry();
 
 module.exports = { client, sendAuctionNotification, announceWinner, sendNotificationStatusUpdate };
 
