@@ -51,11 +51,14 @@
             <div class="container">
                 <h2 class="scroll-reveal">Join the Community <i class="fas fa-users"></i></h2>
                 <div class="social-buttons">
-                    <a href="#" class="social-btn discord-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')">
-                        <i class="fab fa-discord"></i> Join Discord Server
+                    <a href="https://youtube.com/@yourchannel" class="social-btn yt-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')" target="_blank">
+                        <i class="fab fa-youtube"></i> YouTube
                     </a>
-                    <a href="#" class="social-btn insta-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')">
-                        <i class="fab fa-instagram"></i> Follow on Instagram
+                    <a href="https://instagram.com/yourhandle" class="social-btn insta-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')" target="_blank">
+                        <i class="fab fa-instagram"></i> Instagram
+                    </a>
+                    <a href="mailto:hello@mazeBids.online" class="social-btn email-btn ripple scroll-reveal" onmouseenter="soundSystem.play('hover')" onclick="soundSystem.play('success')" target="_blank">
+                        <i class="fas fa-envelope"></i> Email
                     </a>
                 </div>
             </div>
@@ -115,9 +118,11 @@
         </div>
     </footer>
 
+<link rel="stylesheet" href="css/discord-popup.css">
     <script src="js/sound-system.js"></script>
     <script src="js/ui-manager.js"></script>
     <script src="js/script.js"></script>
+    <script src="js/discord-popup.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             soundSystem.init();

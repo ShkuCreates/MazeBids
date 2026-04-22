@@ -1,0 +1,74 @@
+/* Draggable Discord Popup */
+.discord-floating-popup {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #5865F2, #4752C4);
+  border-radius: 50%;
+  cursor: grab;
+  z-index: 10000;
+  box-shadow: 0 10px 40px rgba(88, 101, 242, 0.5);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.discord-floating-popup:hover {
+  transform: scale(1.1);
+  box-shadow: 0 15px 50px rgba(88, 101, 242, 0.7);
+}
+
+.discord-floating-popup.dragging {
+  cursor: grabbing;
+  transform: scale(1.05);
+  box-shadow: 0 20px 60px rgba(88, 101, 242, 0.8);
+}
+
+.discord-floating-popup i {
+  font-size: 2.2em;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.discord-tooltip {
+  position: absolute;
+  bottom: 80px;
+  right: -50px;
+  background: rgba(0,0,0,0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.discord-floating-popup:hover .discord-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-5px);
+}
+
+@media (max-width: 768px) {
+  .discord-floating-popup {
+    width: 60px;
+    height: 60px;
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .discord-tooltip {
+    font-size: 0.75em;
+    padding: 6px 12px;
+  }
+}
+
