@@ -31,9 +31,16 @@ function saveSession(req) {
   });
 }
 
-router.get('/discord', passport.authenticate('discord', {
-  scope: ['identify', 'guilds', 'guilds.join']
-}));
+router.get('/discord', (req, res, next) => {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    console.log('[AUTH] Existing authenticated session, skipping Discord re-auth');
+    return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+  }
+
+  return passport.authenticate('discord', {
+    scope: ['identify', 'guilds', 'guilds.join']
+  })(req, res, next);
+});
 
 router.get('/discord/callback',
   passport.authenticate('discord', {
@@ -42,18 +49,9 @@ router.get('/discord/callback',
   (req, res) => {
     console.log('[AUTH] Discord callback - user authenticated:', req.user?.id);
     console.log('[AUTH] Session ID:', req.sessionID);
-    
-    // Create a JWT token for the user to use on frontend
-    const token = jwt.sign(
-      { userId: req.user.id },
-      process.env.SESSION_SECRET || 'mazebids-secret',
-      { expiresIn: '15m' }
-    );
-    
-    console.log('[AUTH] Created auth token for user:', req.user.id);
-    
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?auth_token=${token}`);
+
+    // Session cookie is now working cross-site, so redirect directly to the app.
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
   }
 );
 

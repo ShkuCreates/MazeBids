@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const pathname = usePathname();
-  const { user, login, logout } = useAuth();
+  const { user, loading, login, logout } = useAuth();
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -43,6 +43,11 @@ const Navbar = () => {
               const isProtected = item.name === "Profile" || item.name === "Dashboard";
               
               const handleClick = (e: React.MouseEvent) => {
+                if (loading) {
+                  e.preventDefault();
+                  return;
+                }
+
                 if (isProtected && !user) {
                   e.preventDefault();
                   if (confirm(`You must be logged in to access the ${item.name}. Would you like to login now with Discord?`)) {
@@ -68,7 +73,9 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {user ? (
+            {loading ? (
+              <div className="text-sm text-gray-400">Checking session...</div>
+            ) : user ? (
               <>
                 <div className="flex items-center space-x-2 bg-purple-900/30 px-3 py-1.5 rounded-full border border-purple-500/30">
                   <Coins className="w-4 h-4 text-yellow-500" />
