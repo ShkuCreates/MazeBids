@@ -52,8 +52,11 @@ require('./lib/passport');
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Start automator
-require('./lib/automator').startLifecycleAutomator();
+// Start automator after 30 second delay
+// Temporarily disabled while circuit breaker resets
+// setTimeout(() => {
+//   require('./lib/automator').startLifecycleAutomator();
+// }, 30000);
 
 // Socket.io logic
 require('./lib/socket')(io);
