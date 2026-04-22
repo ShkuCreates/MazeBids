@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Gavel, PlayCircle, ShieldCheck, Trophy } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function Home() {
   const features = [
     {
@@ -40,7 +42,7 @@ export default function Home() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
           <a
-            href="http://localhost:5000/api/auth/discord"
+            href={`${API_URL}/api/auth/discord`}
             className="group relative px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-lg transition-all transform hover:scale-105 shadow-[0_0_40px_-10px_rgba(139,92,246,0.6)] flex items-center space-x-3 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -80,7 +82,7 @@ export default function Home() {
               Connect your Discord account to get started. No credit card required.
             </p>
             <a 
-              href="http://localhost:5000/api/auth/discord"
+              href={`${API_URL}/api/auth/discord`}
               className="px-10 py-5 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-2xl font-bold text-xl transition-all shadow-xl shadow-[#5865F2]/20 flex items-center space-x-3 mx-auto"
             >
               <img src="https://assets-global.website-files.com/6257adef93867e3d84058941/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" className="w-8 h-8" alt="Discord" />

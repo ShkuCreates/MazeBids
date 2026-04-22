@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 
@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
+  const handledAuthTokenRef = useRef<string | null>(null);
 
   const refreshUser = async () => {
     try {
@@ -72,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return await refreshUser();
     } catch (error) {
       console.error('[AUTH] Token verification failed:', error);
+      setLoading(false);
       return false;
     }
   };
@@ -80,12 +82,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const authToken = searchParams?.get('auth_token');
     
     if (authToken) {
+      if (handledAuthTokenRef.current === authToken) {
+        return;
+      }
+
+      handledAuthTokenRef.current = authToken;
       console.log('[AUTH] Auth token found in URL, verifying...');
+
+      // Remove the one-time token from the URL immediately so it doesn't trigger repeated verification.
+      window.history.replaceState({}, document.title, window.location.pathname);
+
       verifyAuthToken(authToken).then((success) => {
         if (success) {
           console.log('[AUTH] Successfully authenticated with token');
-          // Clean up URL to remove token
-          window.history.replaceState({}, document.title, window.location.pathname);
         } else {
           console.log('[AUTH] Token verification failed');
         }
