@@ -129,7 +129,7 @@ router.get('/me', async (req, res) => {
         where: { id: userId },
         include: {
           referrals: true,
-          redeemedCodes: true
+          redemptions: true
         }
       });
       if (user) {
