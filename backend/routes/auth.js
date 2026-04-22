@@ -4,6 +4,33 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
+function regenerateSession(req) {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+function loginUser(req, user) {
+  return new Promise((resolve, reject) => {
+    req.logIn(user, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+function saveSession(req) {
+  return new Promise((resolve, reject) => {
+    req.session.save((err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
 router.get('/discord', passport.authenticate('discord', {
   scope: ['identify', 'guilds', 'guilds.join']
 }));
@@ -58,46 +85,30 @@ router.post('/verify-token', async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    // Set passport user data in session BEFORE sending response
-    req.session.passport = { user: user.id };
-    
-    // Save session explicitly and wait for it to complete
-    req.session.save((err) => {
-      if (err) {
-        console.error('[AUTH /verify-token] Session save error:', err);
-        return res.status(500).json({ message: 'Session save failed' });
-      }
-      
-      console.log('[AUTH /verify-token] Session saved:', req.sessionID);
-      
-      req.session.user = { id: user.id };
-      
-      // Force set session cookie
-      res.cookie('connect.sid', req.sessionID, {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000
-      });
-      
-      console.log('[AUTH /verify-token] Session cookie explicitly set');
-      
-      // Set additional cookie header to ensure browser stores it
-      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
-      
-      res.json({ 
-        success: true, 
-        message: 'Authenticated',
-        userId: user.id,
-        sessionId: req.sessionID
-      });
+
+    await regenerateSession(req);
+    await loginUser(req, user);
+    req.session.user = { id: user.id };
+    await saveSession(req);
+
+    console.log('[AUTH /verify-token] Session saved:', req.sessionID);
+
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    res.json({ 
+      success: true, 
+      message: 'Authenticated',
+      userId: user.id,
+      sessionId: req.sessionID
     });
   } catch (err) {
     console.error('[AUTH /verify-token] Error:', err.message);
-    res.status(401).json({ message: 'Invalid or expired token' });
+    const isJwtError = err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError';
+    res.status(isJwtError ? 401 : 500).json({
+      message: isJwtError ? 'Invalid or expired token' : 'Session could not be saved'
+    });
   }
 });
 

@@ -63,32 +63,21 @@ class PrismaSessionStore extends session.Store {
       const sessJson = JSON.stringify(sess);
       
       await this.withRetry(async () => {
-        console.log('[SESSION STORE] Attempting UPDATE...');
+        console.log('[SESSION STORE] Attempting UPSERT...');
         const updated = await this.prisma.$executeRawUnsafe(
-          'UPDATE "Session" SET sess = $1::jsonb, expire = $2 WHERE sid = $3',
+          'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3) ON CONFLICT (sid) DO UPDATE SET sess = EXCLUDED.sess, expire = EXCLUDED.expire',
+          sid,
           sessJson,
-          expire,
-          sid
+          expire
         );
-        console.log('[SESSION STORE] UPDATE affected rows:', updated);
-        
-        if (updated === 0) {
-          console.log('[SESSION STORE] Attempting INSERT...');
-          const inserted = await this.prisma.$executeRawUnsafe(
-            'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3)',
-            sid,
-            sessJson,
-            expire
-          );
-          console.log('[SESSION STORE] INSERT affected rows:', inserted);
-        }
+        console.log('[SESSION STORE] UPSERT affected rows:', updated);
       });
       
       console.log('[SESSION STORE] SET SUCCESS: Session saved to database');
       callback(null);
     } catch (err) {
       console.error('[SESSION STORE] SET ERROR:', err.message);
-      callback(null); // Don't fail request
+      callback(err);
     }
   }
 
@@ -105,7 +94,7 @@ class PrismaSessionStore extends session.Store {
       callback(null);
     } catch (err) {
       console.error('[SESSION STORE] DESTROY ERROR:', err.message);
-      callback(null);
+      callback(err);
     }
   }
 
@@ -124,7 +113,7 @@ class PrismaSessionStore extends session.Store {
       callback(null);
     } catch (err) {
       console.error('[SESSION STORE] TOUCH ERROR:', err.message);
-      callback(null);
+      callback(err);
     }
   }
 }
