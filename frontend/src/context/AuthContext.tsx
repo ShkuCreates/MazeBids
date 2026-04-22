@@ -1,7 +1,6 @@
 "use client";
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
-import { useSearchParams } from 'next/navigation';
 
 interface User {
   id: string;
@@ -41,8 +40,6 @@ const apiClient = axios.create({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const searchParams = useSearchParams();
-  const handledAuthTokenRef = useRef<string | null>(null);
 
   const refreshUser = async () => {
     try {
@@ -60,55 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const verifyAuthToken = async (token: string) => {
-    try {
-      console.log('[AUTH] Verifying auth token...');
-      const response = await apiClient.post('/api/auth/verify-token', { token });
-      console.log('[AUTH] Token verified, sessionId:', response.data.sessionId, 'user:', response.data.userId);
-      
-      // Wait longer for session to be fully established and cookie to be stored
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Now fetch the actual user data - browser should send cookie automatically
-      return await refreshUser();
-    } catch (error) {
-      console.error('[AUTH] Token verification failed:', error);
-      setLoading(false);
-      return false;
-    }
-  };
-
   useEffect(() => {
-    const authToken = searchParams?.get('auth_token');
-    
-    if (authToken) {
-      if (handledAuthTokenRef.current === authToken) {
-        return;
-      }
-
-      handledAuthTokenRef.current = authToken;
-      console.log('[AUTH] Auth token found in URL, verifying...');
-
-      // Remove the one-time token from the URL immediately so it doesn't trigger repeated verification.
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      verifyAuthToken(authToken).then((success) => {
-        if (success) {
-          console.log('[AUTH] Successfully authenticated with token');
-        } else {
-          console.log('[AUTH] Token verification failed');
-        }
-      });
-    } else {
-      // No token in URL, just try to load existing session
-      const timer = setTimeout(() => {
-        refreshUser();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
+    refreshUser();
+  }, []);
 
   const login = () => {
+    if (loading || user) return;
     window.location.href = `${API_URL}/api/auth/discord`;
   };
 
