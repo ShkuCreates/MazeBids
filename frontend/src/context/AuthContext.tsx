@@ -49,24 +49,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await apiClient.get('/api/auth/me');
       console.log('[AUTH] User fetched:', response.data);
       setUser(response.data);
+      return true;
     } catch (error) {
       console.log('[AUTH] User fetch failed or not authenticated');
       setUser(null);
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
+  const verifyAuthToken = async (token: string) => {
+    try {
+      console.log('[AUTH] Verifying auth token...');
+      const response = await apiClient.post('/api/auth/verify-token', { token });
+      console.log('[AUTH] Token verified, user:', response.data.userId);
+      
+      // Wait a moment for session to be established
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Now fetch the actual user data
+      return await refreshUser();
+    } catch (error) {
+      console.error('[AUTH] Token verification failed:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    const loginSuccess = searchParams?.get('login_success');
-    console.log('[AUTH] Login success param:', loginSuccess);
+    const authToken = searchParams?.get('auth_token');
     
-    // Add a small delay to ensure session is set by server
-    const timer = setTimeout(() => {
-      refreshUser();
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    if (authToken) {
+      console.log('[AUTH] Auth token found in URL, verifying...');
+      verifyAuthToken(authToken).then((success) => {
+        if (success) {
+          console.log('[AUTH] Successfully authenticated with token');
+          // Clean up URL to remove token
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          console.log('[AUTH] Token verification failed');
+        }
+      });
+    } else {
+      // No token in URL, just try to load existing session
+      const timer = setTimeout(() => {
+        refreshUser();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
   }, [searchParams]);
 
   const login = () => {
