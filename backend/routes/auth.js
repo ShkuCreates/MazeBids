@@ -118,27 +118,29 @@ router.get('/me', async (req, res) => {
   console.log('[AUTH /me] User from passport:', req.user?.id);
   console.log('[AUTH /me] Session user:', req.session.user?.id);
   console.log('[AUTH /me] Authenticated:', req.isAuthenticated());
-  
-  const userId = req.user?.id || req.session.user?.id;
+
+  // Passport already deserializes the current user from the session.
+  if (req.user) {
+    console.log('[AUTH /me] Returning deserialized passport user');
+    return res.json(req.user);
+  }
+
+  const userId = req.session.user?.id;
   if (userId) {
     try {
       const prisma = require('../lib/prisma');
-      const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        include: {
-          referrals: true,
-          redemptions: true
-        }
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
       });
       if (user) {
-        res.json(user);
-        return;
+        console.log('[AUTH /me] Returning session fallback user');
+        return res.json(user);
       }
     } catch (err) {
       console.error('[AUTH /me] User lookup error:', err);
     }
   }
-  
+
   res.status(401).json({ message: 'Not authenticated' });
 });
 
