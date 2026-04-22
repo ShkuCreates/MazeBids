@@ -17,9 +17,7 @@ services:
       - key: SESSION_SECRET
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: mazebids-db
-          property: connectionString
+        sync: false
       - key: DISCORD_REDIRECT_URI
         value: https://mazebids-backend.onrender.com/auth/discord/callback
       - key: FRONTEND_URL
@@ -35,9 +33,4 @@ services:
       - key: NODE_ENV
         value: production
 
-  - type: pserv
-    name: mazebids-db
-    plan: free
-    ipAllowList: []
-    databaseName: mazebids
-    databaseUser: mazebids
+
