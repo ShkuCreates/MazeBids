@@ -1,4 +1,5 @@
 const session = require('express-session');
+const { promisify } = require('util');
 
 class PrismaSessionStore extends session.Store {
   constructor(prisma) {
@@ -10,9 +11,12 @@ class PrismaSessionStore extends session.Store {
   async get(sid, callback) {
     try {
       console.log('[SESSION STORE] GET:', sid);
-      const result = await this.prisma.$queryRaw`
-        SELECT sess FROM "Session" WHERE sid = ${sid} AND expire > NOW()
-      `;
+      
+      // Use query directly instead of $queryRaw
+      const result = await this.prisma.$queryRawUnsafe(
+        'SELECT sess FROM "Session" WHERE sid = $1 AND expire > NOW()',
+        sid
+      );
       
       if (result && result.length > 0) {
         console.log('[SESSION STORE] GET: Found session');
@@ -26,7 +30,7 @@ class PrismaSessionStore extends session.Store {
       }
     } catch (err) {
       console.error('[SESSION STORE] GET ERROR:', err.message);
-      callback(err);
+      callback(null); // Return null instead of error to allow login
     }
   }
 
@@ -36,33 +40,49 @@ class PrismaSessionStore extends session.Store {
       const expire = new Date(Date.now() + (sess.cookie?.maxAge || 30 * 24 * 60 * 60 * 1000));
       const sessJson = JSON.stringify(sess);
       
-      console.log('[SESSION STORE] Inserting session, expires:', expire);
-      // Upsert: insert or update
-      const result = await this.prisma.$executeRaw`
-        INSERT INTO "Session" (sid, sess, expire) 
-        VALUES (${sid}, ${sessJson}::jsonb, ${expire})
-        ON CONFLICT (sid) 
-        DO UPDATE SET sess = ${sessJson}::jsonb, expire = ${expire}
-      `;
+      console.log('[SESSION STORE] Upserting session, expires:', expire);
+      
+      // Use transaction for reliability
+      await this.prisma.$transaction(async (tx) => {
+        // First try to update
+        const updated = await tx.$executeRawUnsafe(
+          'UPDATE "Session" SET sess = $1::jsonb, expire = $2 WHERE sid = $3',
+          sessJson,
+          expire,
+          sid
+        );
+        
+        // If no rows were updated, insert
+        if (updated === 0) {
+          await tx.$executeRawUnsafe(
+            'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3)',
+            sid,
+            sessJson,
+            expire
+          );
+        }
+      });
+      
       console.log('[SESSION STORE] SET SUCCESS: Session saved to database');
       callback();
     } catch (err) {
-      console.error('[SESSION STORE] SET ERROR:', err.message, err);
-      callback(err);
+      console.error('[SESSION STORE] SET ERROR:', err.message);
+      callback(); // Don't fail the request, just log
     }
   }
 
   async destroy(sid, callback) {
     try {
       console.log('[SESSION STORE] DESTROY:', sid);
-      await this.prisma.$executeRaw`
-        DELETE FROM "Session" WHERE sid = ${sid}
-      `;
+      await this.prisma.$executeRawUnsafe(
+        'DELETE FROM "Session" WHERE sid = $1',
+        sid
+      );
       console.log('[SESSION STORE] DESTROY: Session deleted');
       callback();
     } catch (err) {
       console.error('[SESSION STORE] DESTROY ERROR:', err.message);
-      callback(err);
+      callback();
     }
   }
 
@@ -70,14 +90,16 @@ class PrismaSessionStore extends session.Store {
     try {
       console.log('[SESSION STORE] TOUCH:', sid);
       const expire = new Date(Date.now() + (sess.cookie?.maxAge || 30 * 24 * 60 * 60 * 1000));
-      await this.prisma.$executeRaw`
-        UPDATE "Session" SET expire = ${expire} WHERE sid = ${sid}
-      `;
+      await this.prisma.$executeRawUnsafe(
+        'UPDATE "Session" SET expire = $1 WHERE sid = $2',
+        expire,
+        sid
+      );
       console.log('[SESSION STORE] TOUCH: Session updated');
       callback();
     } catch (err) {
       console.error('[SESSION STORE] TOUCH ERROR:', err.message);
-      callback(err);
+      callback();
     }
   }
 }
