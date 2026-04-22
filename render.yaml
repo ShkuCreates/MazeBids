@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: mazebids-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mazebids-db
+          property: connectionString
+      - key: DISCORD_REDIRECT_URI
+        value: https://mazebids-backend.onrender.com/auth/discord/callback
+      - key: FRONTEND_URL
+        value: https://mazebids-frontend.onrender.com
+
+  - type: web
+    name: mazebids-frontend
+    env: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: mazebids-db
+    plan: free
+    ipAllowList: []
+    databaseName: mazebids
+    databaseUser: mazebids
