@@ -15,7 +15,7 @@ services:
       - key: DISCORD_CLIENT_SECRET
         sync: false
       - key: DISCORD_REDIRECT_URI
-        value: https://mazebids-backend.onrender.com/api/auth/discord/callback
+        value: https://api.mazebids.online/api/auth/discord/callback
       - key: SESSION_SECRET
         sync: false
       - key: ADMIN_DISCORD_ID
@@ -23,7 +23,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: FRONTEND_URL
-        value: https://mazebids-frontend.onrender.com
+        value: https://mazebids.online
 
   - type: web
     name: mazebids-frontend
@@ -34,5 +34,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.mazebids.online
 
 

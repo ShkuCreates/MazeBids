@@ -45,7 +45,7 @@ app.use(session({
   saveUninitialized: false, // Avoid creating anonymous DB sessions on every request
   cookie: {
     secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
+    sameSite: 'lax',
     httpOnly: true,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
