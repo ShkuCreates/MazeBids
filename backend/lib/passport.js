@@ -25,11 +25,15 @@ passport.use(new DiscordStrategy({
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log('[DISCORD AUTH] User profile received:', profile.id, profile.username);
+      
       let user = await prisma.user.findUnique({
         where: { discordId: profile.id }
       });
+      console.log('[DISCORD AUTH] Existing user found:', !!user);
 
       if (!user) {
+        console.log('[DISCORD AUTH] Creating new user...');
         user = await prisma.user.create({
           data: {
             discordId: profile.id,
@@ -41,6 +45,7 @@ passport.use(new DiscordStrategy({
             role: profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : 'USER'
           }
         });
+        console.log('[DISCORD AUTH] New user created:', user.id);
 
         // Log welcome transaction
         await prisma.transaction.create({
@@ -53,6 +58,7 @@ passport.use(new DiscordStrategy({
         });
       } else {
         // Update username/avatar if changed
+        console.log('[DISCORD AUTH] Updating existing user...');
         const updateData = {
           username: profile.username,
           avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
@@ -70,8 +76,10 @@ passport.use(new DiscordStrategy({
         });
       }
 
+      console.log('[DISCORD AUTH] Auth successful for user:', user.id);
       return done(null, user);
     } catch (err) {
+      console.error('[DISCORD AUTH ERROR]', err.message, err.code);
       return done(err, null);
     }
   }
