@@ -1,5 +1,5 @@
 "use client";
-import { Mail, Github, Twitter, MessageCircle } from "lucide-react";
+import { Mail, Code, X, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 const Footer = () => {
@@ -14,13 +14,13 @@ const Footer = () => {
     },
     {
       name: "Twitter",
-      icon: Twitter,
+      icon: X,
       href: "https://twitter.com/mazebids",
       color: "hover:text-blue-300"
     },
     {
       name: "GitHub",
-      icon: Github,
+      icon: Code,
       href: "https://github.com/mazebids",
       color: "hover:text-gray-300"
     },

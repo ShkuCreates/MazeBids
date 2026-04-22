@@ -19,6 +19,19 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const { refreshUser } = useAuth();
 
+  const finishGame = useCallback(async () => {
+    setGameState('FINISHED');
+    try {
+      await axios.post(`${API_URL}/api/tasks/complete`, {
+        taskId,
+        score
+      }, { withCredentials: true });
+      refreshUser();
+    } catch (error) {
+      console.error('Failed to save score', error);
+    }
+  }, [taskId, score, refreshUser]);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameState === 'PLAYING' && timeLeft > 0) {
@@ -38,19 +51,6 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
     setTimeLeft(10);
     setGameState('PLAYING');
   }, []);
-
-  const finishGame = useCallback(async () => {
-    setGameState('FINISHED');
-    try {
-      await axios.post(`${API_URL}/api/tasks/complete`, {
-        taskId,
-        score
-      }, { withCredentials: true });
-      refreshUser();
-    } catch (error) {
-      console.error('Failed to save score', error);
-    }
-  }, [taskId, score, refreshUser]);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
