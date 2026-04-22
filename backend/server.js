@@ -18,6 +18,7 @@ console.log('[ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
 
 const app = express();
 app.set('trust proxy', 1);
+const isProduction = process.env.NODE_ENV === 'production';
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -39,11 +40,12 @@ app.use(cookieParser());
 app.use(session({
   store: new PrismaSessionStore(prisma),
   secret: process.env.SESSION_SECRET || 'mazebids-secret',
+  proxy: true,
   resave: false,
   saveUninitialized: false, // Avoid creating anonymous DB sessions on every request
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     httpOnly: true,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
