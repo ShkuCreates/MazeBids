@@ -3,45 +3,28 @@ const cluster = require('cluster');
 const os = require('os');
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const RedisStore = require('connect-redis');
-const Redis = require('redis');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const passport = require('passport');
 const { apiLimiter } = require('./middleware/rateLimit');
+const { Server } = require('socket.io');
+const passport = require('passport');
 
 const numCPUs = os.cpus().length;
-const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 5000;
-
-// Redis client
-const redisClient = Redis.createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-redisClient.connect().catch(console.error);
+const isProduction = process.env.NODE_ENV === 'production';
 
 if (cluster.isMaster) {
-  console.log(`Master ${process.pid} is running`);
-  console.log(`Forking ${numCPUs} workers`);
-
+  console.log(`Master ${process.pid} started, forking ${numCPUs} workers`);
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
-
   cluster.on('exit', (worker) => {
-    console.log(`Worker ${worker.process.pid} died. Forking new one...`);
+    console.log(`Worker ${worker.process.pid} died`);
     cluster.fork();
-  });
-
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received');
-    redisClient.quit();
-    process.exit(0);
   });
 } else {
   console.log(`Worker ${process.pid} started`);
@@ -59,8 +42,8 @@ if (cluster.isMaster) {
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
 
+  // Fallback to memory session for Render (add Redis service later)
   app.use(session({
-    store: new RedisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET || 'mazebids-secret',
     resave: false,
     saveUninitialized: false,
@@ -89,7 +72,7 @@ if (cluster.isMaster) {
 
   require('./lib/socket')(io);
 
-  app.get('/', (req, res) => res.send('Mazebids API live with clustering!'));
+  app.get('/', (req, res) => res.send('Mazebids API live!'));
   app.use('/api/health', require('./routes/health'));
   app.use('/api/auth', require('./routes/auth'));
   app.use('/api/auctions', require('./routes/auctions'));
@@ -98,7 +81,7 @@ if (cluster.isMaster) {
   app.use('/api/ads', require('./routes/ads'));
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Worker ${process.pid} on port ${PORT}`);
+    console.log(`Worker ${process.pid} listening on ${PORT}`);
   });
 }
 
