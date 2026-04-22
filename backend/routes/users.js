@@ -1,6 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const { getLiveVisitorCount, getLiveSignedInUserCount } = require('../lib/analytics');
+
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  next();
+}
 
 // Get user profile and stats
 router.get('/profile', async (req, res) => {
@@ -166,6 +174,46 @@ router.get('/site-stats', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch site stats' });
+  }
+});
+
+router.get('/admin-stats', requireAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - 6);
+    const monthStart = new Date(todayStart);
+    monthStart.setDate(monthStart.getDate() - 29);
+
+    const [signedInUsers, todayVisitors, weekVisitors, monthVisitors] = await Promise.all([
+      prisma.user.count(),
+      prisma.siteVisit.count({
+        where: { visitedOn: { gte: todayStart } }
+      }),
+      prisma.siteVisit.findMany({
+        where: { visitedOn: { gte: weekStart } },
+        distinct: ['visitorId'],
+        select: { visitorId: true }
+      }),
+      prisma.siteVisit.findMany({
+        where: { visitedOn: { gte: monthStart } },
+        distinct: ['visitorId'],
+        select: { visitorId: true }
+      })
+    ]);
+
+    res.json({
+      currentLiveUsers: getLiveVisitorCount(),
+      currentLiveSignedInUsers: getLiveSignedInUserCount(),
+      signedInUsers,
+      visitorsToday: todayVisitors,
+      visitorsThisWeek: weekVisitors.length,
+      visitorsThisMonth: monthVisitors.length
+    });
+  } catch (err) {
+    console.error('[ADMIN STATS] Error:', err);
+    res.status(500).json({ message: 'Failed to fetch admin stats' });
   }
 });
 

@@ -28,6 +28,7 @@ model User {
   wonAuctions   Auction[]      @relation("Winner")
   completedTasks UserTask[]
   redemptions   Redemption[]
+  siteVisits    SiteVisit[]
 }
 
 model BonusCode {
@@ -122,4 +123,19 @@ model Ad {
   expiresAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model SiteVisit {
+  id         String   @id @default(cuid())
+  visitorId  String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  visitedOn  DateTime
+  firstSeenAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  visitCount Int      @default(1)
+
+  @@unique([visitorId, visitedOn])
+  @@index([visitedOn])
+  @@index([userId])
 }

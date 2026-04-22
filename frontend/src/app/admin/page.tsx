@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Plus, Gavel, ShieldAlert, Image as ImageIcon, ShoppingBag, Coins, TrendingUp, Calendar, Clock, Trash2, StopCircle, Timer, Zap, Monitor } from "lucide-react";
+import { Plus, Gavel, ShieldAlert, Image as ImageIcon, ShoppingBag, Coins, TrendingUp, Calendar, Clock, Trash2, StopCircle, Timer, Zap, Monitor, Users, Activity } from "lucide-react";
 import AdManager from "@/components/AdManager";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -24,6 +24,7 @@ export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [auctions, setAuctions] = useState([]);
+  const [adminStats, setAdminStats] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [durationIndex, setDurationIndex] = useState(2); // Default to 30 mins
   const [formData, setFormData] = useState({
@@ -50,8 +51,28 @@ export default function AdminPage() {
     }
   };
 
+  const fetchAdminStats = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/users/admin-stats`, { withCredentials: true });
+      setAdminStats(res.data);
+    } catch (err) {
+      console.error("Failed to fetch admin stats:", err);
+    }
+  };
+
   useEffect(() => {
-    if (user?.role === 'ADMIN') fetchAuctions();
+    if (user?.role === 'ADMIN') {
+      fetchAuctions();
+      fetchAdminStats();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') return;
+    const interval = setInterval(() => {
+      fetchAdminStats();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const calculatedEndTime = useMemo(() => {
@@ -283,6 +304,43 @@ export default function AdminPage() {
 
         {/* Management List */}
         <div className="lg:col-span-7 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-[#0f0f18] border border-white/5 rounded-[2rem] p-5 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <Activity className="w-5 h-5" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Current Live Users</p>
+              </div>
+              <p className="text-3xl font-black text-white">{adminStats?.currentLiveUsers ?? 0}</p>
+              <p className="text-xs text-gray-500">Visitors active in the last 5 minutes</p>
+            </div>
+            <div className="bg-[#0f0f18] border border-white/5 rounded-[2rem] p-5 space-y-2">
+              <div className="flex items-center gap-2 text-purple-400">
+                <Users className="w-5 h-5" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Signed In Users</p>
+              </div>
+              <p className="text-3xl font-black text-white">{adminStats?.signedInUsers ?? 0}</p>
+              <p className="text-xs text-gray-500">Registered user accounts on the platform</p>
+            </div>
+            <div className="bg-[#0f0f18] border border-white/5 rounded-[2rem] p-5 space-y-2">
+              <div className="flex items-center gap-2 text-blue-400">
+                <Calendar className="w-5 h-5" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Visited Today</p>
+              </div>
+              <p className="text-3xl font-black text-white">{adminStats?.visitorsToday ?? 0}</p>
+              <p className="text-xs text-gray-500">Unique visitors today</p>
+            </div>
+            <div className="bg-[#0f0f18] border border-white/5 rounded-[2rem] p-5 space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400">
+                <Monitor className="w-5 h-5" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Week / Month</p>
+              </div>
+              <p className="text-2xl font-black text-white">
+                {(adminStats?.visitorsThisWeek ?? 0).toLocaleString()} / {(adminStats?.visitorsThisMonth ?? 0).toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500">Unique visitors this week and month</p>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-black text-white flex items-center gap-3">
               <Gavel className="text-purple-500 w-8 h-8" /> 
