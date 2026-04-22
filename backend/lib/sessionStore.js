@@ -18,6 +18,8 @@ class PrismaSessionStore extends session.Store {
         sid
       );
       
+      console.log('[SESSION STORE] GET result:', result?.length, 'rows');
+      
       if (result && result.length > 0) {
         console.log('[SESSION STORE] GET: Found session');
         const sessionData = typeof result[0].sess === 'string' 
@@ -29,7 +31,7 @@ class PrismaSessionStore extends session.Store {
         callback(null, null);
       }
     } catch (err) {
-      console.error('[SESSION STORE] GET ERROR:', err.message);
+      console.error('[SESSION STORE] GET ERROR:', err.message, 'CODE:', err.code);
       callback(null); // Return null instead of error to allow login
     }
   }
@@ -40,33 +42,35 @@ class PrismaSessionStore extends session.Store {
       const expire = new Date(Date.now() + (sess.cookie?.maxAge || 30 * 24 * 60 * 60 * 1000));
       const sessJson = JSON.stringify(sess);
       
-      console.log('[SESSION STORE] Upserting session, expires:', expire);
+      console.log('[SESSION STORE] Attempting UPDATE...');
       
-      // Use transaction for reliability
-      await this.prisma.$transaction(async (tx) => {
-        // First try to update
-        const updated = await tx.$executeRawUnsafe(
-          'UPDATE "Session" SET sess = $1::jsonb, expire = $2 WHERE sid = $3',
+      // Simple UPDATE first
+      const updated = await this.prisma.$executeRawUnsafe(
+        'UPDATE "Session" SET sess = $1::jsonb, expire = $2 WHERE sid = $3',
+        sessJson,
+        expire,
+        sid
+      );
+      
+      console.log('[SESSION STORE] UPDATE affected rows:', updated);
+      
+      if (updated === 0) {
+        // If no rows updated, INSERT
+        console.log('[SESSION STORE] Attempting INSERT...');
+        const inserted = await this.prisma.$executeRawUnsafe(
+          'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3)',
+          sid,
           sessJson,
-          expire,
-          sid
+          expire
         );
-        
-        // If no rows were updated, insert
-        if (updated === 0) {
-          await tx.$executeRawUnsafe(
-            'INSERT INTO "Session" (sid, sess, expire) VALUES ($1, $2::jsonb, $3)',
-            sid,
-            sessJson,
-            expire
-          );
-        }
-      });
+        console.log('[SESSION STORE] INSERT affected rows:', inserted);
+      }
       
       console.log('[SESSION STORE] SET SUCCESS: Session saved to database');
       callback();
     } catch (err) {
-      console.error('[SESSION STORE] SET ERROR:', err.message);
+      console.error('[SESSION STORE] SET ERROR:', err.message, 'CODE:', err.code, 'META:', err.meta);
+      console.error('[SESSION STORE] Full error:', err);
       callback(); // Don't fail the request, just log
     }
   }
