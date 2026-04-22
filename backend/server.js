@@ -8,6 +8,13 @@ const session = require('express-session');
 const passport = require('passport');
 const prisma = require('./lib/prisma');
 
+// Debug: Log environment variables
+console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
+console.log('[ENV] PORT:', process.env.PORT);
+console.log('[ENV] DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('[ENV] DISCORD_CLIENT_ID exists:', !!process.env.DISCORD_CLIENT_ID);
+console.log('[ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
+
 const app = express();
 app.set('trust proxy', 1);
 const server = http.createServer(app);
