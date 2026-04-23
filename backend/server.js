@@ -103,6 +103,23 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/webhook', require('./discord').webhookService);
 app.use('/api/admin', require('./routes/admin'));
 
+// TEMPORARY: Manual migration endpoint - REMOVE AFTER USE
+app.get('/api/run-migration', async (req, res) => {
+  const { execSync } = require('child_process');
+  try {
+    console.log('[MIGRATION] Starting manual migration...');
+    execSync('npx prisma migrate deploy', { 
+      stdio: 'inherit',
+      timeout: 300000 // 5 minutes
+    });
+    console.log('[MIGRATION] Completed successfully!');
+    res.json({ success: true, message: 'Migration completed!' });
+  } catch (err) {
+    console.error('[MIGRATION] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
