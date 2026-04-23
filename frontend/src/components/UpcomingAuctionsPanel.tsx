@@ -35,6 +35,40 @@ export default function UpcomingAuctionsPanel() {
     fetchUpcoming();
   }, []);
 
+  // Mock data for exciting upcoming auctions (when API returns empty)
+  const mockUpcoming = [
+    {
+      id: "mock-1",
+      title: "🔥 Mystery Tech Drop - Limited Edition",
+      image: null,
+      startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      isPremium: true,
+    },
+    {
+      id: "mock-2",
+      title: "💎 Rare Gemstone Auction - One of a Kind",
+      image: null,
+      startTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+      isPremium: true,
+    },
+    {
+      id: "mock-3",
+      title: "🎮 Gaming Console Bundle - Ultimate Setup",
+      image: null,
+      startTime: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      isPremium: false,
+    },
+    {
+      id: "mock-4",
+      title: "⚡ Electric Scooter - Premium Model",
+      image: null,
+      startTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      isPremium: true,
+    },
+  ];
+
+  const displayAuctions = auctions.length > 0 ? auctions : mockUpcoming;
+
   const handleNotify = async (auctionId: string) => {
     try {
       await axios.post(`${API_URL}/api/auctions/${auctionId}/notify`, {}, {
@@ -92,22 +126,6 @@ export default function UpcomingAuctionsPanel() {
     );
   }
 
-  if (auctions.length === 0) {
-    return (
-      <div className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] p-6">
-        <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-purple-400" />
-          Upcoming Auctions
-        </h3>
-        <div className="text-center py-8">
-          <Lock className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-          <p className="text-gray-500 font-medium">No upcoming auctions</p>
-          <p className="text-gray-600 text-sm mt-1">Check back later for new drops</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden">
       {/* Glow effect */}
@@ -119,7 +137,7 @@ export default function UpcomingAuctionsPanel() {
       </h3>
 
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide relative z-10">
-        {auctions.map((auction, index) => (
+        {displayAuctions.map((auction, index) => (
           <motion.div
             key={auction.id}
             initial={{ opacity: 0, x: 20 }}
