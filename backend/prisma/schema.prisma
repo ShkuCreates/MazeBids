@@ -30,6 +30,8 @@ model User {
   redemptions   Redemption[]
   userNotifications Notification[]
   auctionSubscriptions AuctionSubscription[]
+  dailyReward   DailyReward?
+  chatRewards   ChatReward[]
 
   @@index([notifications])
   @@index([role])
@@ -182,5 +184,43 @@ model Ad {
   @@index([status])
   @@index([placement])
   @@index([position])
+}
+
+model DailyReward {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastClaimedAt   DateTime @default(now())
+  streak          Int      @default(0)
+  totalClaims     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ChatReward {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastRewardAt DateTime @default(now())
+  messageCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId])
+  @@index([userId])
+}
+
+model Cooldown {
+  id          String   @id @default(cuid())
+  userId      String
+  command     String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, command])
+  @@index([userId])
+  @@index([command])
 }
 
