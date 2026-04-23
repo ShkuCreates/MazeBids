@@ -31,25 +31,6 @@ if (cluster.isMaster) {
 } else {
   console.log(`Worker ${process.pid} started`);
 
-  // Initialize Redis client
-  const redisClient = redis.createClient({
-    url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
-    legacyMode: false
-  });
-
-  redisClient.connect().catch(err => {
-    console.error('[REDIS] Connection failed:', err.message);
-    process.exit(1);
-  });
-
-  redisClient.on('error', (err) => {
-    console.error('[REDIS] Error:', err);
-  });
-
-  redisClient.on('connect', () => {
-    console.log('[REDIS] Connected to Redis');
-  });
-
   const app = express();
   app.set('trust proxy', 1);
 
@@ -63,9 +44,40 @@ if (cluster.isMaster) {
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
 
-  // Redis-backed session store for clustered workers
+  // Initialize session store - try Redis, fall back to Memory
+  let sessionStore;
+  let redisConnected = false;
+
+  // Try to connect to Redis asynchronously (non-blocking)
+  if (process.env.REDIS_URL || process.env.REDIS_HOST) {
+    const redisClient = redis.createClient({
+      url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
+      legacyMode: false,
+      socket: { reconnectStrategy: (retries) => Math.min(retries * 50, 500) }
+    });
+
+    redisClient.connect()
+      .then(() => {
+        console.log('[REDIS] Connected successfully');
+        sessionStore = new RedisStore({ client: redisClient });
+        redisConnected = true;
+      })
+      .catch(err => {
+        console.warn('[REDIS] Failed to connect, falling back to MemoryStore:', err.message);
+        sessionStore = new (require('express-session').MemoryStore)();
+      });
+
+    redisClient.on('error', (err) => {
+      console.warn('[REDIS] Runtime error:', err.message);
+    });
+  } else {
+    console.log('[SESSION] Using MemoryStore (no Redis configured)');
+    sessionStore = new (require('express-session').MemoryStore)();
+  }
+
+  // Session middleware with fallback store
   app.use(session({
-    store: new RedisStore({ client: redisClient }),
+    store: sessionStore || new (require('express-session').MemoryStore)(),
     secret: process.env.SESSION_SECRET || 'mazebids-secret',
     resave: false,
     saveUninitialized: false,
@@ -81,10 +93,8 @@ if (cluster.isMaster) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Initialize Discord bot (singleton - only in master process)
-  if (cluster.isMaster) {
-    require('./lib/discordBotSingleton');
-  }
+  // Initialize Discord bot (singleton - only once)
+  require('./lib/discordBotSingleton');
 
   app.use('/api/', apiLimiter);
 
@@ -107,8 +117,18 @@ if (cluster.isMaster) {
   app.use('/api/tasks', require('./routes/tasks'));
   app.use('/api/ads', require('./routes/ads'));
 
+  console.log(`[STARTUP] Worker ${process.pid} preparing to listen on port ${PORT}...`);
+  
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Worker ${process.pid} listening on ${PORT}`);
+    console.log(`[STARTUP] ✅ Worker ${process.pid} is listening on port ${PORT}`);
+    console.log(`[STARTUP] API ready at http://0.0.0.0:${PORT}`);
+    console.log(`[SESSION] Using ${redisConnected ? 'Redis' : 'Memory'} session store`);
+  });
+
+  // Handle server errors
+  server.on('error', (err) => {
+    console.error(`[SERVER ERROR] ${err.code}: ${err.message}`);
+    process.exit(1);
   });
 }
 
