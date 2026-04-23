@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bell, Lock, Clock, Flame } from "lucide-react";
+import { Bell, Lock, Clock, Flame, Diamond, Zap } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 
@@ -18,6 +18,7 @@ interface Auction {
 
 export default function UpcomingAuctionsPanel() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [timers, setTimers] = useState<Record<string, string>>({});
   const [subscribed, setSubscribed] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -35,32 +36,32 @@ export default function UpcomingAuctionsPanel() {
     fetchUpcoming();
   }, []);
 
-  // Mock data for exciting upcoming auctions (when API returns empty)
+  // Mock data for exciting upcoming auctions with censored images
   const mockUpcoming = [
     {
       id: "mock-1",
-      title: "🔥 Mystery Tech Drop - Limited Edition",
+      title: "Mystery Reward 🔒",
       image: null,
       startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
       isPremium: true,
     },
     {
       id: "mock-2",
-      title: "💎 Rare Gemstone Auction - One of a Kind",
+      title: "Premium Drop (Hidden)",
       image: null,
       startTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
       isPremium: true,
     },
     {
       id: "mock-3",
-      title: "🎮 Gaming Console Bundle - Ultimate Setup",
+      title: "Mystery Reward 🔒",
       image: null,
       startTime: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
       isPremium: false,
     },
     {
       id: "mock-4",
-      title: "⚡ Electric Scooter - Premium Model",
+      title: "Premium Drop (Hidden)",
       image: null,
       startTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
       isPremium: true,
@@ -68,6 +69,31 @@ export default function UpcomingAuctionsPanel() {
   ];
 
   const displayAuctions = auctions.length > 0 ? auctions : mockUpcoming;
+
+  const getTimeLeft = (startTime: string): string => {
+    const now = Date.now();
+    const start = new Date(startTime).getTime();
+    const diff = start - now;
+
+    if (diff <= 0) return "Starting soon";
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const t: Record<string, string> = {};
+      displayAuctions.forEach((a) => {
+        t[a.id] = getTimeLeft(a.startTime);
+      });
+      setTimers(t);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [displayAuctions]);
 
   const handleNotify = async (auctionId: string) => {
     try {
@@ -80,37 +106,7 @@ export default function UpcomingAuctionsPanel() {
     }
   };
 
-  const formatCountdown = (startTime: string): string => {
-    const now = Date.now();
-    const start = new Date(startTime).getTime();
-    const diff = start - now;
-
-    if (diff <= 0) return "Starting soon";
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours > 24) {
-      const days = Math.floor(hours / 24);
-      return `${days}d ${hours % 24}h`;
-    }
-    return `${hours}h ${minutes}m`;
-  };
-
-  const [countdowns, setCountdowns] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newCountdowns: Record<string, string> = {};
-      auctions.forEach((a) => {
-        newCountdowns[a.id] = formatCountdown(a.startTime);
-      });
-      setCountdowns(newCountdowns);
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, [auctions]);
-
+  
   if (loading) {
     return (
       <div className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] p-6">
@@ -143,55 +139,53 @@ export default function UpcomingAuctionsPanel() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
+            whileHover={{ scale: 1.02 }}
             className="w-72 shrink-0 relative group"
           >
             {/* Card */}
-            <div className="relative h-52 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] group-hover:border-purple-500/30 transition-all duration-300">
-              {/* Blurred image */}
-              {auction.image ? (
-                <div className="absolute inset-0">
-                  <img
-                    src={auction.image}
-                    alt={auction.title}
-                    className="w-full h-full object-cover blur-md scale-110 opacity-60"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-[#0f0f18]/80 to-transparent" />
-                </div>
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-blue-500/10" />
-              )}
+            <div className="relative h-52 rounded-2xl overflow-hidden border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-blue-500/5 group-hover:border-purple-500/40 transition-all duration-300 shadow-lg shadow-purple-500/10 group-hover:shadow-purple-500/20">
+              {/* Censored image with blur */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-md group-hover:backdrop-blur-[4px] transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-[#0f0f18]/80 to-transparent opacity-90" />
 
-              {/* Lock icon overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                  <Lock className="w-8 h-8 text-gray-400" />
-                </div>
+              {/* Locked badge */}
+              <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
+                <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                  🔒 Locked
+                </span>
               </div>
 
-              {/* High value badge */}
-              {auction.isPremium && (
-                <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30">
+              {/* Tags */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-2">
+                <div className="px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30">
                   <Flame className="w-3 h-3 text-orange-400" />
-                  <span className="text-[10px] font-black text-orange-400 uppercase tracking-wider">
-                    High Value
-                  </span>
                 </div>
-              )}
+                {auction.isPremium && (
+                  <div className="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
+                    <Diamond className="w-3 h-3 text-blue-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* Center icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl mb-2 animate-pulse">🔮</div>
+                  <p className="text-white font-black text-sm">{auction.title}</p>
+                </div>
+              </div>
 
               {/* Countdown badge */}
               <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
                 <span className="text-[11px] font-black text-white">
-                  {countdowns[auction.id] || formatCountdown(auction.startTime)}
+                  {timers[auction.id] || "00:00:00"}
                 </span>
               </div>
 
               {/* Content */}
               <div className="absolute bottom-0 left-0 right-0 p-4">
-                <h4 className="font-black text-white text-sm mb-1 line-clamp-1">
-                  {auction.title}
-                </h4>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-                  Starts in {countdowns[auction.id] || formatCountdown(auction.startTime)}
+                <p className="text-[10px] text-purple-300 uppercase tracking-wider">
+                  Starts in {timers[auction.id] || "00:00:00"}
                 </p>
               </div>
             </div>

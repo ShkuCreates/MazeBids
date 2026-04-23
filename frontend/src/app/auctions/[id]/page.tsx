@@ -12,6 +12,8 @@ import LiveInterestIndicator from "@/components/LiveInterestIndicator";
 import RecentWins from "@/components/RecentWins";
 import UpcomingAuctionsPanel from "@/components/UpcomingAuctionsPanel";
 import EarnWhileYouWait from "@/components/EarnWhileYouWait";
+import LivePopups from "@/components/LivePopups";
+import FeaturedAuction from "@/components/FeaturedAuction";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const socket = io(API_URL, {
@@ -132,7 +134,17 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 space-y-8 relative">
+      <LivePopups />
       <AdBanner placement="AUCTIONS" />
+
+      {/* Featured Mega Auction */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <FeaturedAuction />
+      </motion.div>
       {/* Insufficient Funds Popup */}
       <AnimatePresence>
         {showFundsError && (
