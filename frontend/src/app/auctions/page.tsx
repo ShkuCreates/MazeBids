@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { io } from "socket.io-client";
 import { Gavel, Clock, Users, ChevronRight, Bell, BellRing, Coins, ShoppingBag, Trophy, ArrowUpRight, Flame, Diamond, Eye, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import axios from "axios";
 import AdBanner from "@/components/AdBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { Skeleton } from "@/components/Skeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const socket = io(API_URL, { withCredentials: true });
@@ -251,7 +252,7 @@ export default function AuctionsPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <Skeleton className="h-12 w-12 rounded-full" />
     </div>
   );
 
@@ -551,37 +552,21 @@ export default function AuctionsPage() {
         {filteredAuctions.length === 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
             {[1, 2].map((i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
                 className="group relative bg-[#0f0f18] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-purple-500/40 transition-all duration-700 hover:shadow-[0_0_80px_-20px_rgba(139,92,246,0.4)] flex flex-col"
               >
                 <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
                   <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
-                    <div className="w-full h-full bg-gradient-to-br from-purple-900/40 to-black/60 flex items-center justify-center">
-                      <div className="text-6xl animate-pulse">🔮</div>
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-60" />
-                    <div className="absolute top-6 left-6 flex flex-col gap-2">
-                      <div className="px-4 py-2 rounded-full text-[10px] font-black flex items-center gap-2 shadow-2xl backdrop-blur-md bg-purple-600/90 text-white animate-pulse">
-                        <div className="w-2 h-2 rounded-full bg-white animate-ping" />
-                        COMING SOON
-                      </div>
-                    </div>
+                    <Skeleton className="w-full h-full" />
                   </div>
                   <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-center space-y-4 sm:space-y-8 relative">
-                    <div className="space-y-2 sm:space-y-4">
-                      <h3 className="text-xl sm:text-3xl font-black text-white leading-tight">Mystery Reward 🔒</h3>
-                      <p className="text-gray-400 text-sm font-medium leading-relaxed">Premium drop coming soon. Stay tuned for exclusive rewards.</p>
-                    </div>
-                    <div className="p-4 sm:p-6 bg-white/[0.03] rounded-2xl sm:rounded-[2rem] border border-white/5">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Status</p>
-                      <p className="text-xl sm:text-3xl font-black text-purple-400">Loading...</p>
-                    </div>
+                    <Skeleton className="h-8 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-20 w-full" />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         ) : (
@@ -602,6 +587,7 @@ export default function AuctionsPage() {
                         src={auction.image}
                         alt={auction.title}
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 group-hover:rotate-1"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-60" />
                       <div className="absolute top-6 left-6 flex flex-col gap-2">

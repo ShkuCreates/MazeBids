@@ -90,7 +90,7 @@ router.get('/upcoming', async (req, res) => {
   }
 });
 
-// Get all active auctions
+// Get all active auctions (optimized with caching and reduced payload)
 router.get('/', async (req, res) => {
   try {
     const cacheKey = 'auctions:active';
@@ -101,14 +101,26 @@ router.get('/', async (req, res) => {
         where: {
           status: { in: ['ACTIVE', 'UPCOMING'] }
         },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          product: true,
+          image: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          startingBid: true,
+          currentBid: true,
+          minBidIncrement: true,
+          highestBidderId: true,
           highestBidder: {
             select: { username: true, avatar: true }
           }
         },
         orderBy: { startTime: 'asc' }
       });
-      cache.set(cacheKey, auctions, 30); // 30s cache
+      cache.set(cacheKey, auctions, 15); // 15s cache for real-time feel
     }
 
     res.json(auctions);
@@ -118,23 +130,33 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get ended auctions
+// Get ended auctions (cached)
 router.get('/ended', async (req, res) => {
   try {
-    const auctions = await prisma.auction.findMany({
-      where: {
-        status: 'ENDED'
-      },
-      include: {
-        highestBidder: {
-          select: { username: true, avatar: true }
-        }
-      },
-      orderBy: { endTime: 'desc' },
-      take: 20 // Show last 20 ended auctions
-    });
+    const cacheKey = 'auctions:ended';
+    let auctions = cache.get(cacheKey);
 
-    console.log(`Found ${auctions.length} ended auctions`);
+    if (!auctions) {
+      auctions = await prisma.auction.findMany({
+        where: {
+          status: 'ENDED'
+        },
+        select: {
+          id: true,
+          title: true,
+          image: true,
+          currentBid: true,
+          endTime: true,
+          highestBidder: {
+            select: { username: true, avatar: true }
+          }
+        },
+        orderBy: { endTime: 'desc' },
+        take: 20
+      });
+      cache.set(cacheKey, auctions, 60); // 60s cache
+    }
+
     res.json(auctions);
   } catch (err) {
     console.error('Fetch ended auctions error:', err);
@@ -142,23 +164,46 @@ router.get('/ended', async (req, res) => {
   }
 });
 
-// Get single auction
+// Get single auction (cached)
 router.get('/:id', async (req, res) => {
   try {
-    const auction = await prisma.auction.findUnique({
-      where: { id: req.params.id },
-      include: {
-        highestBidder: {
-          select: { username: true, avatar: true }
-        },
-        bids: {
-          include: { user: { select: { username: true } } },
-          orderBy: { timestamp: 'desc' },
-          take: 10
+    const cacheKey = `auction:${req.params.id}`;
+    let auction = cache.get(cacheKey);
+
+    if (!auction) {
+      auction = await prisma.auction.findUnique({
+        where: { id: req.params.id },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          product: true,
+          image: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          startingBid: true,
+          currentBid: true,
+          minBidIncrement: true,
+          highestBidderId: true,
+          highestBidder: {
+            select: { username: true, avatar: true }
+          },
+          bids: {
+            select: {
+              amount: true,
+              timestamp: true,
+              user: { select: { username: true } }
+            },
+            orderBy: { timestamp: 'desc' },
+            take: 10
+          }
         }
-      }
-    });
-    if (!auction) return res.status(404).json({ message: 'Auction not found' });
+      });
+      if (!auction) return res.status(404).json({ message: 'Auction not found' });
+      cache.set(cacheKey, auction, 10); // 10s cache for real-time updates
+    }
+
     res.json(auction);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch auction' });
@@ -310,10 +355,24 @@ router.post('/:id/bid', async (req, res) => {
       }),
       prisma.bid.create({
         data: { amount: bidAmount, auctionId, userId: req.user.id }
+      }),
+      prisma.transaction.create({
+        data: {
+          userId: req.user.id,
+          amount: bidAmount,
+          type: 'SPEND',
+          description: `Bid on ${auction.title}`
+        }
       })
     ]);
 
+    // Clear relevant caches
     cache.del('auctions:active');
+    cache.del(`auction:${auctionId}`);
+    const profileCacheKey = `profile-${req.user.id}`;
+    if (profileCache.has(profileCacheKey)) {
+      profileCache.delete(profileCacheKey);
+    }
 
     // Create notifications
     // Notify bidder

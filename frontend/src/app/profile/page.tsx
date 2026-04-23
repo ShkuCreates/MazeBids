@@ -12,6 +12,7 @@ import WalletOverview from "@/components/WalletOverview";
 import NotificationSettings from "@/components/NotificationSettings";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import ProgressRing from "@/components/ProgressRing";
+import { Skeleton, CardSkeleton } from "@/components/Skeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -51,8 +52,8 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <div className="py-20 text-center">Loading profile...</div>;
-  
+  if (loading) return <div className="py-20 text-center">Loading...</div>;
+
   if (!user) return (
     <div className="py-20 text-center space-y-6">
       <h1 className="text-4xl font-black">Please login to view your profile</h1>

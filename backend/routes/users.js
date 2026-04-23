@@ -4,12 +4,22 @@ const prisma = require('../lib/prisma');
 const { sendNotificationStatusUpdate } = require('../lib/discordBotSingleton');
 const { createNotification } = require('../lib/notificationHelper');
 
-// Get user profile
+// Simple in-memory cache for frequently accessed data
+const profileCache = new Map();
+const CACHE_TTL = 30000; // 30 seconds
+
+// Get user profile (optimized with caching)
 router.get('/profile', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  
+  const cacheKey = `profile-${req.user.id}`;
+  const cached = profileCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return res.json(cached.data);
+  }
+
   try {
-    console.log('Fetching profile for user ID:', req.user.id);
-    
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { 
@@ -28,11 +38,8 @@ router.get('/profile', async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    console.log('User data found:', { coins: user.coins, totalEarned: user.totalEarned, totalSpent: user.totalSpent });
-
-    // Fetch actual won auctions
     const wonAuctions = await prisma.auction.findMany({
-      where: { highestBidderId: user.id },
+      where: { highestBidderId: user.id, status: 'ENDED' },
       select: {
         id: true,
         title: true,
@@ -45,11 +52,10 @@ router.get('/profile', async (req, res) => {
       take: 10
     });
 
-    console.log('Auctions won count:', wonAuctions.length);
-
     const profileData = { ...user, wonAuctions, auctionsWonCount: wonAuctions.length };
-    console.log('Final profile data:', profileData);
-
+    
+    profileCache.set(cacheKey, { data: profileData, timestamp: Date.now() });
+    
     res.json(profileData);
   } catch (err) {
     console.error('Profile fetch error:', err);
@@ -66,6 +72,11 @@ router.put('/profile', async (req, res) => {
       where: { id: req.user.id },
       data: { username, avatar }
     });
+    
+    // Clear cache
+    const cacheKey = `profile-${req.user.id}`;
+    profileCache.delete(cacheKey);
+    
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update profile' });
@@ -88,6 +99,10 @@ router.post('/toggle-notifications', async (req, res) => {
       where: { id: req.user.id },
       data: { notifications: newNotificationStatus }
     });
+
+    // Clear cache
+    const cacheKey = `profile-${req.user.id}`;
+    profileCache.delete(cacheKey);
 
     // Send Discord DM notification
     if (user.discordId) {
@@ -182,6 +197,10 @@ router.post('/redeem-code', async (req, res) => {
         })
       ]);
 
+      // Clear cache
+      const cacheKey = `profile-${req.user.id}`;
+      profileCache.delete(cacheKey);
+
       console.log('Redemption successful!');
 
       // Notify user of reward
@@ -244,21 +263,28 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
-// Site stats endpoint
+// Site stats endpoint (cached for 60 seconds)
+const siteStatsCache = { data: null, timestamp: 0 };
+const STATS_CACHE_TTL = 60000;
+
 router.get('/site-stats', async (req, res) => {
   try {
-    console.log('Fetching site stats...');
+    const now = Date.now();
+    if (siteStatsCache.data && now - siteStatsCache.timestamp < STATS_CACHE_TTL) {
+      return res.json(siteStatsCache.data);
+    }
     
-    const userCount = await prisma.user.count();
-    const auctionCount = await prisma.auction.count();
-    const stats = await prisma.user.aggregate({
-      _sum: {
-        totalEarned: true,
-        totalSpent: true
-      }
-    });
+    const [userCount, auctionCount, stats] = await Promise.all([
+      prisma.user.count(),
+      prisma.auction.count(),
+      prisma.user.aggregate({
+        _sum: {
+          totalEarned: true,
+          totalSpent: true
+        }
+      })
+    ]);
 
-    // Add realistic base numbers for social proof + real data on top
     const siteStats = {
       registeredUsers: userCount + 2847,
       auctionsHeld: auctionCount + 156,
@@ -266,7 +292,9 @@ router.get('/site-stats', async (req, res) => {
       totalSpent: (stats._sum.totalSpent || 0) + 893200
     };
 
-    console.log('Site stats calculated:', siteStats);
+    siteStatsCache.data = siteStats;
+    siteStatsCache.timestamp = now;
+    
     res.json(siteStats);
   } catch (err) {
     console.error('Site stats error:', err);

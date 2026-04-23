@@ -5,7 +5,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: "MazeBids - Gamified Auctions",
@@ -22,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-purple-gradient min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} bg-purple-gradient min-h-screen flex flex-col`}>
         <AuthProvider>
           <Navbar />
           <main className="container mx-auto px-4 py-8 flex-grow">

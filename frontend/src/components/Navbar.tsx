@@ -4,23 +4,40 @@ import { usePathname } from "next/navigation";
 import { Coins, Gavel, LayoutDashboard, User as UserIcon, LogOut, ShieldCheck, Menu, X } from "lucide-react";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import { useAuth } from "@/context/AuthContext";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { memo } from "react";
 
-const Navbar = () => {
+const Navbar = memo(() => {
   const pathname = usePathname();
   const { user, loading, login, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Auctions", href: "/auctions", icon: Gavel },
-    { name: "Earn Coins", href: "/earn", icon: Coins },
-    { name: "Profile", href: "/profile", icon: UserIcon },
-  ];
+  const navItems = useMemo(() => {
+    const items = [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Auctions", href: "/auctions", icon: Gavel },
+      { name: "Earn Coins", href: "/earn", icon: Coins },
+      { name: "Profile", href: "/profile", icon: UserIcon },
+    ];
 
-  if (user?.role === 'ADMIN') {
-    navItems.push({ name: "Admin", href: "/admin", icon: ShieldCheck });
-  }
+    if (user?.role === 'ADMIN') {
+      items.push({ name: "Admin", href: "/admin", icon: ShieldCheck });
+    }
+
+    return items;
+  }, [user?.role]);
+
+  const handleLogin = useCallback(() => {
+    login();
+  }, [login]);
+
+  const handleLogout = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  const toggleMobileMenu = useCallback(() => {
+    setMobileMenuOpen(prev => !prev);
+  }, []);
 
   return (
     <nav className="border-b border-purple-900/50 bg-black/40 backdrop-blur-md sticky top-0 z-50">
@@ -46,7 +63,7 @@ const Navbar = () => {
               const Icon = item.icon;
               const isProtected = item.name === "Profile" || item.name === "Dashboard" || item.name === "Earn Coins";
               
-              const handleClick = (e: React.MouseEvent) => {
+              const handleClick = useCallback((e: React.MouseEvent) => {
                 if (loading) {
                   e.preventDefault();
                   return;
@@ -55,10 +72,10 @@ const Navbar = () => {
                 if (isProtected && !user) {
                   e.preventDefault();
                   if (confirm(`You must be logged in to access the ${item.name}. Would you like to login now with Discord?`)) {
-                    login();
+                    handleLogin();
                   }
                 }
-              };
+              }, [loading, user, handleLogin, item.name]);
 
               return (
                 <Link
@@ -106,7 +123,7 @@ const Navbar = () => {
                     </div>
                   )}
                   <button 
-                    onClick={() => logout()}
+                    onClick={handleLogout}
                     className="text-gray-400 hover:text-white transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
@@ -115,7 +132,7 @@ const Navbar = () => {
               </>
             ) : (
               <button 
-                onClick={() => login()}
+                onClick={handleLogin}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-500/20"
               >
                 Login with Discord
@@ -133,7 +150,7 @@ const Navbar = () => {
                 const Icon = item.icon;
                 const isProtected = item.name === "Profile" || item.name === "Dashboard" || item.name === "Earn Coins";
                 
-                const handleClick = (e: React.MouseEvent) => {
+                const handleClick = useCallback((e: React.MouseEvent) => {
                   if (loading) {
                     e.preventDefault();
                     return;
@@ -142,11 +159,11 @@ const Navbar = () => {
                   if (isProtected && !user) {
                     e.preventDefault();
                     if (confirm(`You must be logged in to access the ${item.name}. Would you like to login now with Discord?`)) {
-                      login();
+                      handleLogin();
                     }
                   }
                   setMobileMenuOpen(false);
-                };
+                }, [loading, user, handleLogin, item.name]);
 
                 return (
                   <Link
@@ -192,7 +209,7 @@ const Navbar = () => {
                     </div>
                     <button 
                       onClick={() => {
-                        logout();
+                        handleLogout();
                         setMobileMenuOpen(false);
                       }}
                       className="flex items-center space-x-2 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all w-full"
@@ -204,7 +221,7 @@ const Navbar = () => {
                 ) : (
                   <button 
                     onClick={() => {
-                      login();
+                      handleLogin();
                       setMobileMenuOpen(false);
                     }}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-all shadow-lg shadow-purple-500/20"
@@ -219,6 +236,6 @@ const Navbar = () => {
       </div>
     </nav>
   );
-};
+});
 
 export default Navbar;

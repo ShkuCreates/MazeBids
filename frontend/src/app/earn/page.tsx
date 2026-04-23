@@ -1,13 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Coins, Gamepad2, Play, CheckCircle2, Trophy, ArrowRight, Ticket, Loader2, Zap, Brain, Target, Flame, Clock, Eye, Users, Gift, Star, TrendingUp, Calendar, Bell, Crown, Medal } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
+import { Coins, Play, Clock, CheckCircle, AlertCircle, Target, Brain, Flame, Eye, Calendar, TrendingUp, Gamepad2, Users, Trophy, Star, Ticket, Loader2, Bell } from "lucide-react";
+import AdBanner from "@/components/AdBanner";
 import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
 import EmojiHitGame from "@/components/games/EmojiHitGame";
 import AdPlayer from "@/components/AdPlayer";
-import axios from "axios";
-import { useAuth } from "@/context/AuthContext";
-import AdBanner from "@/components/AdBanner";
 import { motion, AnimatePresence } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -340,131 +340,10 @@ export default function EarnPage() {
               </div>
 
               <div className="relative h-3 bg-white/5 rounded-full overflow-hidden mb-3">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(todayEarned / dailyGoal) * 100}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="text-gray-400">1000 → +100</span>
-                <span className="text-gray-400">5000 → 🎁</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-500" style={{ width: `${(todayEarned / dailyGoal) * 100}%` }} />
               </div>
             </div>
           </motion.div>
-        </div>
-
-        {/* SECTION 2: QUICK ACTIONS (MAIN EARNING AREA) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* LEFT: Primary Actions (BIGGER) */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">🔥 Best Method</span>
-            </div>
-            
-            {/* Play Games */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
-                    <Gamepad2 className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-white">Play Games</h3>
-                    <p className="text-gray-400 text-xs">⚡ Fastest</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {tasks.slice(0, 3).map((task, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.15 + index * 0.05 }}
-                      whileHover={{ scale: 1.01 }}
-                      className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between hover:border-purple-500/30 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 bg-gradient-to-br ${task.color} rounded-lg flex items-center justify-center`}>
-                          <task.icon className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-white font-bold text-xs">{task.title}</p>
-                          <p className="text-gray-400 text-[9px]">{task.desc}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleGameClick(task)}
-                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-black transition-all"
-                      >
-                        PLAY
-                      </button>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Watch Videos */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                    <Play className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-white">Watch Videos</h3>
-                    <p className="text-gray-400 text-xs">💎 High Reward</p>
-                  </div>
-                </div>
-                <AdBanner placement="WATCH_ADS" />
-                <div className="space-y-2 mt-3">
-                  {[
-                    { title: "MAZE BIDS TUTORIAL", reward: 25, color: "from-rose-500 to-pink-600" },
-                    { title: "WINNING STRATEGIES", reward: 30, color: "from-blue-500 to-cyan-600" },
-                  ].map((video, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.25 + index * 0.05 }}
-                      whileHover={{ scale: 1.01 }}
-                      className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between hover:border-purple-500/30 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 bg-gradient-to-br ${video.color} rounded-lg flex items-center justify-center`}>
-                          <Play className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-white font-bold text-xs">{video.title}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400 text-[10px] font-black">+{video.reward}</span>
-                        <button
-                          onClick={() => setActiveGame({ id: `ad${index}`, reward: video.reward, type: "AD" })}
-                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-black transition-all"
-                        >
-                          WATCH
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
           </div>
 
           {/* RIGHT: Secondary Actions (smaller cards) */}
