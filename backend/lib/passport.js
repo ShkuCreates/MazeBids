@@ -12,7 +12,9 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
   try {
     console.log('[PASSPORT] Deserializing user:', id);
-    const user = await prisma.user.findUnique({ where: { id } });
+    // Use raw query to avoid Prisma schema mismatch during migration
+    const users = await prisma.$queryRaw`SELECT id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, "createdAt", "updatedAt", "referralCode", "referredById" FROM "User" WHERE id = ${id}`;
+    const user = users[0] || null;
     console.log('[PASSPORT] User found:', !!user);
     done(null, user);
   } catch (err) {
@@ -31,53 +33,59 @@ passport.use(new DiscordStrategy({
     try {
       console.log('[DISCORD AUTH] User profile received:', profile.id, profile.username);
       
-      let user = await prisma.user.findUnique({
-        where: { discordId: profile.id }
-      });
+      // Use raw query to find user (avoids schema mismatch)
+      const existingUsers = await prisma.$queryRaw`SELECT id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, "referralCode" FROM "User" WHERE "discordId" = ${profile.id}`;
+      let user = existingUsers[0] || null;
+      
       console.log('[DISCORD AUTH] Existing user found:', !!user);
 
       if (!user) {
         console.log('[DISCORD AUTH] Creating new user...');
-        user = await prisma.user.create({
-          data: {
-            discordId: profile.id,
-            username: profile.username,
-            avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
-            coins: 100, // Welcome coins
-            totalEarned: 100,
-            referralCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
-            role: profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : 'USER'
-          }
-        });
+        
+        // Create user with raw SQL
+        const referralCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+        const role = profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : 'USER';
+        const avatar = profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null;
+        
+        const newUsers = await prisma.$queryRaw`
+          INSERT INTO "User" (id, "discordId", username, avatar, coins, "totalEarned", "totalSpent", role, notifications, "referralCode", "referredById", "createdAt", "updatedAt")
+          VALUES (gen_random_uuid(), ${profile.id}, ${profile.username}, ${avatar}, 100, 100, 0, ${role}, false, ${referralCode}, null, NOW(), NOW())
+          RETURNING id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, referralCode
+        `;
+        
+        user = newUsers[0];
         console.log('[DISCORD AUTH] New user created:', user.id);
 
         // Log welcome transaction
-        await prisma.transaction.create({
-          data: {
-            userId: user.id,
-            amount: 100,
-            type: 'EARN',
-            description: 'Welcome Bonus'
-          }
-        });
+        await prisma.$queryRaw`
+          INSERT INTO "Transaction" (id, "userId", amount, type, description, timestamp)
+          VALUES (gen_random_uuid(), ${user.id}, 100, 'EARN', 'Welcome Bonus', NOW())
+        `;
       } else {
         // Update username/avatar if changed
         console.log('[DISCORD AUTH] Updating existing user...');
-        const updateData = {
-          username: profile.username,
-          avatar: profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null,
-          role: profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : user.role
-        };
-
-        // Ensure user has a referral code if they were created before this update
-        if (!user.referralCode) {
-          updateData.referralCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+        const avatar = profile.avatar ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` : null;
+        const role = profile.id === process.env.ADMIN_DISCORD_ID ? 'ADMIN' : user.role;
+        
+        // Ensure referral code exists
+        let referralCode = user.referralCode;
+        if (!referralCode) {
+          referralCode = crypto.randomBytes(4).toString('hex').toUpperCase();
         }
-
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: updateData
-        });
+        
+        await prisma.$queryRaw`
+          UPDATE "User" 
+          SET username = ${profile.username}, 
+              avatar = ${avatar}, 
+              role = ${role}, 
+              "referralCode" = ${referralCode},
+              "updatedAt" = NOW()
+          WHERE id = ${user.id}
+        `;
+        
+        // Refresh user data
+        const updatedUsers = await prisma.$queryRaw`SELECT id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, referralCode FROM "User" WHERE id = ${user.id}`;
+        user = updatedUsers[0];
       }
 
       console.log('[DISCORD AUTH] Auth successful for user:', user.id);

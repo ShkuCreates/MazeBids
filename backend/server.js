@@ -103,51 +103,23 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/webhook', require('./discord').webhookService);
 app.use('/api/admin', require('./routes/admin'));
 
-// TEMPORARY: Manual migration endpoint - REMOVE AFTER USE
-app.get('/api/run-migration', async (req, res) => {
-  const { spawn } = require('child_process');
+// TEMPORARY: Fix missing columns - REMOVE AFTER USE
+app.get('/api/fix-database', async (req, res) => {
   try {
-    console.log('[MIGRATION] Starting database push...');
+    console.log('[DB FIX] Adding missing columns...');
     
-    const result = await new Promise((resolve, reject) => {
-      const proc = spawn('npx', ['prisma', 'db', 'push', '--accept-data-loss'], {
-        cwd: process.cwd(),
-        env: process.env,
-        stdio: 'pipe'
-      });
-      
-      let output = '';
-      let errorOutput = '';
-      
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-        console.log('[MIGRATION]', data.toString());
-      });
-      
-      proc.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-        console.error('[MIGRATION ERROR]', data.toString());
-      });
-      
-      proc.on('close', (code) => {
-        if (code === 0) {
-          resolve({ success: true, output });
-        } else {
-          reject(new Error(errorOutput || `Exit code ${code}`));
-        }
-      });
-      
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        proc.kill();
-        reject(new Error('Migration timeout'));
-      }, 300000);
-    });
+    // Add missing columns directly using Prisma's queryRaw
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "User" 
+      ADD COLUMN IF NOT EXISTS "coinsEarnedToday" INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS "dailyCheckInClaimed" BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "lastDailyReset" TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
     
-    console.log('[MIGRATION] Completed successfully!');
-    res.json({ success: true, message: 'Database schema updated! Restart server to apply changes.', output: result.output });
+    console.log('[DB FIX] Columns added successfully!');
+    res.json({ success: true, message: 'Database columns added! Refresh the page.' });
   } catch (err) {
-    console.error('[MIGRATION] Error:', err.message);
+    console.error('[DB FIX] Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
