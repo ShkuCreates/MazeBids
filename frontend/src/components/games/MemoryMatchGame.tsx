@@ -23,7 +23,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const [cards, setCards] = useState<Array<{ id: number; emoji: string; isFlipped: boolean; isMatched: boolean }>>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
-  const { refreshUser } = useAuth();
+  const { user, refreshUser, updateCoins } = useAuth();
 
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
@@ -34,11 +34,18 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
         score,
         reward: calculatedReward
       }, { withCredentials: true });
-      refreshUser();
+      
+      // Update coins in real-time
+      if (updateCoins && user) {
+        updateCoins(user.coins + calculatedReward, calculatedReward);
+      }
+      
+      // Also refresh to ensure data consistency
+      await refreshUser();
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  }, [taskId, score, refreshUser]);
+  }, [taskId, score, refreshUser, updateCoins, user]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

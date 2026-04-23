@@ -137,6 +137,8 @@ model Ad {
   contentUrl  String   // URL to image/video or target link
   targetUrl   String?  // Optional link for image/video ads
   placement   String   // DASHBOARD, PROFILE, AUCTIONS, EARN, WATCH_ADS
+  position    String   @default("TOP") // TOP, LEFT, RIGHT, BOTTOM
+  size        String   @default("MEDIUM") // SMALL, MEDIUM, LARGE
   duration    Int?     // Duration in seconds (for video ads)
   reward      Int      @default(0) // Reward coins for watching
   status      String   @default("ACTIVE") // ACTIVE, INACTIVE
@@ -146,5 +148,6 @@ model Ad {
 
   @@index([status])
   @@index([placement])
+  @@index([position])
 }
 

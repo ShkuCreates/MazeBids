@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const { title, type, contentUrl, targetUrl, placement, duration, reward, expiresAt } = req.body;
+  const { title, type, contentUrl, targetUrl, placement, position, size, duration, reward, expiresAt } = req.body;
   
   // Input validation
   if (!title || !type || !contentUrl || !targetUrl || !placement) {
@@ -64,6 +64,8 @@ router.post('/', async (req, res) => {
         contentUrl,
         targetUrl,
         placement: placement.toUpperCase(),
+        position: (position || 'TOP').toUpperCase(),
+        size: (size || 'MEDIUM').toUpperCase(),
         duration: durationNum,
         reward: rewardNum,
         expiresAt: expiresAt ? new Date(expiresAt) : null,

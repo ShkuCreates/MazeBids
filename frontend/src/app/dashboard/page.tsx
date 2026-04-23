@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { Coins, Gavel, History, TrendingUp, Award, Clock, Users, ArrowUpRight, ArrowDownRight, Globe, Trophy, Play, Info, Video } from "lucide-react";
+import { Coins, Gavel, History, TrendingUp, Award, Clock, Users, ArrowUpRight, ArrowDownRight, Globe, Trophy, Play, Info, Video, Activity } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -10,7 +10,7 @@ import AdBanner from "@/components/AdBanner";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [siteStats, setSiteStats] = useState<any>(null);
 
@@ -21,6 +21,15 @@ export default function Dashboard() {
           axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }),
           axios.get(`${API_URL}/api/users/site-stats`)
         ]);
+        console.log('Dashboard data updated:', { profile: profileRes.data, siteStats: statsRes.data });
+        
+        // Check if user won an auction since last update
+        if (profile && profileRes.data.totalSpent > profile.totalSpent) {
+          console.log('User won an auction! Updating stats...');
+          // Force a refresh to get the latest data
+          refreshUser();
+        }
+        
         setProfile(profileRes.data);
         setSiteStats(statsRes.data);
       } catch (err) {
@@ -30,10 +39,10 @@ export default function Dashboard() {
     
     if (user) {
       fetchData(); // Initial fetch
-      const interval = setInterval(fetchData, 10000); // Update every 10 seconds
+      const interval = setInterval(fetchData, 5000); // Update every 5 seconds for better real-time feel
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, refreshUser]);
 
   if (loading) return <div className="py-20 text-center">Loading dashboard...</div>;
   if (!user) return (
@@ -66,26 +75,48 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold flex items-center gap-2 px-2">
           <Globe className="text-purple-400 w-6 h-6" /> GLOBAL METRICS
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <Users className="w-5 h-5 text-blue-400 mb-3" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Registered Users</p>
-            <p className="text-2xl font-black text-white">{siteStats?.registeredUsers?.toLocaleString() || "0"}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mb-2 sm:mb-3" />
+            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Registered Users</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.registeredUsers?.toLocaleString() || "0"}</p>
           </div>
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <TrendingUp className="w-5 h-5 text-green-400 mb-3" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Earned</p>
-            <p className="text-2xl font-black text-white">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mb-2 sm:mb-3" />
+            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Earned</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
           </div>
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <Gavel className="w-5 h-5 text-red-400 mb-3" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Spent</p>
-            <p className="text-2xl font-black text-white">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
+            <Gavel className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mb-2 sm:mb-3" />
+            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Spent</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
           </div>
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <Award className="w-5 h-5 text-purple-400 mb-3" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Auctions Held</p>
-            <p className="text-2xl font-black text-white">{siteStats?.auctionsHeld?.toLocaleString() || "0"}</p>
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
+            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 mb-2 sm:mb-3" />
+            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Auctions Held</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.auctionsHeld?.toLocaleString() || "0"}</p>
+          </div>
+        </div>
+
+        {/* Real platform stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 group hover:border-green-500/40 transition-all">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="text-[8px] sm:text-xs text-green-400 font-bold">REAL</span>
+              </div>
+            </div>
+            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Earned</p>
+            <p className="text-2xl sm:text-3xl font-black text-white">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
+            <p className="text-xs text-gray-400 mt-2">Coins earned by all users</p>
+          </div>
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 group hover:border-blue-500/40 transition-all">
+            <Gavel className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mb-2 sm:mb-3" />
+            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Spent</p>
+            <p className="text-2xl sm:text-3xl font-black text-white">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
+            <p className="text-xs text-gray-400 mt-2">Coins spent on auctions</p>
           </div>
         </div>
       </div>

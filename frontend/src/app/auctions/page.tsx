@@ -40,14 +40,17 @@ export default function AuctionsPage() {
 
   const fetchAuctions = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/auctions`);
+      const endpoint = filter === 'ENDED' ? `${API_URL}/api/auctions/ended` : `${API_URL}/api/auctions`;
+      const response = await axios.get(endpoint);
       setAuctions(response.data);
+      console.log(`Fetched ${response.data.length} ${filter.toLowerCase()} auctions`);
     } catch (err) {
       setError("Failed to load auctions");
+      console.error(`Failed to fetch ${filter.toLowerCase()} auctions:`, err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filter]);
 
   const toggleNotifications = async () => {
     if (!user) return alert("Please login to enable notifications");
@@ -88,6 +91,12 @@ export default function AuctionsPage() {
       socket.off("error");
     };
   }, [user?.id, fetchAuctions, refreshUser]);
+
+  // Refetch auctions when filter changes
+  useEffect(() => {
+    setLoading(true);
+    fetchAuctions();
+  }, [filter, fetchAuctions]);
 
   const getTimeLeft = useCallback((endTime: string) => {
     const total = Date.parse(endTime) - Date.now();
@@ -130,7 +139,7 @@ export default function AuctionsPage() {
             <Trophy className="w-4 h-4 text-purple-400" />
             <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Premium Rewards</span>
           </div>
-          <h1 className="text-6xl font-black text-white tracking-tighter">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tighter">
             LIVE <span className="text-purple-500">AUCTIONS</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-xl font-medium">
@@ -177,11 +186,11 @@ export default function AuctionsPage() {
 
       {/* Grid */}
       {filteredAuctions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-8 bg-[#0f0f18] border border-white/5 rounded-[4rem] text-center px-6 relative overflow-hidden group">
+        <div className="flex flex-col items-center justify-center py-16 sm:py-32 space-y-6 sm:space-y-8 bg-[#0f0f18] border border-white/5 rounded-3xl sm:rounded-[4rem] text-center px-4 sm:px-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           
-          <div className="w-28 h-28 bg-purple-600/10 rounded-full flex items-center justify-center border border-purple-500/20 relative z-10">
-            <Gavel className="w-14 h-14 text-purple-400 opacity-50" />
+          <div className="w-20 h-20 sm:w-28 sm:h-28 bg-purple-600/10 rounded-full flex items-center justify-center border border-purple-500/20 relative z-10">
+            <Gavel className="w-10 h-10 sm:w-14 sm:h-14 text-purple-400 opacity-50" />
           </div>
           <div className="space-y-3 relative z-10">
             <h2 className="text-4xl font-black text-white tracking-tight">Marketplace is quiet...</h2>
@@ -191,7 +200,7 @@ export default function AuctionsPage() {
           </div>
           
           <div className="p-1 rounded-[2.5rem] bg-gradient-to-r from-purple-500/30 via-indigo-500/30 to-blue-500/30 relative z-10">
-            <div className="bg-[#161621] rounded-[2.4rem] p-10 space-y-8 max-w-lg shadow-2xl">
+            <div className="bg-[#161621] rounded-2xl sm:rounded-[2.4rem] p-6 sm:p-10 space-y-6 sm:space-y-8 max-w-lg shadow-2xl">
               <div className="space-y-2">
                 <h3 className="text-2xl font-black text-white">Never Miss a Drop</h3>
                 <p className="text-gray-500 text-sm font-medium">Get a Discord DM the second we launch a new high-value auction.</p>
@@ -233,7 +242,7 @@ export default function AuctionsPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="group relative bg-[#0f0f18] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-purple-500/40 transition-all duration-700 hover:shadow-[0_0_80px_-20px_rgba(139,92,246,0.4)] flex flex-col"
               >
-                <div className="flex flex-col md:flex-row min-h-[400px]">
+                <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
                   {/* Image Section */}
                   <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
                     <img
@@ -259,10 +268,10 @@ export default function AuctionsPage() {
                   </div>
 
                   {/* Content Section */}
-                  <div className="md:w-[55%] p-10 flex flex-col justify-between space-y-8 relative">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-3xl font-black text-white group-hover:text-purple-400 transition-colors leading-tight">
+                  <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-between space-y-4 sm:space-y-8 relative">
+                    <div className="space-y-2 sm:space-y-4">
+                      <div className="flex justify-between items-start gap-2">
+                        <h3 className="text-xl sm:text-3xl font-black text-white group-hover:text-purple-400 transition-colors leading-tight">
                           {auction.title}
                         </h3>
                         <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-purple-500/20 group-hover:border-purple-500/30 transition-all">
@@ -275,40 +284,38 @@ export default function AuctionsPage() {
                     </div>
 
                     {/* Stats Card */}
-                    <div className="grid grid-cols-2 gap-6 p-6 bg-white/[0.03] rounded-[2rem] border border-white/5 relative overflow-hidden">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 bg-white/[0.03] rounded-2xl sm:rounded-[2rem] border border-white/5 relative overflow-hidden">
                       <div className="space-y-2">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Current Bid</p>
                         <div className="flex items-center gap-2">
-                          <Coins className="w-5 h-5 text-yellow-500" />
-                          <p className="text-3xl font-black text-white">{auction.currentBid.toLocaleString()}</p>
+                          <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
+                          <p className="text-xl sm:text-3xl font-black text-white">{auction.currentBid.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Time Left</p>
                         <div className="flex items-center gap-2 text-purple-400">
-                          <Clock className="w-5 h-5" />
+                          <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                           <p className="text-2xl font-black tracking-tighter">{timers[auction.id] || "00:00:00"}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Bottom Action */}
-                    <div className="flex items-center justify-between gap-6 pt-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center shadow-inner">
-                          <Users className="w-6 h-6 text-purple-400" />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 pt-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center shadow-inner">
+                          <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                         </div>
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Leading Bidder</p>
-                          <p className="text-sm font-black text-white truncate max-w-[120px]">
-                            {auction.highestBidder?.username || "NO BIDS YET"}
-                          </p>
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Highest Bidder</p>
+                          <p className="text-white font-bold text-sm sm:text-base">{auction.highestBidder?.username || "No bids yet"}</p>
                         </div>
                       </div>
                       
                       <Link
                         href={`/auctions/${auction.id}`}
-                        className="group/btn relative px-8 py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30"
+                        className="group/btn relative px-6 sm:px-8 py-3 sm:py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30 w-full sm:w-auto text-center"
                       >
                         <span className="relative z-10 flex items-center gap-2 uppercase">
                           {auction.status === 'ACTIVE' ? 'Bid Now' : 'View Details'}
@@ -320,10 +327,10 @@ export default function AuctionsPage() {
                   </div>
                 </div>
               </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-    </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
   );
 }

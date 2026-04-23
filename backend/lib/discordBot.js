@@ -17,6 +17,7 @@ const client = new Client({
 const MAIN_GUILD_ID = process.env.MAZEBIDS_GUILD_ID || '1430842081865371821';
 const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID || '1496049411258581052';
 const LEADERBOARD_CHANNEL_ID = process.env.LEADERBOARD_CHANNEL_ID || '1496048643969650759';
+const WINNER_ANNOUNCEMENT_CHANNEL_ID = process.env.WINNER_ANNOUNCEMENT_CHANNEL_ID || '1496049007204503644';
 
 // Random welcomes
 const welcomes = [
@@ -351,16 +352,63 @@ async function sendAuctionNotification(discordId, auction) {
 
 async function announceWinner(auction, winner) {
   try {
-    const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
+    // Send announcement to winner announcement channel
+    const channel = await client.channels.fetch(WINNER_ANNOUNCEMENT_CHANNEL_ID);
+    
+    // Create detailed embed with product image
     const embed = new EmbedBuilder()
-      .setTitle('🎉 Auction Won! 🎉')
-      .setDescription(`**${winner.username}** won **${auction.title}** with ${auction.currentBid} coins!`)
+      .setTitle('🎉 Auction Winner Announced! 🎉')
+      .setDescription(
+        `**🏆 Winner:** ${winner.username}\n` +
+        `**🎯 Product:** ${auction.title}\n` +
+        `**💰 Winning Bid:** ${auction.currentBid} coins\n` +
+        `**📝 Description:** ${auction.description}`
+      )
       .setColor('#10b981')
-      .setTimestamp();
+      .setTimestamp()
+      .setThumbnail(winner.avatar ? `https://cdn.discordapp.com/avatars/${winner.discordId}/${winner.avatar}.png` : null)
+      .setFooter({ text: 'Congratulations to the winner!' });
+
+    // Add product image if available
+    if (auction.image) {
+      embed.setImage(auction.image);
+    }
 
     await channel.send({ embeds: [embed] });
+    console.log(`Winner announcement sent for auction ${auction.id} to channel ${WINNER_ANNOUNCEMENT_CHANNEL_ID}`);
+
+    // Send DM to the winner
+    await notifyWinner(auction, winner);
   } catch (err) {
     console.error('Announce winner error:', err);
+  }
+}
+
+async function notifyWinner(auction, winner) {
+  try {
+    const user = await client.users.fetch(winner.discordId);
+    
+    const winnerEmbed = new EmbedBuilder()
+      .setTitle('🎉 Congratulations! You Won an Auction! 🎉')
+      .setDescription(
+        `**🎯 Product Won:** ${auction.title}\n` +
+        `**💰 Your Winning Bid:** ${auction.currentBid} coins\n` +
+        `**📝 Description:** ${auction.description}\n\n` +
+        `🎊 **Amazing win! Your coins were well spent!**`
+      )
+      .setColor('#fbbf24')
+      .setTimestamp()
+      .setThumbnail(auction.image || null)
+      .setFooter({ text: 'Thank you for participating in MazeBids!' });
+
+    if (auction.image) {
+      winnerEmbed.setImage(auction.image);
+    }
+
+    await user.send({ embeds: [winnerEmbed] });
+    console.log(`Winner notification sent to ${winner.username} (${winner.discordId})`);
+  } catch (err) {
+    console.error(`Failed to send winner DM to ${winner.discordId}:`, err.message);
   }
 }
 

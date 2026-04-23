@@ -46,7 +46,7 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
       
       // Update coins in real-time
       if (updateCoins && user) {
-        updateCoins(user.coins + reward);
+        updateCoins(user.coins + reward, reward);
       }
       
       // Also refresh to ensure data consistency

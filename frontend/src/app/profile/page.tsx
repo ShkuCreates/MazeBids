@@ -19,6 +19,7 @@ export default function ProfilePage() {
       try {
         const res = await axios.get(`${API_URL}/api/users/profile`, { withCredentials: true });
         setProfileData(res.data);
+        console.log('Profile data updated:', res.data);
       } catch (err) {
         console.error("Failed to fetch profile:", err);
       }
@@ -26,10 +27,10 @@ export default function ProfilePage() {
     
     if (user) {
       fetchProfile(); // Initial fetch
-      const interval = setInterval(fetchProfile, 8000); // Update every 8 seconds
+      const interval = setInterval(fetchProfile, 3000); // Update every 3 seconds for real-time updates
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, refreshUser]);
 
   const handleToggleNotifications = async () => {
     setTogglingNotify(true);
@@ -146,10 +147,10 @@ export default function ProfilePage() {
               <button 
                 onClick={handleToggleNotifications}
                 disabled={togglingNotify}
-                className={`w-14 h-8 rounded-full transition-all relative ${profileData?.notifications ? 'bg-purple-600' : 'bg-gray-700'}`}
+                className={`w-14 h-8 rounded-full transition-all relative ${user?.notifications ? 'bg-purple-600' : 'bg-gray-700'}`}
               >
                 <motion.div 
-                  animate={{ x: profileData?.notifications ? 28 : 4 }}
+                  animate={{ x: user?.notifications ? 28 : 4 }}
                   className="absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg"
                 />
               </button>

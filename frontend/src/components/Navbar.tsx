@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Coins, Gavel, LayoutDashboard, User as UserIcon, LogOut, ShieldCheck } from "lucide-react";
+import { Coins, Gavel, LayoutDashboard, User as UserIcon, LogOut, ShieldCheck, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
 
 const Navbar = () => {
   const pathname = usePathname();
   const { user, loading, login, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -37,6 +39,7 @@ const Navbar = () => {
             </span>
           </Link>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -72,7 +75,18 @@ const Navbar = () => {
             })}
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="text-gray-400 hover:text-white transition-colors p-2"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {/* Desktop User Section */}
+          <div className="hidden md:flex items-center space-x-4">
             {loading ? (
               <div className="text-sm text-gray-400">Checking session...</div>
             ) : user ? (
@@ -107,6 +121,98 @@ const Navbar = () => {
             )}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-purple-900/50 bg-black/40 backdrop-blur-md">
+            <div className="px-4 py-4 space-y-3">
+              {/* Mobile Navigation Items */}
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isProtected = item.name === "Profile" || item.name === "Dashboard" || item.name === "Earn Coins";
+                
+                const handleClick = (e: React.MouseEvent) => {
+                  if (loading) {
+                    e.preventDefault();
+                    return;
+                  }
+
+                  if (isProtected && !user) {
+                    e.preventDefault();
+                    if (confirm(`You must be logged in to access the ${item.name}. Would you like to login now with Discord?`)) {
+                      login();
+                    }
+                  }
+                  setMobileMenuOpen(false);
+                };
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={handleClick}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                      pathname === item.href 
+                        ? "bg-purple-600/20 text-purple-400 border border-purple-500/30" 
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+
+              {/* Mobile User Section */}
+              <div className="border-t border-purple-900/50 pt-4 space-y-3">
+                {loading ? (
+                  <div className="text-sm text-gray-400 px-4">Checking session...</div>
+                ) : user ? (
+                  <>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center space-x-3">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.username} className="w-10 h-10 rounded-full" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-sm font-bold">
+                            {user.username[0].toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-white">{user.username}</p>
+                          <div className="flex items-center space-x-1">
+                            <Coins className="w-3 h-3 text-yellow-500" />
+                            <span className="text-sm text-gray-400">{user.coins.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        logout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center space-x-2 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all w-full"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Logout</span>
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      login();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-all shadow-lg shadow-purple-500/20"
+                  >
+                    Login with Discord
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

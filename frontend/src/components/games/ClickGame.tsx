@@ -31,7 +31,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
       
       // Update coins in real-time
       if (updateCoins && user) {
-        updateCoins(user.coins + calculatedReward);
+        updateCoins(user.coins + calculatedReward, calculatedReward);
       }
       
       // Also refresh to ensure data consistency

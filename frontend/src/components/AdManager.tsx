@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Plus, Trash2, Edit2, ExternalLink, Layout, User, Gavel, Wallet, Monitor, Play, Link as LinkIcon, Image as ImageIcon, Save, X, Calendar, Clock } from "lucide-react";
+import { Plus, Trash2, Edit2, ExternalLink, Layout, User, Gavel, Wallet, Monitor, Play, Link as LinkIcon, Image as ImageIcon, Save, X, Calendar, Clock, ArrowUpRight, ChevronRight, ArrowDownRight } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -19,6 +19,19 @@ const AD_TYPES = [
   { label: "Link/Button", value: "LINK", icon: LinkIcon },
 ];
 
+const AD_POSITIONS = [
+  { label: "Top of Page", value: "TOP", icon: ArrowUpRight },
+  { label: "Left Side", value: "LEFT", icon: ChevronRight },
+  { label: "Right Side", value: "RIGHT", icon: ChevronRight },
+  { label: "Bottom of Page", value: "BOTTOM", icon: ArrowDownRight },
+];
+
+const AD_SIZES = [
+  { label: "Small", value: "SMALL", description: "Compact banner" },
+  { label: "Medium", value: "MEDIUM", description: "Standard size" },
+  { label: "Large", value: "LARGE", description: "Full width" },
+];
+
 export default function AdManager() {
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +44,8 @@ export default function AdManager() {
     contentUrl: "",
     targetUrl: "",
     placement: "DASHBOARD",
+    position: "TOP", // New field for ad position
+    size: "MEDIUM", // New field for ad size
     duration: "24", // Default to 24 hours
     expiresAt: "",
     reward: "0",
@@ -74,6 +89,8 @@ export default function AdManager() {
         contentUrl: "",
         targetUrl: "",
         placement: "DASHBOARD",
+        position: "TOP",
+        size: "MEDIUM",
         duration: "24",
         expiresAt: "",
         reward: "0",
@@ -104,6 +121,8 @@ export default function AdManager() {
       contentUrl: ad.contentUrl,
       targetUrl: ad.targetUrl || "",
       placement: ad.placement,
+      position: ad.position || "TOP",
+      size: ad.size || "MEDIUM",
       duration: ad.duration?.toString() || "24",
       reward: ad.reward?.toString() || "0",
       expiresAt: ad.expiresAt ? new Date(ad.expiresAt).toISOString().split('T')[0] : "",
@@ -157,6 +176,40 @@ export default function AdManager() {
               >
                 {PLACEMENTS.map(p => <option key={p.value} value={p.value} className="bg-[#0f0f18]">{p.label}</option>)}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ad Position</label>
+              <div className="grid grid-cols-2 gap-2">
+                {AD_POSITIONS.map(position => (
+                  <button
+                    key={position.value}
+                    type="button"
+                    onClick={() => setFormData({...formData, position: position.value})}
+                    className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${formData.position === position.value ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                  >
+                    <position.icon className="w-4 h-4" />
+                    <span className="text-[8px] font-black uppercase tracking-tighter">{position.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ad Size</label>
+              <div className="grid grid-cols-3 gap-2">
+                {AD_SIZES.map(size => (
+                  <button
+                    key={size.value}
+                    type="button"
+                    onClick={() => setFormData({...formData, size: size.value})}
+                    className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${formData.size === size.value ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
+                  >
+                    <span className="text-[10px] font-black uppercase tracking-tighter">{size.label}</span>
+                    <span className="text-[6px] text-gray-400">{size.description}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">

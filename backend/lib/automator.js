@@ -46,12 +46,23 @@ const startLifecycleAutomator = () => {
           console.log(`Auction ended: ${auction.title}`);
 
           if (auction.highestBidder) {
-            // Update winner stats
-            await prisma.user.update({
-              where: { id: auction.highestBidderId },
-              data: { totalSpent: { increment: auction.currentBid } }
-            });
+            // Update winner stats and create transaction
+            await prisma.$transaction([
+              prisma.user.update({
+                where: { id: auction.highestBidderId },
+                data: { totalSpent: { increment: auction.currentBid } }
+              }),
+              prisma.transaction.create({
+                data: {
+                  userId: auction.highestBidderId,
+                  amount: auction.currentBid,
+                  type: 'SPEND',
+                  description: `Won auction: ${auction.title}`
+                }
+              })
+            ]);
 
+            console.log(`Winner stats updated for ${auction.highestBidder.username}: spent ${auction.currentBid} coins`);
             await announceWinner(auction, auction.highestBidder);
             console.log(`Winner announced for ${auction.title}: ${auction.highestBidder.username}`);
           } else {

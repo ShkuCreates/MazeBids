@@ -97,7 +97,6 @@ export default function EarnPage() {
 
   return (
     <div className="space-y-12 py-8">
-      <AdBanner placement="EARN" />
       
       {/* Referral System - Smaller */}
       <div className="bg-[#0f0f18] border border-white/5 p-6 rounded-[2rem] relative overflow-hidden">
@@ -190,53 +189,52 @@ export default function EarnPage() {
         <p className="text-purple-300/60 text-lg">Complete fun tasks and games to fill your wallet. No purchase necessary, ever.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Left Side - Games */}
         <div className="space-y-4">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <Gamepad2 className="text-purple-400" /> GAMES
+          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+            <Play className="text-purple-400 w-5 h-5" /> PLAY GAMES
           </h2>
-          {tasks.filter(task => task.id !== "4").map((task) => (
-            <div
-              key={task.id}
-              className="group relative bg-[#0f0f18] border border-white/5 rounded-xl p-4 overflow-hidden hover:border-purple-500/30 transition-all"
-            >
-              <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${task.color} opacity-10 blur-xl group-hover:opacity-20 transition-opacity`} />
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 bg-gradient-to-br ${task.color} rounded-lg flex items-center justify-center shadow-lg`}>
-                    <task.icon className="w-5 h-5 text-white" />
+          <div className="space-y-3">
+            {tasks.map((task, index) => (
+              <div key={index} className="bg-[#0f0f18] border border-white/5 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-purple-500/30 transition-all">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">{task.title}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-white truncate">{task.title}</h3>
                     <p className="text-xs text-gray-400">{task.desc}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                   <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
                     <Coins className="w-3 h-3 text-yellow-500" />
                     <span className="text-xs font-black text-white">
-                      {task.reward > 0 ? `+${task.reward}` : 'Performance'}
+                      {task.reward > 0 ? `+${task.reward}` : ''}
                     </span>
                   </div>
                   <button 
                     onClick={() => handleGameClick(task)}
-                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
+                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all whitespace-nowrap"
                   >
                     PLAY
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Right Side - Watch Videos */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <Play className="text-purple-400" /> WATCH VIDEOS AND EARN
+          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+            <Play className="text-purple-400 w-5 h-5" /> WATCH VIDEOS AND EARN
           </h2>
+          
+          {/* Ad Banner Placement */}
+          <AdBanner placement="WATCH_ADS" />
+          
           <div className="space-y-3">
             <div className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/30 transition-all">
               <div className="flex items-center gap-3">
@@ -254,7 +252,7 @@ export default function EarnPage() {
                   <span className="text-xs font-black text-white">+25</span>
                 </div>
                 <button 
-                  onClick={() => setActiveGame({ id: "3", reward: 25, type: "AD" })}
+                  onClick={() => setActiveGame({ id: "ad1", reward: 25, type: "AD" })}
                   className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
                 >
                   WATCH
@@ -278,7 +276,7 @@ export default function EarnPage() {
                   <span className="text-xs font-black text-white">+30</span>
                 </div>
                 <button 
-                  onClick={() => setActiveGame({ id: "4", reward: 30, type: "AD" })}
+                  onClick={() => setActiveGame({ id: "ad2", reward: 30, type: "AD" })}
                   className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
                 >
                   WATCH
@@ -302,7 +300,7 @@ export default function EarnPage() {
                   <span className="text-xs font-black text-white">+20</span>
                 </div>
                 <button 
-                  onClick={() => setActiveGame({ id: "5", reward: 20, type: "AD" })}
+                  onClick={() => setActiveGame({ id: "ad3", reward: 20, type: "AD" })}
                   className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
                 >
                   WATCH

@@ -32,6 +32,30 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get ended auctions
+router.get('/ended', async (req, res) => {
+  try {
+    const auctions = await prisma.auction.findMany({
+      where: {
+        status: 'ENDED'
+      },
+      include: {
+        highestBidder: {
+          select: { username: true, avatar: true }
+        }
+      },
+      orderBy: { endTime: 'desc' },
+      take: 20 // Show last 20 ended auctions
+    });
+
+    console.log(`Found ${auctions.length} ended auctions`);
+    res.json(auctions);
+  } catch (err) {
+    console.error('Fetch ended auctions error:', err);
+    res.status(500).json({ message: 'Failed to fetch ended auctions' });
+  }
+});
+
 // Get single auction
 router.get('/:id', async (req, res) => {
   try {

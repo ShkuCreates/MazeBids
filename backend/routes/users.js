@@ -206,6 +206,7 @@ router.get('/site-stats', async (req, res) => {
       }
     });
 
+    // Use exact real data - no hypothetical numbers
     const siteStats = {
       registeredUsers: userCount,
       auctionsHeld: auctionCount,

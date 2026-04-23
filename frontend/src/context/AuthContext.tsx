@@ -22,7 +22,8 @@ interface AuthContextType {
   login: () => void;
   logout: () => void;
   refreshUser: () => Promise<boolean>;
-  updateCoins: (newCoins: number) => void;
+  updateCoins: (newCoins: number, earnedAmount?: number) => void;
+  updateTotalSpent: (newSpent: number, spentAmount: number) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,22 +71,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log('Attempting logout...');
       await apiClient.post('/api/auth/logout');
+      console.log('Logout successful');
       setUser(null);
+      // Clear any stored auth data
+      localStorage.removeItem('user');
+      sessionStorage.clear();
       window.location.href = '/';
     } catch (error) {
       console.error('Logout failed', error);
+      // Even if logout fails on backend, clear local state
+      setUser(null);
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+      window.location.href = '/';
     }
   };
 
-  const updateCoins = (newCoins: number) => {
+  const updateCoins = (newCoins: number, earnedAmount?: number) => {
     if (user) {
-      setUser({ ...user, coins: newCoins });
+      setUser({ 
+        ...user, 
+        coins: newCoins,
+        totalEarned: earnedAmount ? user.totalEarned + earnedAmount : user.totalEarned
+      });
+    }
+  };
+
+  const updateTotalSpent = (newSpent: number, spentAmount: number) => {
+    if (user) {
+      setUser({ 
+        ...user, 
+        totalSpent: newSpent
+      });
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, updateCoins }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, updateCoins, updateTotalSpent }}>
       {children}
     </AuthContext.Provider>
   );

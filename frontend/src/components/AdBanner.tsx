@@ -13,6 +13,8 @@ interface Ad {
   contentUrl: string;
   targetUrl?: string;
   placement: string;
+  position: string;
+  size: string;
   duration?: number;
   reward: number;
 }
@@ -21,6 +23,36 @@ export default function AdBanner({ placement }: { placement: string }) {
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
+
+  // Helper function to get size classes
+  const getSizeClasses = (size: string) => {
+    switch (size) {
+      case 'SMALL':
+        return 'aspect-[16/9] max-w-sm';
+      case 'MEDIUM':
+        return 'aspect-[16/9] max-w-2xl';
+      case 'LARGE':
+        return 'aspect-[21/9] w-full';
+      default:
+        return 'aspect-[16/9] max-w-2xl';
+    }
+  };
+
+  // Helper function to get container classes based on position
+  const getPositionClasses = (position: string) => {
+    switch (position) {
+      case 'TOP':
+        return 'w-full justify-center';
+      case 'LEFT':
+        return 'w-full justify-start';
+      case 'RIGHT':
+        return 'w-full justify-end';
+      case 'BOTTOM':
+        return 'w-full justify-center';
+      default:
+        return 'w-full justify-center';
+    }
+  };
 
   useEffect(() => {
     const fetchAds = async () => {
@@ -51,40 +83,42 @@ export default function AdBanner({ placement }: { placement: string }) {
   if (loading || ads.length === 0) return null;
 
   return (
-    <div className="space-y-4">
+    <div className={`flex ${getPositionClasses(ads[0]?.position || 'TOP')}`}>
       {ads.map((ad) => (
         <motion.div
           key={ad.id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative group overflow-hidden rounded-[2rem] bg-[#0f0f18] border border-purple-500/10 hover:border-purple-500/30 transition-all shadow-xl"
+          className={`relative group overflow-hidden rounded-[2rem] bg-[#0f0f18] border border-purple-500/10 hover:border-purple-500/30 transition-all shadow-xl ${getSizeClasses(ad.size)}`}
         >
           {ad.type === 'IMAGE' && (
             <div className="relative">
               <a 
                 href={ad.targetUrl || "#"} 
                 target={ad.targetUrl ? "_blank" : "_self"}
-                className="block relative aspect-[21/9] md:aspect-[32/9] overflow-hidden"
+                className={`block relative ${getSizeClasses(ad.size)} overflow-hidden rounded-[2rem]`}
               >
                 <img src={ad.contentUrl} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-6">
-                  <p className="text-white font-black text-lg tracking-tight">{ad.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 bg-white/10 backdrop-blur-md rounded text-[8px] font-black text-white/60 uppercase tracking-widest border border-white/10">Sponsor</span>
-                    {ad.targetUrl && <ExternalLink className="w-3 h-3 text-purple-400" />}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute bottom-4 left-6 right-6">
+                  <p className="text-white font-black text-xl tracking-tight drop-shadow-lg">{ad.title}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-widest border border-white/30">Campaign</span>
+                      {ad.targetUrl && <ExternalLink className="w-4 h-4 text-purple-400" />}
+                    </div>
+                    {ad.reward > 0 && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); handleClaimReward(ad.id); }}
+                        disabled={claiming === ad.id}
+                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-[10px] rounded-full transition-all shadow-lg flex items-center gap-2"
+                      >
+                        <Coins className="w-3 h-3" /> CLAIM {ad.reward} COINS
+                      </button>
+                    )}
                   </div>
                 </div>
               </a>
-              {ad.reward > 0 && (
-                <button
-                  onClick={() => handleClaimReward(ad.id)}
-                  disabled={claiming === ad.id}
-                  className="absolute top-4 right-4 px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-[10px] rounded-full transition-all shadow-lg flex items-center gap-2"
-                >
-                  <Coins className="w-3 h-3" /> CLAIM {ad.reward} COINS
-                </button>
-              )}
             </div>
           )}
 

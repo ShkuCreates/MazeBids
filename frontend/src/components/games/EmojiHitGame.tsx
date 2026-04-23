@@ -20,7 +20,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const [emojis, setEmojis] = useState<Array<{ id: number; emoji: string; x: number; y: number; size: number }>>([]);
-  const { refreshUser } = useAuth();
+  const { user, refreshUser, updateCoins } = useAuth();
 
   const generateRandomEmoji = useCallback(() => {
     return {
@@ -41,11 +41,18 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
         score,
         reward: calculatedReward
       }, { withCredentials: true });
-      refreshUser();
+      
+      // Update coins in real-time
+      if (updateCoins && user) {
+        updateCoins(user.coins + calculatedReward, calculatedReward);
+      }
+      
+      // Also refresh to ensure data consistency
+      await refreshUser();
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  }, [taskId, score, refreshUser]);
+  }, [taskId, score, refreshUser, updateCoins, user]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
