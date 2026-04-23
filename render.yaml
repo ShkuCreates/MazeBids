@@ -3,9 +3,11 @@ services:
     name: mazebids-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install && npx prisma migrate deploy && npm run build
+    buildCommand: cd backend && npm install && npx prisma migrate deploy
     startCommand: cd backend && node server.js
     envVars:
+      - key: WEB_CONCURRENCY
+        value: "1"
       - key: NODE_ENV
         value: production
       - key: PORT
