@@ -33,7 +33,7 @@ export default function AuctionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notifying, setNotifying] = useState(false);
-  const [filter, setFilter] = useState<'ACTIVE' | 'UPCOMING' | 'ENDED'>('ACTIVE');
+  const [filter, setFilter] = useState<'ONGOING' | 'ENDED'>('ONGOING');
   const { user, refreshUser } = useAuth();
   const [timers, setTimers] = useState<{ [key: string]: string }>({});
   const [recentBids, setRecentBids] = useState<{ [key: string]: boolean }>({});
@@ -116,8 +116,7 @@ export default function AuctionsPage() {
   );
 
   const filteredAuctions = auctions.filter(a => {
-    if (filter === 'ACTIVE') return a.status === 'ACTIVE';
-    if (filter === 'UPCOMING') return a.status === 'UPCOMING';
+    if (filter === 'ONGOING') return a.status === 'ACTIVE';
     return a.status === 'ENDED';
   });
 
@@ -159,7 +158,7 @@ export default function AuctionsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {(['ACTIVE', 'UPCOMING', 'ENDED'] as const).map((t) => (
+            {(['ONGOING', 'ENDED'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setFilter(t)}

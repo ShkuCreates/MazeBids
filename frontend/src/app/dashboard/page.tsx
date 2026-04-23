@@ -27,7 +27,12 @@ export default function Dashboard() {
         console.error("Failed to fetch dashboard data:", err);
       }
     };
-    if (user) fetchData();
+    
+    if (user) {
+      fetchData(); // Initial fetch
+      const interval = setInterval(fetchData, 10000); // Update every 10 seconds
+      return () => clearInterval(interval);
+    }
   }, [user]);
 
   if (loading) return <div className="py-20 text-center">Loading dashboard...</div>;

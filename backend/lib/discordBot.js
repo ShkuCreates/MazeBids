@@ -52,6 +52,66 @@ client.on('ready', async () => {
     {
       name: 'leaderboard',
       description: 'Show the current top 5 coin holders'
+    },
+    {
+      name: 'add',
+      description: 'Add coins to a user (Admin only)',
+      options: [
+        {
+          name: 'user',
+          description: 'The user to add coins to',
+          type: ApplicationCommandOptionType.User,
+          required: true
+        },
+        {
+          name: 'amount',
+          description: 'Amount of coins to add',
+          type: ApplicationCommandOptionType.Integer,
+          required: true
+        }
+      ]
+    },
+    {
+      name: 'remove',
+      description: 'Remove coins from a user (Admin only)',
+      options: [
+        {
+          name: 'user',
+          description: 'The user to remove coins from',
+          type: ApplicationCommandOptionType.User,
+          required: true
+        },
+        {
+          name: 'amount',
+          description: 'Amount of coins to remove',
+          type: ApplicationCommandOptionType.Integer,
+          required: true
+        }
+      ]
+    },
+    {
+      name: 'bonuscode',
+      description: 'Create a bonus code (Admin only)',
+      options: [
+        {
+          name: 'code',
+          description: 'The bonus code',
+          type: ApplicationCommandOptionType.String,
+          required: true
+        },
+        {
+          name: 'reward',
+          description: 'Reward amount in coins',
+          type: ApplicationCommandOptionType.Integer,
+          required: true
+        },
+        {
+          name: 'uses',
+          description: 'Maximum uses (default: 1)',
+          type: ApplicationCommandOptionType.Integer,
+          required: false
+        }
+      ]
     }
   ];
 
@@ -180,7 +240,95 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply({ embeds: [embed] });
   }
 
-  // Existing commands (add them here)
+  // Admin commands
+  if (commandName === 'add') {
+    const targetUser = interaction.options.getUser('user');
+    const amount = interaction.options.getInteger('amount');
+
+    // Check if user is admin
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+    if (!member.permissions.has('Administrator')) {
+      return await interaction.reply({ content: '❌ This command is for administrators only!', ephemeral: true });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { discordId: targetUser.id }
+      });
+
+      if (!user) {
+        return await interaction.reply({ content: '❌ User not found in database!', ephemeral: true });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { coins: { increment: amount } }
+      });
+
+      await interaction.reply({ content: `✅ Added ${amount} coins to ${targetUser.username}!` });
+    } catch (err) {
+      console.error('Add coins error:', err);
+      await interaction.reply({ content: '❌ Failed to add coins!', ephemeral: true });
+    }
+  }
+
+  if (commandName === 'remove') {
+    const targetUser = interaction.options.getUser('user');
+    const amount = interaction.options.getInteger('amount');
+
+    // Check if user is admin
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+    if (!member.permissions.has('Administrator')) {
+      return await interaction.reply({ content: '❌ This command is for administrators only!', ephemeral: true });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { discordId: targetUser.id }
+      });
+
+      if (!user) {
+        return await interaction.reply({ content: '❌ User not found in database!', ephemeral: true });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { coins: { decrement: amount } }
+      });
+
+      await interaction.reply({ content: `✅ Removed ${amount} coins from ${targetUser.username}!` });
+    } catch (err) {
+      console.error('Remove coins error:', err);
+      await interaction.reply({ content: '❌ Failed to remove coins!', ephemeral: true });
+    }
+  }
+
+  if (commandName === 'bonuscode') {
+    const code = interaction.options.getString('code');
+    const reward = interaction.options.getInteger('reward');
+    const uses = interaction.options.getInteger('uses') || 1;
+
+    // Check if user is admin
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+    if (!member.permissions.has('Administrator')) {
+      return await interaction.reply({ content: '❌ This command is for administrators only!', ephemeral: true });
+    }
+
+    try {
+      await prisma.bonusCode.create({
+        data: {
+          code: code.toUpperCase(),
+          reward,
+          maxUses: uses
+        }
+      });
+
+      await interaction.reply({ content: `✅ Bonus code created!\n**Code:** ${code.toUpperCase()}\n**Reward:** ${reward} coins\n**Uses:** ${uses}` });
+    } catch (err) {
+      console.error('Bonus code error:', err);
+      await interaction.reply({ content: '❌ Failed to create bonus code!', ephemeral: true });
+    }
+  }
 });
 
 async function sendAuctionNotification(discordId, auction) {

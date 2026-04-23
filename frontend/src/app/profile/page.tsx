@@ -23,7 +23,12 @@ export default function ProfilePage() {
         console.error("Failed to fetch profile:", err);
       }
     };
-    if (user) fetchProfile();
+    
+    if (user) {
+      fetchProfile(); // Initial fetch
+      const interval = setInterval(fetchProfile, 8000); // Update every 8 seconds
+      return () => clearInterval(interval);
+    }
   }, [user]);
 
   const handleToggleNotifications = async () => {

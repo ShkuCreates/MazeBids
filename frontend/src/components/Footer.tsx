@@ -1,5 +1,5 @@
 "use client";
-import { Mail, Code, X, MessageCircle } from "lucide-react";
+import { Play, Camera, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 const Footer = () => {
@@ -7,28 +7,22 @@ const Footer = () => {
 
   const socialLinks = [
     {
+      name: "YouTube",
+      icon: Play,
+      href: "https://youtube.com/@mazebids",
+      color: "hover:text-red-500"
+    },
+    {
+      name: "Instagram",
+      icon: Camera,
+      href: "https://instagram.com/mazebids",
+      color: "hover:text-pink-500"
+    },
+    {
       name: "Discord",
       icon: MessageCircle,
       href: "https://discord.gg/mazebids",
       color: "hover:text-blue-400"
-    },
-    {
-      name: "Twitter",
-      icon: X,
-      href: "https://twitter.com/mazebids",
-      color: "hover:text-blue-300"
-    },
-    {
-      name: "GitHub",
-      icon: Code,
-      href: "https://github.com/mazebids",
-      color: "hover:text-gray-300"
-    },
-    {
-      name: "Email",
-      icon: Mail,
-      href: "mailto:support@mazebids.com",
-      color: "hover:text-purple-400"
     }
   ];
 
