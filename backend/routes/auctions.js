@@ -35,6 +35,29 @@ router.post('/:id/notify', async (req, res) => {
   }
 });
 
+// Get recent wins
+router.get('/recent-wins', async (req, res) => {
+  try {
+    const auctions = await prisma.auction.findMany({
+      where: {
+        status: 'ENDED',
+        highestBidderId: { not: null }
+      },
+      include: {
+        highestBidder: {
+          select: { username: true, avatar: true }
+        }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+    res.json(auctions);
+  } catch (err) {
+    console.error('Fetch recent wins error:', err);
+    res.status(500).json({ message: 'Failed to fetch recent wins' });
+  }
+});
+
 // Get upcoming auctions
 router.get('/upcoming', async (req, res) => {
   try {

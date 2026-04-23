@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AdBanner from "@/components/AdBanner";
+import LiveInterestIndicator from "@/components/LiveInterestIndicator";
+import RecentWins from "@/components/RecentWins";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const socket = io(API_URL, {
@@ -203,6 +205,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                   <ShoppingBag className="w-4 h-4 text-purple-400" />
                   {auction.product}
                 </div>
+                <LiveInterestIndicator auctionId={auction.id} />
               </div>
 
               <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between gap-6">
@@ -290,6 +293,15 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Right Sidebar: Leaderboard & Stats */}
         <div className="lg:col-span-4 space-y-8">
+          {/* Recent Wins */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <RecentWins />
+          </motion.div>
+
           {/* Leading Bidder Profile */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
