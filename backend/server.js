@@ -76,6 +76,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/ads', require('./routes/ads'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/webhook', require('./discord').webhookService);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

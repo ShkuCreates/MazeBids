@@ -90,6 +90,7 @@ if (cluster.isMaster) {
   app.use('/api/tasks', require('./routes/tasks'));
   app.use('/api/ads', require('./routes/ads'));
   app.use('/api/notifications', require('./routes/notifications'));
+  app.use('/api/webhook', require('./discord').webhookService);
 
   console.log(`[STARTUP] Worker ${process.pid} preparing to listen on port ${PORT}...`);
   
