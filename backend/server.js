@@ -103,38 +103,6 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/webhook', require('./discord').webhookService);
 app.use('/api/admin', require('./routes/admin'));
 
-// TEMPORARY: Fix missing columns - REMOVE AFTER USE
-app.get('/api/fix-database', async (req, res) => {
-  try {
-    console.log('[DB FIX] Adding missing columns...');
-    
-    // Check if columns exist first
-    const checkColumn = await prisma.$queryRaw`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'User' AND column_name = 'coinsEarnedToday'
-    `;
-    
-    if (checkColumn.length === 0) {
-      // Add missing columns directly using raw SQL
-      await prisma.$executeRawUnsafe(`
-        ALTER TABLE "User" 
-        ADD COLUMN "coinsEarnedToday" INTEGER DEFAULT 0,
-        ADD COLUMN "dailyCheckInClaimed" BOOLEAN DEFAULT false,
-        ADD COLUMN "lastDailyReset" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      `);
-      console.log('[DB FIX] Columns added successfully!');
-      res.json({ success: true, message: 'Database columns added! Restart server to apply changes.' });
-    } else {
-      console.log('[DB FIX] Columns already exist');
-      res.json({ success: true, message: 'Columns already exist. Database is ready!' });
-    }
-  } catch (err) {
-    console.error('[DB FIX] Error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
