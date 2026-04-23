@@ -34,6 +34,11 @@ export default function Dashboard() {
     coinsSpent: 0,
     activeUsers: 0,
   });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const targetStats = useMemo(() => ({
     totalUsers: 12842,
@@ -101,6 +106,7 @@ export default function Dashboard() {
   }, [user, profile, refreshUser]);
 
   useEffect(() => {
+    if (!mounted) return;
     const duration = 2000;
     const steps = 60;
     const stepDuration = duration / steps;
@@ -125,7 +131,7 @@ export default function Dashboard() {
     }, stepDuration);
 
     return () => clearInterval(interval);
-  }, [targetStats]);
+  }, [targetStats, mounted]);
 
   return (
     <div className="space-y-10 py-8">

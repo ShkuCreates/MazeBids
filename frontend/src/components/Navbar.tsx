@@ -39,6 +39,20 @@ const Navbar = memo(() => {
     setMobileMenuOpen(prev => !prev);
   }, []);
 
+  const handleNavItemClick = useCallback((e: React.MouseEvent, itemName: string, isProtected: boolean) => {
+    if (loading) {
+      e.preventDefault();
+      return;
+    }
+
+    if (isProtected && !user) {
+      e.preventDefault();
+      if (confirm(`You must be logged in to access the ${itemName}. Would you like to login now with Discord?`)) {
+        handleLogin();
+      }
+    }
+  }, [loading, user, handleLogin]);
+
   return (
     <nav className="border-b border-purple-900/50 bg-black/40 backdrop-blur-md sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -62,26 +76,12 @@ const Navbar = memo(() => {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isProtected = item.name === "Profile" || item.name === "Dashboard" || item.name === "Earn Coins";
-              
-              const handleClick = useCallback((e: React.MouseEvent) => {
-                if (loading) {
-                  e.preventDefault();
-                  return;
-                }
-
-                if (isProtected && !user) {
-                  e.preventDefault();
-                  if (confirm(`You must be logged in to access the ${item.name}. Would you like to login now with Discord?`)) {
-                    handleLogin();
-                  }
-                }
-              }, [loading, user, handleLogin, item.name]);
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={handleClick}
+                  onClick={(e) => handleNavItemClick(e, item.name, isProtected)}
                   className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-purple-400 ${
                     pathname === item.href ? "text-purple-400" : "text-gray-400"
                   }`}
@@ -149,30 +149,18 @@ const Navbar = memo(() => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isProtected = item.name === "Profile" || item.name === "Dashboard" || item.name === "Earn Coins";
-                
-                const handleClick = useCallback((e: React.MouseEvent) => {
-                  if (loading) {
-                    e.preventDefault();
-                    return;
-                  }
-
-                  if (isProtected && !user) {
-                    e.preventDefault();
-                    if (confirm(`You must be logged in to access the ${item.name}. Would you like to login now with Discord?`)) {
-                      handleLogin();
-                    }
-                  }
-                  setMobileMenuOpen(false);
-                }, [loading, user, handleLogin, item.name]);
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={handleClick}
+                    onClick={(e) => {
+                      handleNavItemClick(e, item.name, isProtected);
+                      setMobileMenuOpen(false);
+                    }}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                      pathname === item.href 
-                        ? "bg-purple-600/20 text-purple-400 border border-purple-500/30" 
+                      pathname === item.href
+                        ? "bg-purple-600/20 text-purple-400 border border-purple-500/30"
                         : "text-gray-400 hover:text-white hover:bg-white/5"
                     }`}
                   >

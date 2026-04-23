@@ -43,6 +43,7 @@ const apiClient = axios.create({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const refreshUser = async () => {
     try {
@@ -61,8 +62,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    refreshUser();
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    refreshUser();
+  }, [mounted]);
 
   const login = () => {
     if (loading || user) return;
