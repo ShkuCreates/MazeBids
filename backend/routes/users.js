@@ -57,4 +57,3 @@ router.get('/site-stats', async (req, res) => {
 */
 
 module.exports = router;
-console.log('Users routes loaded');\n
