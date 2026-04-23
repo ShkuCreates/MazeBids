@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Coins, Gamepad2, Play, CheckCircle2, Trophy, ArrowRight, Ticket, Loader2, Zap, Brain, Target } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Coins, Gamepad2, Play, CheckCircle2, Trophy, ArrowRight, Ticket, Loader2, Zap, Brain, Target, Flame, Clock, Eye, Users, Gift, Star, TrendingUp, Calendar, Bell, Crown, Medal } from "lucide-react";
 import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
 import EmojiHitGame from "@/components/games/EmojiHitGame";
@@ -8,21 +8,66 @@ import AdPlayer from "@/components/AdPlayer";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import AdBanner from "@/components/AdBanner";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+interface EarningActivity {
+  id: string;
+  username: string;
+  action: string;
+  coins: number;
+  timestamp: Date;
+}
+
+interface Popup {
+  id: string;
+  icon: React.ReactNode;
+  message: string;
+}
 
 export default function EarnPage() {
   const { user, refreshUser } = useAuth();
   const [activeGame, setActiveGame] = useState<{ id: string, reward: number, type: string } | null>(null);
-
-  const handleGameClick = (task: any) => {
-    console.log('Game clicked:', task);
-    setActiveGame({ id: task.id, reward: task.reward, type: task.type });
-  };
   const [redeemCode, setRedeemCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [redeemMessage, setRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [redeemRefCode, setRedeemRefCode] = useState("");
+
+  // Daily Streak State
+  const [streak, setStreak] = useState(3);
+  const [canClaimDaily, setCanClaimDaily] = useState(true);
+  const [dailyReward, setDailyReward] = useState(100);
+
+  // Earning Progress State
+  const [todayEarned, setTodayEarned] = useState(2750);
+  const [dailyGoal] = useState(5000);
+
+  // Limited Offer Timer
+  const [offerTimer, setOfferTimer] = useState("02:30:00");
+
+  // Live Earnings Feed State
+  const [earnings, setEarnings] = useState<EarningActivity[]>([]);
+
+  // Live Popups State
+  const [popups, setPopups] = useState<Popup[]>([]);
+
+  // Referral Progress
+  const [referralsInvited, setReferralsInvited] = useState(3);
+  const [referralsGoal] = useState(5);
+
+  // Leaderboard State
+  const [leaderboard] = useState([
+    { username: "CryptoKing", coins: 5200, rank: 1 },
+    { username: "SnehaX", coins: 4800, rank: 2 },
+    { username: "Rahul_23", coins: 4100, rank: 3 },
+    { username: "AryanLive", coins: 3800, rank: 4 },
+    { username: "NehaOP", coins: 3200, rank: 5 },
+  ]);
+
+  const handleGameClick = (task: any) => {
+    setActiveGame({ id: task.id, reward: task.reward, type: task.type });
+  };
 
   const handleRedeem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,29 +90,35 @@ export default function EarnPage() {
     {
       id: "1",
       title: "Speed Clicker",
-      reward: 0, // Will be calculated as clicks * 10
+      reward: 0,
       type: "GAME",
       icon: Target,
       desc: "Click as many times as you can in 10 seconds!",
-      color: "from-purple-500 to-indigo-600"
+      color: "from-purple-500 to-indigo-600",
+      tag: "🔥 Popular",
+      highScore: "Score 1000 → +200 coins"
     },
     {
       id: "2",
       title: "Memory Match",
-      reward: 0, // Will be calculated as matches * 10
+      reward: 0,
       type: "GAME",
       icon: Brain,
       desc: "Find all pairs in the shortest time.",
-      color: "from-blue-500 to-cyan-600"
+      color: "from-blue-500 to-cyan-600",
+      tag: "⚡ Fast Earn",
+      highScore: "Score 500 → +150 coins"
     },
     {
       id: "3",
       title: "Emoji Hit",
-      reward: 0, // Will be calculated as hits * 10
+      reward: 0,
       type: "GAME",
       icon: Target,
       desc: "Hit as many emojis as you can!",
-      color: "from-rose-500 to-pink-600"
+      color: "from-rose-500 to-pink-600",
+      tag: "💎 High Reward",
+      highScore: "Score 800 → +250 coins"
     },
     {
       id: "4",
@@ -76,7 +127,9 @@ export default function EarnPage() {
       type: "AD",
       icon: Play,
       desc: "Support us by watching a short video.",
-      color: "from-green-500 to-emerald-600"
+      color: "from-green-500 to-emerald-600",
+      tag: "⚡ Quick",
+      highScore: null
     }
   ];
 
@@ -95,256 +148,640 @@ export default function EarnPage() {
     }
   };
 
+  const handleClaimDaily = () => {
+    if (!canClaimDaily) return;
+    setStreak((prev) => prev + 1);
+    setCanClaimDaily(false);
+    setTodayEarned((prev) => prev + dailyReward);
+    refreshUser();
+  };
+
+  const getTimeAgo = (timestamp: Date): string => {
+    const seconds = Math.floor((Date.now() - timestamp.getTime()) / 1000);
+    if (seconds < 60) return "just now";
+    if (seconds < 120) return "1 min ago";
+    return `${Math.floor(seconds / 60)} min ago`;
+  };
+
+  const getDailyReward = (day: number): number => {
+    const rewards = [50, 75, 100, 125, 150, 175, 500];
+    return rewards[day - 1] || 50;
+  };
+
+  // Limited offer timer
+  useEffect(() => {
+    const endTime = new Date(Date.now() + 2.5 * 60 * 60 * 1000);
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const diff = endTime.getTime() - now;
+      if (diff <= 0) {
+        setOfferTimer("00:00:00");
+        clearInterval(timer);
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setOfferTimer(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Live earnings feed generator
+  useEffect(() => {
+    const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
+    const activities = ["earned 250 coins from game", "watched video +40 coins", "redeemed code +100 coins", "completed daily bonus +50 coins"];
+
+    const generateEarning = (): EarningActivity => {
+      const activity = activities[Math.floor(Math.random() * activities.length)];
+      const coinsMatch = activity.match(/\d+/);
+      const coins = coinsMatch ? parseInt(coinsMatch[0]) : 50;
+      return {
+        id: `earning-${Date.now()}-${Math.random()}`,
+        username: usernames[Math.floor(Math.random() * usernames.length)],
+        action: activity,
+        coins,
+        timestamp: new Date(),
+      };
+    };
+
+    setEarnings(Array.from({ length: 5 }, () => generateEarning()));
+
+    const interval = setInterval(() => {
+      setEarnings((prev) => {
+        const newEarning = generateEarning();
+        return [newEarning, ...prev.slice(0, 6)];
+      });
+    }, 4000 + Math.random() * 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Live popups generator
+  useEffect(() => {
+    const messages = [
+      { icon: <Coins className="w-4 h-4 text-yellow-400" />, template: () => `💰 ${(Math.floor(Math.random() * 4500) + 500).toLocaleString()} coins just earned` },
+      { icon: <Flame className="w-4 h-4 text-orange-400" />, template: () => `🔥 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} completed a task` },
+      { icon: <Eye className="w-4 h-4 text-blue-400" />, template: () => `👀 ${Math.floor(Math.random() * 200) + 50} users earning now` },
+    ];
+
+    const addPopup = () => {
+      const msg = messages[Math.floor(Math.random() * messages.length)];
+      const newPopup = { id: `popup-${Date.now()}-${Math.random()}`, icon: msg.icon, message: msg.template() };
+      setPopups((prev) => [newPopup, ...prev.slice(0, 1)]);
+    };
+
+    addPopup();
+    const interval = setInterval(addPopup, 3500 + Math.random() * 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="space-y-12 py-8">
-      
-      {/* Referral System - Smaller */}
-      <div className="bg-[#0f0f18] border border-white/5 p-6 rounded-[2rem] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-600/5 blur-[100px] rounded-full" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-          <div className="space-y-3">
-            <h2 className="text-xl font-black text-white flex items-center gap-2">
-              <Ticket className="text-purple-400" /> REFERRAL SYSTEM
-            </h2>
-            <p className="text-gray-500 text-sm font-medium">Invite friends and get <span className="text-purple-400">300 Coins</span> each!</p>
-            <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Your Code</p>
-                <p className="text-lg font-black text-white tracking-widest">{user?.referralCode || "LOGIN"}</p>
-              </div>
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(user?.referralCode || "");
-                  alert("Code copied!");
-                }}
-                className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white rounded-lg text-xs font-black transition-all"
-              >
-                COPY
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h2 className="text-xl font-black text-white flex items-center gap-2">
-              <Zap className="text-yellow-500" /> REDEEM CODE
-            </h2>
-            <p className="text-gray-500 text-sm font-medium">Got a referral or bonus code? Enter it below.</p>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="ENTER CODE" 
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 outline-none focus:border-purple-500 transition-all font-black text-white tracking-widest text-sm"
-                value={redeemRefCode}
-                onChange={(e) => setRedeemRefCode(e.target.value.toUpperCase())}
-              />
-              <button 
-                onClick={handleRedeemReferral}
-                disabled={redeeming}
-                className="px-6 py-3 bg-white text-black hover:bg-purple-400 hover:text-white rounded-xl font-black transition-all flex items-center gap-2 text-sm"
-              >
-                {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM"}
-              </button>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#0a0a0f] relative">
+      {/* Live Popups */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        <AnimatePresence mode="popLayout">
+          {popups.map((popup) => (
+            <motion.div
+              key={popup.id}
+              initial={{ opacity: 0, x: 50, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="bg-[#0f0f18]/95 backdrop-blur-md border border-purple-500/30 rounded-2xl px-4 py-3 shadow-2xl shadow-purple-500/20 flex items-center gap-3 pointer-events-auto"
+            >
+              {popup.icon}
+              <span className="text-white text-xs font-bold">{popup.message}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
-      {activeGame && activeGame.id === "1" && (
-        <ClickGame 
-          taskId={activeGame.id} 
-          reward={activeGame.reward} 
-          onComplete={() => setActiveGame(null)}
-          onCancel={() => setActiveGame(null)}
-        />
-      )}
-
-      {activeGame && activeGame.id === "2" && (
-        <MemoryMatchGame 
-          taskId={activeGame.id} 
-          reward={activeGame.reward} 
-          onComplete={() => setActiveGame(null)}
-          onCancel={() => setActiveGame(null)}
-        />
-      )}
-
-      {activeGame && activeGame.id === "3" && (
-        <EmojiHitGame 
-          taskId={activeGame.id} 
-          reward={activeGame.reward} 
-          onComplete={() => setActiveGame(null)}
-          onCancel={() => setActiveGame(null)}
-        />
-      )}
-
-      {activeGame && activeGame.type === "AD" && (
-        <AdPlayer
-          taskId={activeGame.id}
-          reward={activeGame.reward}
-          onComplete={() => setActiveGame(null)}
-          onCancel={() => setActiveGame(null)}
-        />
-      )}
-      <div className="text-center space-y-4 max-w-2xl mx-auto">
-        <h1 className="text-5xl font-black text-white">EARN COINS</h1>
-        <p className="text-purple-300/60 text-lg">Complete fun tasks and games to fill your wallet. No purchase necessary, ever.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Left Side - Games */}
-        <div className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-            <Play className="text-purple-400 w-5 h-5" /> PLAY GAMES
-          </h2>
-          <div className="space-y-3">
-            {tasks.map((task, index) => (
-              <div key={index} className="bg-[#0f0f18] border border-white/5 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-purple-500/30 transition-all">
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-bold text-white truncate">{task.title}</h3>
-                    <p className="text-xs text-gray-400">{task.desc}</p>
-                  </div>
+      <div className="max-w-7xl mx-auto space-y-8 py-8 px-4 relative">
+        {/* Daily Check-in Bonus */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2rem] p-6 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-20 animate-pulse blur-sm" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <Calendar className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                    <Coins className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs font-black text-white">
-                      {task.reward > 0 ? `+${task.reward}` : ''}
-                    </span>
+                <div>
+                  <h2 className="font-black text-white text-xl tracking-wider">DAILY CHECK-IN BONUS</h2>
+                  <p className="text-purple-300 text-xs font-medium">Day {streak}/7 • Streak active!</p>
+                </div>
+              </div>
+              <div className="px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/40">
+                <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">🔥 {streak} Day Streak</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <div
+                  key={day}
+                  className={`relative aspect-square rounded-xl flex flex-col items-center justify-center border transition-all ${
+                    day < streak
+                      ? "bg-green-500/20 border-green-500/40"
+                      : day === streak
+                      ? "bg-purple-500/20 border-purple-500/40 ring-2 ring-purple-500"
+                      : "bg-white/5 border-white/10"
+                  }`}
+                >
+                  <span className="text-[10px] font-black text-gray-400">Day {day}</span>
+                  <span className="text-xs font-bold text-white mt-1">+{getDailyReward(day)}</span>
+                  {day < streak && <CheckCircle2 className="w-4 h-4 text-green-400 absolute top-1 right-1" />}
+                  {day === 7 && <Crown className="w-4 h-4 text-yellow-400 absolute top-1 right-1" />}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleClaimDaily}
+              disabled={!canClaimDaily}
+              className={`w-full py-4 rounded-2xl font-black text-lg tracking-wider transition-all shadow-lg ${
+                canClaimDaily
+                  ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02]"
+                  : "bg-white/5 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              {canClaimDaily ? `CLAIM +${dailyReward} COINS` : "CLAIMED TODAY"}
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Earning Progress Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                  <TrendingUp className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-sm tracking-wider">TODAY'S PROGRESS</h3>
+                  <p className="text-gray-400 text-xs">You earned {todayEarned.toLocaleString()} / {dailyGoal.toLocaleString()} coins</p>
+                </div>
+              </div>
+              <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+                <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">{Math.round((todayEarned / dailyGoal) * 100)}%</span>
+              </div>
+            </div>
+
+            <div className="relative h-4 bg-white/5 rounded-full overflow-hidden mb-4">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(todayEarned / dailyGoal) * 100}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Star className="w-3 h-3 text-yellow-400" />
+                <span className="text-gray-400">1000 coins → +100 bonus</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Gift className="w-3 h-3 text-purple-400" />
+                <span className="text-gray-400">5000 coins → 🎁 reward</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Limited-Time Offer */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-gradient-to-br from-orange-600/20 via-red-600/10 to-orange-600/20 border-2 border-orange-500 rounded-[2rem] p-6 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 opacity-30 animate-pulse blur-sm" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <Flame className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-black text-white text-xl tracking-wider">🔥 LIMITED OFFER</h2>
+                  <p className="text-orange-300 text-xs font-medium">Watch 3 videos → +100 BONUS</p>
+                </div>
+              </div>
+              <div className="px-4 py-2 rounded-full bg-red-500/20 border border-red-500/40 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-red-400" />
+                <span className="text-red-300 text-[10px] font-black uppercase tracking-widest font-mono">{offerTimer}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Task</p>
+                <p className="text-white font-bold text-sm">Watch 3 videos</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Reward</p>
+                <p className="text-yellow-400 font-black text-sm">+100 BONUS</p>
+              </div>
+            </div>
+
+            <button className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm tracking-wider transition-all shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02]">
+              START OFFER
+            </button>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Games & Guide */}
+          <div className="space-y-6">
+            {/* Earning Guide */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
+                <Star className="w-5 h-5 text-yellow-400" />
+                Best Way to Earn
+              </h3>
+              <div className="space-y-3 relative z-10">
+                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <Play className="w-4 h-4 text-green-400" />
                   </div>
-                  <button 
-                    onClick={() => handleGameClick(task)}
-                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all whitespace-nowrap"
+                  <div className="flex-1">
+                    <p className="text-white font-bold text-sm">Watch Videos</p>
+                    <p className="text-gray-400 text-[10px]">Quick coins</p>
+                  </div>
+                  <span className="text-green-400 text-xs font-black">⚡</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <Gamepad2 className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-bold text-sm">Play Games</p>
+                    <p className="text-gray-400 text-[10px]">Medium reward</p>
+                  </div>
+                  <span className="text-blue-400 text-xs font-black">💎</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-bold text-sm">Referrals</p>
+                    <p className="text-gray-400 text-[10px]">High reward</p>
+                  </div>
+                  <span className="text-purple-400 text-xs font-black">🔥</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Play Games */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-4"
+            >
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <Gamepad2 className="text-purple-400 w-5 h-5" /> PLAY GAMES
+              </h2>
+              <div className="space-y-3">
+                {tasks.map((task, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-purple-500/30 transition-all shadow-lg hover:shadow-purple-500/20"
                   >
-                    PLAY
-                  </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className={`w-10 h-10 bg-gradient-to-br ${task.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                        <task.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-sm font-bold text-white truncate">{task.title}</h3>
+                          <span className="text-[9px] font-black text-orange-400">{task.tag}</span>
+                        </div>
+                        <p className="text-xs text-gray-400">{task.desc}</p>
+                        {task.highScore && <p className="text-[9px] text-purple-400 font-bold mt-1">{task.highScore}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                      <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                        <Coins className="w-3 h-3 text-yellow-400" />
+                        <span className="text-xs font-black text-white">
+                          {task.reward > 0 ? `+${task.reward}` : ''}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleGameClick(task)}
+                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all whitespace-nowrap"
+                      >
+                        PLAY
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Middle Column - Videos & Live Feed */}
+          <div className="space-y-6">
+            <h2 className="text-lg font-black text-white flex items-center gap-2">
+              <Play className="text-purple-400 w-5 h-5" /> WATCH VIDEOS AND EARN
+            </h2>
+
+            <AdBanner placement="WATCH_ADS" />
+
+            <div className="space-y-3">
+              {[
+                { title: "MAZE BIDS TUTORIAL", desc: "Learn how to play and win", reward: 25, color: "from-rose-500 to-pink-600" },
+                { title: "WINNING STRATEGIES", desc: "Pro tips from top players", reward: 30, color: "from-blue-500 to-cyan-600" },
+                { title: "FEATURE UPDATE", desc: "New features and improvements", reward: 20, color: "from-green-500 to-emerald-600" },
+              ].map((video, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/30 transition-all shadow-lg hover:shadow-purple-500/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 bg-gradient-to-br ${video.color} rounded-lg flex items-center justify-center`}>
+                      <Play className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">{video.title}</h3>
+                      <p className="text-xs text-gray-400">{video.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                      <Coins className="w-3 h-3 text-yellow-400" />
+                      <span className="text-xs font-black text-white">+{video.reward}</span>
+                    </div>
+                    <button
+                      onClick={() => setActiveGame({ id: `ad${index}`, reward: video.reward, type: "AD" })}
+                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
+                    >
+                      WATCH
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Live Earnings Feed */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl shadow-purple-500/5 relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+
+              <div className="p-4 border-b border-white/5 flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                    <Bell className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm tracking-wider">LIVE EARNINGS</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Real-time activity</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
                 </div>
               </div>
-            ))}
+
+              <div className="h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+                <AnimatePresence mode="popLayout">
+                  {earnings.map((earning, index) => (
+                    <motion.div
+                      key={earning.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className="p-3 border-b border-white/5 hover:bg-white/[0.02] transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                          <span className="text-xs font-black text-purple-300">{earning.username.charAt(0)}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-300">
+                            <span className="font-bold text-white">{earning.username}</span>
+                            <span className="text-gray-500"> {earning.action}</span>
+                          </p>
+                          <p className="text-[10px] text-gray-500">{getTimeAgo(earning.timestamp)}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-yellow-400">
+                          <Coins className="w-3 h-3" />
+                          <span className="text-xs font-black">+{earning.coins}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Right Column - Referral, Leaderboard, Bonus Code */}
+          <div className="space-y-6">
+            {/* Referral Boost */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
+                <Users className="w-5 h-5 text-purple-400" />
+                Referral Boost
+              </h3>
+              <div className="space-y-4 relative z-10">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-xs font-bold uppercase">Progress</span>
+                    <span className="text-purple-400 text-xs font-black">{referralsInvited} / {referralsGoal}</span>
+                  </div>
+                  <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(referralsInvited / referralsGoal) * 100}%` }}
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Star className="w-3 h-3 text-yellow-400" />
+                    <span className="text-gray-400">Invite 5 friends → +500 BONUS</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Crown className="w-3 h-3 text-purple-400" />
+                    <span className="text-gray-400">Invite 10 → VIP unlock</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Leaderboard */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                Top Earners Today
+              </h3>
+              <div className="space-y-3 relative z-10">
+                {leaderboard.map((user, index) => (
+                  <motion.div
+                    key={user.username}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      index === 0
+                        ? "bg-yellow-500/10 border-yellow-500/30 shadow-lg shadow-yellow-500/20"
+                        : index === 1
+                        ? "bg-gray-500/10 border-gray-500/30"
+                        : index === 2
+                        ? "bg-orange-500/10 border-orange-500/30"
+                        : "bg-white/5 border-white/10 hover:border-purple-500/30"
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-white ${
+                      index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-500" : "bg-white/10"
+                    }`}>
+                      {user.rank}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white font-bold text-sm">{user.username}</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-yellow-400">
+                      <Coins className="w-3 h-3" />
+                      <span className="text-xs font-black">{user.coins.toLocaleString()}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Bonus Code */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+              className="bg-[#0f0f18] border border-purple-500/20 rounded-[2rem] p-6 space-y-4 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 blur-xl rounded-full" />
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
+                  <Ticket className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">REDEEM BONUS CODE</h3>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Extra Coins</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleRedeem} className="space-y-3 relative z-10">
+                <input
+                  type="text"
+                  placeholder="ENTER CODE..."
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                  className="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl p-3 text-center font-black tracking-widest outline-none transition-all placeholder:text-gray-700 text-sm"
+                />
+                <button
+                  disabled={redeeming || !redeemCode}
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 text-sm"
+                >
+                  {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM NOW"}
+                </button>
+              </form>
+
+              {redeemMessage && (
+                <p className={`text-center text-xs font-bold ${redeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                  {redeemMessage.text}
+                </p>
+              )}
+            </motion.div>
           </div>
         </div>
 
-        {/* Right Side - Watch Videos */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-            <Play className="text-purple-400 w-5 h-5" /> WATCH VIDEOS AND EARN
-          </h2>
-          
-          {/* Ad Banner Placement */}
-          <AdBanner placement="WATCH_ADS" />
-          
-          <div className="space-y-3">
-            <div className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/30 transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-lg flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">MAZE BIDS TUTORIAL</h3>
-                  <p className="text-xs text-gray-400">Learn how to play and win</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                  <Coins className="w-3 h-3 text-yellow-500" />
-                  <span className="text-xs font-black text-white">+25</span>
-                </div>
-                <button 
-                  onClick={() => setActiveGame({ id: "ad1", reward: 25, type: "AD" })}
-                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
-                >
-                  WATCH
-                </button>
-              </div>
-            </div>
-            
-            <div className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/30 transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">WINNING STRATEGIES</h3>
-                  <p className="text-xs text-gray-400">Pro tips from top players</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                  <Coins className="w-3 h-3 text-yellow-500" />
-                  <span className="text-xs font-black text-white">+30</span>
-                </div>
-                <button 
-                  onClick={() => setActiveGame({ id: "ad2", reward: 30, type: "AD" })}
-                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
-                >
-                  WATCH
-                </button>
-              </div>
-            </div>
-            
-            <div className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/30 transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">FEATURE UPDATE</h3>
-                  <p className="text-xs text-gray-400">New features and improvements</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                  <Coins className="w-3 h-3 text-yellow-500" />
-                  <span className="text-xs font-black text-white">+20</span>
-                </div>
-                <button 
-                  onClick={() => setActiveGame({ id: "ad3", reward: 20, type: "AD" })}
-                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
-                >
-                  WATCH
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Game Modals */}
+        {activeGame && activeGame.id === "1" && (
+          <ClickGame
+            taskId={activeGame.id}
+            reward={activeGame.reward}
+            onComplete={() => setActiveGame(null)}
+            onCancel={() => setActiveGame(null)}
+          />
+        )}
 
-          {/* Bonus Code Section - Smaller Rectangular */}
-          <div className="bg-[#0f0f18] border border-purple-500/20 rounded-xl p-4 space-y-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 blur-xl rounded-full" />
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
-                <Ticket className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">REDEEM BONUS CODE</h3>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Extra Coins</p>
-              </div>
-            </div>
+        {activeGame && activeGame.id === "2" && (
+          <MemoryMatchGame
+            taskId={activeGame.id}
+            reward={activeGame.reward}
+            onComplete={() => setActiveGame(null)}
+            onCancel={() => setActiveGame(null)}
+          />
+        )}
 
-            <form onSubmit={handleRedeem} className="space-y-3">
-              <input 
-                type="text" 
-                placeholder="ENTER CODE..." 
-                value={redeemCode}
-                onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl p-3 text-center font-black tracking-widest outline-none transition-all placeholder:text-gray-700 text-sm"
-              />
-              <button 
-                disabled={redeeming || !redeemCode}
-                className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 text-sm"
-              >
-                {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM NOW"}
-              </button>
-            </form>
+        {activeGame && activeGame.id === "3" && (
+          <EmojiHitGame
+            taskId={activeGame.id}
+            reward={activeGame.reward}
+            onComplete={() => setActiveGame(null)}
+            onCancel={() => setActiveGame(null)}
+          />
+        )}
 
-            {redeemMessage && (
-              <p className={`text-center text-xs font-bold ${redeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                {redeemMessage.text}
-              </p>
-            )}
-          </div>
-        </div>
+        {activeGame && activeGame.type === "AD" && (
+          <AdPlayer
+            taskId={activeGame.id}
+            reward={activeGame.reward}
+            onComplete={() => setActiveGame(null)}
+            onCancel={() => setActiveGame(null)}
+          />
+        )}
       </div>
     </div>
   );
