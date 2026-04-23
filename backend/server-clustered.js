@@ -20,6 +20,11 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 if (cluster.isMaster) {
   console.log(`Master ${process.pid} started, forking ${numCPUs} workers`);
+  
+  // Initialize Discord bot (singleton - ONLY in Master)
+  console.log('[STARTUP] Initializing Discord bot in Master process...');
+  require('./lib/discordBotSingleton');
+
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
@@ -63,9 +68,6 @@ if (cluster.isMaster) {
   require('./lib/passport');
   app.use(passport.initialize());
   app.use(passport.session());
-
-  // Initialize Discord bot (singleton - only once)
-  require('./lib/discordBotSingleton');
 
   app.use('/api/', apiLimiter);
 
