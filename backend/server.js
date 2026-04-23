@@ -105,15 +105,47 @@ app.use('/api/admin', require('./routes/admin'));
 
 // TEMPORARY: Manual migration endpoint - REMOVE AFTER USE
 app.get('/api/run-migration', async (req, res) => {
-  const { execSync } = require('child_process');
+  const { spawn } = require('child_process');
   try {
-    console.log('[MIGRATION] Starting manual migration...');
-    execSync('npx prisma migrate deploy', { 
-      stdio: 'inherit',
-      timeout: 300000 // 5 minutes
+    console.log('[MIGRATION] Starting database push...');
+    
+    const result = await new Promise((resolve, reject) => {
+      const proc = spawn('npx', ['prisma', 'db', 'push', '--accept-data-loss'], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: 'pipe'
+      });
+      
+      let output = '';
+      let errorOutput = '';
+      
+      proc.stdout.on('data', (data) => {
+        output += data.toString();
+        console.log('[MIGRATION]', data.toString());
+      });
+      
+      proc.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+        console.error('[MIGRATION ERROR]', data.toString());
+      });
+      
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({ success: true, output });
+        } else {
+          reject(new Error(errorOutput || `Exit code ${code}`));
+        }
+      });
+      
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        proc.kill();
+        reject(new Error('Migration timeout'));
+      }, 300000);
     });
+    
     console.log('[MIGRATION] Completed successfully!');
-    res.json({ success: true, message: 'Migration completed!' });
+    res.json({ success: true, message: 'Database schema updated! Restart server to apply changes.', output: result.output });
   } catch (err) {
     console.error('[MIGRATION] Error:', err.message);
     res.status(500).json({ error: err.message });
