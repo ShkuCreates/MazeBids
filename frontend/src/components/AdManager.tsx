@@ -130,10 +130,12 @@ export default function AdManager() {
     setShowForm(true);
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading Ad Manager...</div>;
-
   return (
     <div className="space-y-8">
+      {loading ? (
+        <div className="p-8 text-center text-gray-500">Loading Ad Manager...</div>
+      ) : (
+        <>
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-black text-white flex items-center gap-2">
           <Monitor className="text-purple-400" /> AD CAMPAIGNS
@@ -366,6 +368,8 @@ export default function AdManager() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

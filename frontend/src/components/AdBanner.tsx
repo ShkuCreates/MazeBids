@@ -80,10 +80,10 @@ export default function AdBanner({ placement }: { placement: string }) {
     }
   };
 
-  if (loading || ads.length === 0) return null;
-
   return (
     <div className={`flex ${getPositionClasses(ads[0]?.position || 'TOP')}`}>
+      {loading || ads.length === 0 ? null : (
+        <>
       {ads.map((ad) => (
         <motion.div
           key={ad.id}
@@ -180,6 +180,8 @@ export default function AdBanner({ placement }: { placement: string }) {
           )}
         </motion.div>
       ))}
+        </>
+      )}
     </div>
   );
 }

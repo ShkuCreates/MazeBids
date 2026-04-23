@@ -250,12 +250,6 @@ export default function AuctionsPage() {
     return `${Math.floor(seconds / 60)} min ago`;
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-      <Skeleton className="h-12 w-12 rounded-full" />
-    </div>
-  );
-
   const filteredAuctions = auctions.filter(a => {
     if (filter === 'ONGOING') return a.status === 'ACTIVE';
     return a.status === 'ENDED';
@@ -263,6 +257,12 @@ export default function AuctionsPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative">
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+          <Skeleton className="h-12 w-12 rounded-full" />
+        </div>
+      ) : (
+        <>
       {/* Live Popups */}
       <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
         <AnimatePresence mode="popLayout">
@@ -661,7 +661,8 @@ export default function AuctionsPage() {
             </AnimatePresence>
           </div>
         )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

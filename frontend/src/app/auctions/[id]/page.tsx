@@ -254,16 +254,16 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     return `${Math.floor(seconds / 60)} min ago`;
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-    </div>
-  );
-
-  if (!auction) return <div className="py-20 text-center text-white">Auction not found.</div>;
-
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative">
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+      ) : !auction ? (
+        <div className="py-20 text-center text-white">Auction not found.</div>
+      ) : (
+        <>
       {/* Live Popups */}
       <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
         <AnimatePresence mode="popLayout">
@@ -761,6 +761,8 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
           )}
         </AnimatePresence>
       </div>
+        </>
+      )}
     </div>
   );
 }

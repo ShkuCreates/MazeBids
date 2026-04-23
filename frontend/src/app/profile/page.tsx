@@ -52,17 +52,8 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <div className="py-20 text-center">Loading...</div>;
-
-  if (!user) return (
-    <div className="py-20 text-center space-y-6">
-      <h1 className="text-4xl font-black">Please login to view your profile</h1>
-      <Link href="/" className="inline-block px-8 py-4 bg-purple-600 rounded-2xl font-bold">Back Home</Link>
-    </div>
-  );
-
   const stats = [
-    { label: "Current Balance", value: user.coins, icon: Wallet, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+    { label: "Current Balance", value: user?.coins || 0, icon: Wallet, color: "text-yellow-500", bg: "bg-yellow-500/10" },
     { label: "Total Earned", value: profileData?.totalEarned || 0, icon: ArrowUpRight, color: "text-green-400", bg: "bg-green-400/10" },
     { label: "Total Spent", value: profileData?.totalSpent || 0, icon: ArrowDownRight, color: "text-red-400", bg: "bg-red-400/10" },
     { label: "Auctions Won", value: profileData?.auctionsWonCount || 0, icon: Award, color: "text-purple-400", bg: "bg-purple-400/10" },
@@ -70,6 +61,15 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-4 space-y-8">
+      {loading ? (
+        <div className="py-20 text-center">Loading...</div>
+      ) : !user ? (
+        <div className="py-20 text-center space-y-6">
+          <h1 className="text-4xl font-black">Please login to view your profile</h1>
+          <Link href="/" className="inline-block px-8 py-4 bg-purple-600 rounded-2xl font-bold">Back Home</Link>
+        </div>
+      ) : (
+        <>
       <AdBanner placement="PROFILE" />
       
       <motion.div
@@ -222,6 +222,8 @@ export default function ProfilePage() {
           <NotificationSettings />
         </motion.div>
       </div>
+        </>
+      )}
     </div>
   );
 }
