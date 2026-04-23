@@ -112,114 +112,6 @@ export default function ActiveAuctionsPanel() {
     return () => clearInterval(interval);
   }, [auctions, getTimeLeft]);
 
-  if (auctions.length === 0) {
-    // Show "No Live Auctions" state with preview cards
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-orange-400" />
-            <h2 className="text-lg font-black text-white uppercase tracking-wider">Active Auctions</h2>
-          </div>
-          <Link
-            href="/auctions"
-            className="text-[10px] font-bold text-purple-400 hover:text-purple-300 uppercase tracking-widest transition-colors flex items-center gap-1"
-          >
-            View All <ChevronRight className="w-3 h-3" />
-          </Link>
-        </div>
-
-        {/* Empty State Card */}
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl p-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4">
-            <Gavel className="w-8 h-8 text-purple-400 opacity-40" />
-          </div>
-          <h3 className="text-white font-black text-lg mb-2">No Live Auctions</h3>
-          <p className="text-gray-500 text-sm mb-6">New auctions will appear here soon</p>
-          <Link
-            href="/auctions"
-            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black text-sm transition-all shadow-lg shadow-purple-500/20"
-          >
-            Go to Auctions Page
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        {/* Censored Auctions (Hype Generation) */}
-        <div className="space-y-3">
-          <p className="text-[10px] text-purple-400 font-medium uppercase tracking-wider flex items-center gap-2">
-            <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-            Coming Soon
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 0.7, scale: 1 }}
-              whileHover={{ opacity: 0.9, scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-              className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 group cursor-pointer"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 animate-pulse" />
-              <div className="relative aspect-video overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-90" />
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-sm group-hover:backdrop-blur-[2px] transition-all" />
-                <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
-                  <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
-                    🔒 Locked
-                  </span>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">🔮</div>
-                    <p className="text-white font-black text-sm">Mystery Reward</p>
-                    <p className="text-purple-300 text-[10px] mt-1">High Value Item (Hidden)</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 border-t border-purple-500/20">
-                <div className="flex items-center justify-between">
-                  <span className="text-purple-200 font-bold text-xs">Unlock when auction starts</span>
-                  <Clock className="w-3 h-3 text-purple-400" />
-                </div>
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 0.7, scale: 1 }}
-              whileHover={{ opacity: 0.9, scale: 1.02 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 group cursor-pointer"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 animate-pulse" style={{ animationDelay: "1s" }} />
-              <div className="relative aspect-video overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-90" />
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-sm group-hover:backdrop-blur-[2px] transition-all" />
-                <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
-                  <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
-                    🔒 Locked
-                  </span>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">🎁</div>
-                    <p className="text-white font-black text-sm">Secret Drop</p>
-                    <p className="text-purple-300 text-[10px] mt-1">Premium Item (Hidden)</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 border-t border-purple-500/20">
-                <div className="flex items-center justify-between">
-                  <span className="text-purple-200 font-bold text-xs">Unlock when auction starts</span>
-                  <Clock className="w-3 h-3 text-purple-400" />
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
@@ -235,119 +127,211 @@ export default function ActiveAuctionsPanel() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <AnimatePresence mode="popLayout">
-          {auctions.map((auction) => {
-            const ending = isEndingSoon(auction.endTime);
-            const secs = getSecondsLeft(auction.endTime);
-            const timer = timers[auction.id] || "00:00:00";
-            const bidFlash = recentBids[auction.id];
+      {auctions.length === 0 ? (
+        <>
+          {/* Empty State Card */}
+          <div className="bg-[#0f0f18] border border-white/5 rounded-2xl p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4">
+              <Gavel className="w-8 h-8 text-purple-400 opacity-40" />
+            </div>
+            <h3 className="text-white font-black text-lg mb-2">No Live Auctions</h3>
+            <p className="text-gray-500 text-sm mb-6">New auctions will appear here soon</p>
+            <Link
+              href="/auctions"
+              className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black text-sm transition-all shadow-lg shadow-purple-500/20"
+            >
+              Go to Auctions Page
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
 
-            return (
+          {/* Censored Auctions (Hype Generation) */}
+          <div className="space-y-3">
+            <p className="text-[10px] text-purple-400 font-medium uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+              Coming Soon
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <motion.div
-                key={auction.id}
-                layout
                 initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`group relative rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_0_60px_-15px_rgba(139,92,246,0.35)] hover:-translate-y-1 ${
-                  ending
-                    ? "border-2 border-red-500/40 shadow-[0_0_30px_-5px_rgba(239,68,68,0.3)]"
-                    : "border border-white/10 hover:border-purple-500/40"
-                } bg-[#0f0f18]`}
+                animate={{ opacity: 0.7, scale: 1 }}
+                whileHover={{ opacity: 0.9, scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+                className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 group cursor-pointer"
               >
-                {/* Red pulse overlay for ending soon */}
-                {ending && (
-                  <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none" />
-                )}
-
-                {/* Bid flash overlay */}
-                <AnimatePresence>
-                  {bidFlash && (
-                    <motion.div
-                      initial={{ opacity: 0.6 }}
-                      animate={{ opacity: 0 }}
-                      transition={{ duration: 1.2 }}
-                      className="absolute inset-0 bg-purple-400/10 pointer-events-none z-20"
-                    />
-                  )}
-                </AnimatePresence>
-
-                {/* Image */}
-                <div className="relative h-32 overflow-hidden bg-[#0a0a0f]">
-                  <img
-                    src={auction.image}
-                    alt={auction.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent" />
-
-                  {/* Ending soon badge */}
-                  {ending && (
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600/90 backdrop-blur-md text-white shadow-lg shadow-red-500/30">
-                      <Zap className="w-3 h-3 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Ending Soon</span>
-                    </div>
-                  )}
-
-                  {/* Timer overlay */}
-                  <div className={`absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-md border ${
-                    ending
-                      ? "bg-red-500/20 border-red-500/30"
-                      : "bg-black/50 border-white/10"
-                  }`}>
-                    <Clock className={`w-3.5 h-3.5 ${ending ? "text-red-400 animate-pulse" : "text-purple-400"}`} />
-                    <span className={`text-xs font-black tracking-tight ${ending ? "text-red-300" : "text-white"}`}>
-                      {timer}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 animate-pulse" />
+                <div className="relative aspect-video overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-sm group-hover:backdrop-blur-[2px] transition-all" />
+                  <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
+                    <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                      🔒 Locked
                     </span>
                   </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-black text-white group-hover:text-purple-300 transition-colors leading-tight line-clamp-1">
-                      {auction.title}
-                    </h3>
-                  </div>
-
-                  {/* Bid info */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Coins className="w-4 h-4 text-yellow-400" />
-                      <span className="text-lg font-black text-white">{auction.currentBid.toLocaleString()}</span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">🔮</div>
+                      <p className="text-white font-black text-sm">Mystery Reward</p>
+                      <p className="text-purple-300 text-[10px] mt-1">High Value Item (Hidden)</p>
                     </div>
-                    {auction.highestBidder && (
-                      <div className="flex items-center gap-1.5">
-                        {auction.highestBidder.avatar ? (
-                          <img src={auction.highestBidder.avatar} className="w-5 h-5 rounded-full" />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-purple-500/30 flex items-center justify-center text-[8px] text-white font-bold">
-                            {auction.highestBidder.username[0]}
-                          </div>
-                        )}
-                        <span className="text-[10px] text-gray-400 font-medium">{auction.highestBidder.username}</span>
-                      </div>
-                    )}
                   </div>
-
-                  {/* CTA */}
-                  <Link
-                    href={`/auctions/${auction.id}`}
-                    className={`block w-full py-2.5 rounded-xl font-black text-xs tracking-wider text-center transition-all active:scale-95 ${
-                      ending
-                        ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/25"
-                        : "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/25"
-                    }`}
-                  >
-                    {ending ? "BID NOW — ENDING SOON" : "PLACE BID"}
-                  </Link>
+                </div>
+                <div className="p-3 border-t border-purple-500/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-purple-200 font-bold text-xs">Unlock when auction starts</span>
+                    <Clock className="w-3 h-3 text-purple-400" />
+                  </div>
                 </div>
               </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 0.7, scale: 1 }}
+                whileHover={{ opacity: 0.9, scale: 1.02 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 group cursor-pointer"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 animate-pulse" style={{ animationDelay: "1s" }} />
+                <div className="relative aspect-video overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-sm group-hover:backdrop-blur-[2px] transition-all" />
+                  <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
+                    <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                      🔒 Locked
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">🎁</div>
+                      <p className="text-white font-black text-sm">Secret Drop</p>
+                      <p className="text-purple-300 text-[10px] mt-1">Premium Item (Hidden)</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 border-t border-purple-500/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-purple-200 font-bold text-xs">Unlock when auction starts</span>
+                    <Clock className="w-3 h-3 text-purple-400" />
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AnimatePresence mode="popLayout">
+            {auctions.map((auction) => {
+              const ending = isEndingSoon(auction.endTime);
+              const secs = getSecondsLeft(auction.endTime);
+              const timer = timers[auction.id] || "00:00:00";
+              const bidFlash = recentBids[auction.id];
+
+              return (
+                <motion.div
+                  key={auction.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className={`group relative rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_0_60px_-15px_rgba(139,92,246,0.35)] hover:-translate-y-1 ${
+                    ending
+                      ? "border-2 border-red-500/40 shadow-[0_0_30px_-5px_rgba(239,68,68,0.3)]"
+                      : "border border-white/10 hover:border-purple-500/40"
+                  } bg-[#0f0f18]`}
+                >
+                  {/* Red pulse overlay for ending soon */}
+                  {ending && (
+                    <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none" />
+                  )}
+
+                  {/* Bid flash overlay */}
+                  <AnimatePresence>
+                    {bidFlash && (
+                      <motion.div
+                        initial={{ opacity: 0.6 }}
+                        animate={{ opacity: 0 }}
+                        transition={{ duration: 1.2 }}
+                        className="absolute inset-0 bg-purple-400/10 pointer-events-none z-20"
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  {/* Image */}
+                  <div className="relative h-32 overflow-hidden bg-[#0a0a0f]">
+                    <img
+                      src={auction.image}
+                      alt={auction.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent" />
+
+                    {/* Ending soon badge */}
+                    {ending && (
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600/90 backdrop-blur-md text-white shadow-lg shadow-red-500/30">
+                        <Zap className="w-3 h-3 animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Ending Soon</span>
+                      </div>
+                    )}
+
+                    {/* Timer overlay */}
+                    <div className={`absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-md border ${
+                      ending
+                        ? "bg-red-500/20 border-red-500/30"
+                        : "bg-black/50 border-white/10"
+                    }`}>
+                      <Clock className={`w-3.5 h-3.5 ${ending ? "text-red-400 animate-pulse" : "text-purple-400"}`} />
+                      <span className={`text-xs font-black tracking-tight ${ending ? "text-red-300" : "text-white"}`}>
+                        {timer}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-black text-white group-hover:text-purple-300 transition-colors leading-tight line-clamp-1">
+                        {auction.title}
+                      </h3>
+                    </div>
+
+                    {/* Bid info */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="w-4 h-4 text-yellow-400" />
+                        <span className="text-lg font-black text-white">{auction.currentBid.toLocaleString()}</span>
+                      </div>
+                      {auction.highestBidder && (
+                        <div className="flex items-center gap-1.5">
+                          {auction.highestBidder.avatar ? (
+                            <img src={auction.highestBidder.avatar} className="w-5 h-5 rounded-full" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-purple-500/30 flex items-center justify-center text-[8px] text-white font-bold">
+                              {auction.highestBidder.username[0]}
+                            </div>
+                          )}
+                          <span className="text-[10px] text-gray-400 font-medium">{auction.highestBidder.username}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    <Link
+                      href={`/auctions/${auction.id}`}
+                      className={`block w-full py-2.5 rounded-xl font-black text-xs tracking-wider text-center transition-all active:scale-95 ${
+                        ending
+                          ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/25"
+                          : "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/25"
+                      }`}
+                    >
+                      {ending ? "BID NOW — ENDING SOON" : "PLACE BID"}
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
