@@ -8,9 +8,27 @@ router.get('/profile', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, username: true, email: true, avatar: true, totalEarned: true, totalSpent: true }
+      select: { 
+        id: true, 
+        username: true, 
+        email: true, 
+        avatar: true, 
+        totalEarned: true, 
+        totalSpent: true,
+        notifications: true,
+        createdAt: true,
+        discordId: true
+      }
     });
-    res.json(user);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Count won auctions
+    const auctionsWonCount = await prisma.auction.count({
+      where: { highestBidderId: user.id }
+    });
+
+    res.json({ ...user, auctionsWonCount });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch profile' });
   }
@@ -31,8 +49,29 @@ router.put('/profile', async (req, res) => {
   }
 });
 
-// Site stats endpoint disabled per request - re-enable if needed
-/*
+// Toggle notifications
+router.post('/toggle-notifications', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { notifications: true }
+    });
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { notifications: !user.notifications }
+    });
+
+    res.json({ notifications: updated.notifications });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update notification settings' });
+  }
+});
+
+// Site stats endpoint
 router.get('/site-stats', async (req, res) => {
   try {
     const userCount = await prisma.user.count();
@@ -45,15 +84,14 @@ router.get('/site-stats', async (req, res) => {
     });
 
     res.json({
-      users: userCount,
-      auctions: auctionCount,
-      totalCoinsEarned: stats._sum.totalEarned || 0,
-      totalCoinsSpent: stats._sum.totalSpent || 0
+      registeredUsers: userCount,
+      auctionsHeld: auctionCount,
+      totalEarned: stats._sum.totalEarned || 0,
+      totalSpent: stats._sum.totalSpent || 0
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch stats' });
   }
 });
-*/
 
 module.exports = router;

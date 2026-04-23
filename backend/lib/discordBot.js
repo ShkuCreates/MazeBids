@@ -43,9 +43,30 @@ const statuses = [
 
 client.on('error', (error) => console.error('Discord bot error:', error.message));
 
-// Bot ready event - set up status rotation and log ready
-client.on('ready', () => {
+// Bot ready event - set up status rotation, register commands, and log ready
+client.on('ready', async () => {
   console.log(`Discord bot ready as ${client.user.tag}`);
+  
+  // Register slash commands
+  const commands = [
+    {
+      name: 'leaderboard',
+      description: 'Show the current top 5 coin holders'
+    }
+  ];
+
+  try {
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, MAIN_GUILD_ID),
+      { body: commands }
+    );
+    
+    console.log('Successfully registered slash commands!');
+  } catch (error) {
+    console.error('Error registering slash commands:', error);
+  }
   
   // Status rotation - only start after bot is ready
   setInterval(() => {
@@ -86,19 +107,52 @@ client.on('guildMemberAdd', async (member) => {
 cron.schedule('30 16 * * *', async () => {
   try {
     const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
+    
+    // Get top 5 coin holders
     const topCoins = await prisma.user.findMany({
       select: { username: true, coins: true, discordId: true },
       orderBy: { coins: 'desc' },
       take: 5
     });
 
-    const embed = new EmbedBuilder()
+    // Get top 5 auction winners (count of won auctions)
+    const topWinners = await prisma.user.findMany({
+      select: { 
+        username: true, 
+        discordId: true,
+        _count: {
+          select: { wonAuctions: true }
+        }
+      },
+      where: {
+        wonAuctions: {
+          some: {}
+        }
+      },
+      orderBy: {
+        wonAuctions: {
+          _count: 'desc'
+        }
+      },
+      take: 5
+    });
+
+    // Create embed for coin leaderboard
+    const coinsEmbed = new EmbedBuilder()
       .setTitle('🏆 Daily Top 5 Coin Holders 🏆')
       .setDescription(topCoins.map((u, i) => `${i+1}. **${u.username || `User ${u.discordId}`}** - ${u.coins} coins`).join('\n') || 'No data')
       .setColor('#8b5cf6')
       .setTimestamp();
 
-    await channel.send({ embeds: [embed] });
+    // Create embed for auction winners leaderboard
+    const winnersEmbed = new EmbedBuilder()
+      .setTitle('🎉 Daily Top 5 Auction Winners 🎉')
+      .setDescription(topWinners.map((u, i) => `${i+1}. **${u.username || `User ${u.discordId}`}** - ${u._count.wonAuctions} auctions won`).join('\n') || 'No data')
+      .setColor('#10b981')
+      .setTimestamp();
+
+    // Send both embeds
+    await channel.send({ embeds: [coinsEmbed, winnersEmbed] });
   } catch (err) {
     console.error('Leaderboard cron error:', err);
   }
