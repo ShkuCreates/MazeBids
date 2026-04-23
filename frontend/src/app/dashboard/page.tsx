@@ -127,27 +127,25 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [targetStats]);
 
-  if (loading) return (
-    <div className="py-20">
-      <div className="max-w-7xl mx-auto px-4 space-y-8">
-        <Skeleton className="h-32 w-full" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4"><CardSkeleton /></div>
-          <div className="lg:col-span-8"><CardSkeleton /></div>
-        </div>
-      </div>
-    </div>
-  );
-  
-  if (!user) return (
-    <div className="py-20 text-center space-y-6">
-      <h1 className="text-4xl font-black">Please login to view your dashboard</h1>
-      <Link href="/" className="inline-block px-8 py-4 bg-purple-600 rounded-2xl font-bold">Back Home</Link>
-    </div>
-  );
-
   return (
     <div className="space-y-10 py-8">
+      {loading ? (
+        <div className="py-20">
+          <div className="max-w-7xl mx-auto px-4 space-y-8">
+            <Skeleton className="h-32 w-full" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-4"><CardSkeleton /></div>
+              <div className="lg:col-span-8"><CardSkeleton /></div>
+            </div>
+          </div>
+        </div>
+      ) : !user ? (
+        <div className="py-20 text-center space-y-6">
+          <h1 className="text-4xl font-black">Please login to view your dashboard</h1>
+          <Link href="/" className="inline-block px-8 py-4 bg-purple-600 rounded-2xl font-bold">Back Home</Link>
+        </div>
+      ) : (
+        <>
       {/* Ad Banner */}
       <AdBanner placement="DASHBOARD" />
 
@@ -261,6 +259,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
