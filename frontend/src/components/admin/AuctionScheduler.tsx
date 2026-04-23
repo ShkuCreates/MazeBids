@@ -58,7 +58,7 @@ export default function AuctionScheduler() {
   };
 
   const handleCancelSchedule = (auctionId: string) => {
-    setScheduledAuctions(auctions.map(a => 
+    setScheduledAuctions(scheduledAuctions.map(a => 
       a.id === auctionId ? { ...a, status: "cancelled" as const } : a
     ));
   };
@@ -68,7 +68,7 @@ export default function AuctionScheduler() {
   };
 
   const handleStartNow = (auctionId: string) => {
-    setScheduledAuctions(auctions.map(a => 
+    setScheduledAuctions(scheduledAuctions.map(a => 
       a.id === auctionId ? { ...a, status: "running" as const } : a
     ));
   };
