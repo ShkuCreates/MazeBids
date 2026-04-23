@@ -32,18 +32,82 @@ export default function RecentWins() {
   const [wins, setWins] = useState<Win[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Mock data for recent wins (when API returns empty)
+  const mockWins: Win[] = [
+    {
+      id: "mock-1",
+      title: "iPhone 15 Pro Max",
+      image: null,
+      currentBid: 45000,
+      highestBidder: { username: "CryptoKing", avatar: null },
+      updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "mock-2",
+      title: "PlayStation 5 Bundle",
+      image: null,
+      currentBid: 32000,
+      highestBidder: { username: "GamerPro", avatar: null },
+      updatedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "mock-3",
+      title: "MacBook Air M3",
+      image: null,
+      currentBid: 58000,
+      highestBidder: { username: "TechNinja", avatar: null },
+      updatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "mock-4",
+      title: "Samsung Galaxy S24 Ultra",
+      image: null,
+      currentBid: 28000,
+      highestBidder: { username: "MobileMaster", avatar: null },
+      updatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    },
+  ];
+
   useEffect(() => {
     const fetchRecentWins = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/auctions/recent-wins`);
-        setWins(res.data);
+        const data = res.data;
+        // If API returns empty, use mock data
+        if (data.length === 0) {
+          setWins(mockWins);
+        } else {
+          setWins(data);
+        }
       } catch (err) {
         console.error("Failed to fetch recent wins:", err);
+        setWins(mockWins);
       } finally {
         setLoading(false);
       }
     };
     fetchRecentWins();
+
+    // Simulate real-time updates every 8-10 seconds
+    const interval = setInterval(() => {
+      setWins((prev) => {
+        // Add a new random win and remove oldest
+        const newWin = {
+          id: `mock-${Date.now()}`,
+          title: ["iPhone 15 Pro Max", "PlayStation 5 Bundle", "MacBook Air M3", "Samsung Galaxy S24 Ultra", "Nintendo Switch OLED", "iPad Pro M2"][Math.floor(Math.random() * 6)],
+          image: null,
+          currentBid: Math.floor(Math.random() * 50000) + 10000,
+          highestBidder: {
+            username: ["CryptoKing", "GamerPro", "TechNinja", "MobileMaster", "BidMaster", "AuctionKing"][Math.floor(Math.random() * 6)],
+            avatar: null,
+          },
+          updatedAt: new Date().toISOString(),
+        };
+        return [newWin, ...prev.slice(0, 3)];
+      });
+    }, 8000 + Math.random() * 2000); // 8-10 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

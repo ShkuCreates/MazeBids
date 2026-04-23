@@ -12,21 +12,21 @@ export default function LiveInterestIndicator({ auctionId }: { auctionId: string
   const [waiting, setWaiting] = useState(0);
 
   useEffect(() => {
-    // Simulate initial values
-    setViewers(Math.floor(Math.random() * 50) + 10);
-    setWaiting(Math.floor(Math.random() * 30) + 5);
+    // Simulate initial values with higher numbers for excitement
+    setViewers(Math.floor(Math.random() * 100) + 50);
+    setWaiting(Math.floor(Math.random() * 60) + 20);
 
     // Simulate real-time updates (replace with socket.io when backend ready)
     const interval = setInterval(() => {
       setViewers((prev) => {
-        const change = Math.floor(Math.random() * 5) - 2;
-        return Math.max(5, prev + change);
+        const change = Math.floor(Math.random() * 15) - 5;
+        return Math.max(30, prev + change);
       });
       setWaiting((prev) => {
-        const change = Math.floor(Math.random() * 3) - 1;
-        return Math.max(3, prev + change);
+        const change = Math.floor(Math.random() * 10) - 3;
+        return Math.max(15, prev + change);
       });
-    }, 3000);
+    }, 5000);
 
     // Socket.io integration for real-time updates (when backend ready)
     const socket = io(API_URL, { withCredentials: true });

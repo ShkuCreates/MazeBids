@@ -81,9 +81,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ═══ UPCOMING AUCTIONS ═══ */}
-      <UpcomingAuctionsPanel />
-
       {/* ═══ EARN WHILE YOU WAIT ═══ */}
       <EarnWhileYouWait />
 
