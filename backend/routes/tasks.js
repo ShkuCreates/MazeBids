@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { createNotification } = require('../lib/notificationHelper');
+const { checkAndResetUserDaily, addDailyEarnings } = require('../lib/dailyReset');
 
 // Get available tasks
 router.get('/', async (req, res) => {
@@ -27,22 +28,23 @@ router.post('/complete', async (req, res) => {
 
     console.log('Task completion:', { taskId, score, actualReward, taskReward: task.reward });
 
-    // 1. Anti-Cheat: Daily Coin Limit
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    // LAZY RESET: Check and reset daily fields if needed
+    await checkAndResetUserDaily(req.user.id);
 
-    const dailyTransactions = await prisma.transaction.aggregate({
-      where: {
-        userId: req.user.id,
-        type: 'EARN',
-        timestamp: { gte: startOfDay }
-      },
-      _sum: { amount: true }
+    // 1. Anti-Cheat: Daily Coin Limit (using coinsEarnedToday field)
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { coinsEarnedToday: true }
     });
 
-    const dailyTotal = dailyTransactions._sum.amount || 0;
+    const dailyTotal = user?.coinsEarnedToday || 0;
     if (dailyTotal + actualReward > 5000) { // Max 5000 coins per day
-      return res.status(429).json({ message: 'Daily earning limit reached' });
+      return res.status(429).json({
+        message: 'Daily earning limit reached',
+        current: dailyTotal,
+        limit: 5000,
+        remaining: Math.max(0, 5000 - dailyTotal)
+      });
     }
 
     // 2. Anti-Cheat: Cooldown Check
@@ -67,15 +69,17 @@ router.post('/complete', async (req, res) => {
       }
     }
 
+    // 4. Update daily earnings and complete task
     await prisma.$transaction([
       prisma.userTask.create({
         data: { userId: req.user.id, taskId }
       }),
       prisma.user.update({
         where: { id: req.user.id },
-        data: { 
+        data: {
           coins: { increment: actualReward },
-          totalEarned: { increment: actualReward }
+          totalEarned: { increment: actualReward },
+          coinsEarnedToday: { increment: actualReward } // Track daily earnings
         }
       }),
       prisma.transaction.create({
@@ -91,8 +95,14 @@ router.post('/complete', async (req, res) => {
     // Notify user of coins earned
     await createNotification(req.user.id, 'COINS_EARNED', `+${actualReward} coins earned from: ${task.title}`, { amount: actualReward });
 
-    res.json({ message: 'Task completed', reward: actualReward });
+    res.json({
+      message: 'Task completed',
+      reward: actualReward,
+      dailyEarned: dailyTotal + actualReward,
+      dailyLimit: 5000
+    });
   } catch (err) {
+    console.error('Task completion error:', err);
     res.status(500).json({ message: 'Failed to complete task' });
   }
 });

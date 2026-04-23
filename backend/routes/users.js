@@ -3,36 +3,44 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const { sendNotificationStatusUpdate } = require('../lib/discordBotSingleton');
 const { createNotification } = require('../lib/notificationHelper');
+const { checkAndResetUserDaily, getUserDailyStats, manualDailyReset } = require('../lib/dailyReset');
 
 // Simple in-memory cache for frequently accessed data
 const profileCache = new Map();
 const CACHE_TTL = 30000; // 30 seconds
 
-// Get user profile (optimized with caching)
+// Get user profile (optimized with caching + lazy daily reset check)
 router.get('/profile', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-  
+
   const cacheKey = `profile-${req.user.id}`;
   const cached = profileCache.get(cacheKey);
-  
+
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return res.json(cached.data);
   }
 
   try {
+    // LAZY RESET: Check and reset daily fields if needed
+    await checkAndResetUserDaily(req.user.id);
+
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { 
-        id: true, 
-        username: true, 
-        email: true, 
-        avatar: true, 
-        totalEarned: true, 
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        avatar: true,
+        totalEarned: true,
         totalSpent: true,
         notifications: true,
         createdAt: true,
         discordId: true,
-        coins: true
+        coins: true,
+        // Daily tracking fields (auto-reset if new day)
+        coinsEarnedToday: true,
+        dailyCheckInClaimed: true,
+        lastDailyReset: true
       }
     });
 
@@ -52,10 +60,26 @@ router.get('/profile', async (req, res) => {
       take: 10
     });
 
-    const profileData = { ...user, wonAuctions, auctionsWonCount: wonAuctions.length };
-    
+    // Calculate daily stats
+    const dailyEarnLimit = 5000;
+    const dailyStats = {
+      coinsEarnedToday: user.coinsEarnedToday,
+      dailyCheckInClaimed: user.dailyCheckInClaimed,
+      dailyEarnLimit,
+      canClaimCheckIn: !user.dailyCheckInClaimed,
+      canEarnMore: user.coinsEarnedToday < dailyEarnLimit,
+      remainingDailyAllowance: Math.max(0, dailyEarnLimit - user.coinsEarnedToday)
+    };
+
+    const profileData = {
+      ...user,
+      wonAuctions,
+      auctionsWonCount: wonAuctions.length,
+      dailyStats
+    };
+
     profileCache.set(cacheKey, { data: profileData, timestamp: Date.now() });
-    
+
     res.json(profileData);
   } catch (err) {
     console.error('Profile fetch error:', err);
@@ -226,12 +250,15 @@ router.post('/redeem-code', async (req, res) => {
   }
 });
 
-// Get user transactions (paginated)
+// Get user transactions (paginated) with lazy daily reset check
 router.get('/transactions', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
   try {
     const limit = parseInt(req.query.limit) || 10;
     const offset = parseInt(req.query.offset) || 0;
+
+    // LAZY RESET: Check and reset daily fields if needed
+    await checkAndResetUserDaily(req.user.id);
 
     const transactions = await prisma.transaction.findMany({
       where: { userId: req.user.id },
@@ -240,22 +267,20 @@ router.get('/transactions', async (req, res) => {
       skip: offset,
     });
 
-    // Calculate daily earned for progress bar
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const dailyEarned = await prisma.transaction.aggregate({
-      where: {
-        userId: req.user.id,
-        type: 'EARN',
-        timestamp: { gte: startOfDay },
-      },
-      _sum: { amount: true },
+    // Get current daily stats (already reset if needed)
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        coinsEarnedToday: true,
+        dailyCheckInClaimed: true
+      }
     });
 
     res.json({
       transactions,
-      dailyEarned: dailyEarned._sum.amount || 0,
+      dailyEarned: user?.coinsEarnedToday || 0,
       dailyLimit: 5000,
+      dailyCheckInClaimed: user?.dailyCheckInClaimed || false
     });
   } catch (err) {
     console.error('Transactions fetch error:', err);
@@ -299,6 +324,77 @@ router.get('/site-stats', async (req, res) => {
   } catch (err) {
     console.error('Site stats error:', err);
     res.status(500).json({ message: 'Failed to fetch stats' });
+  }
+});
+
+// Get user's daily stats (with auto-reset if needed)
+router.get('/daily-stats', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    const dailyStats = await getUserDailyStats(req.user.id);
+
+    if (!dailyStats) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(dailyStats);
+  } catch (err) {
+    console.error('Daily stats fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch daily stats' });
+  }
+});
+
+// Manual daily reset trigger (ADMIN ONLY - for testing/debugging)
+router.post('/admin/trigger-daily-reset', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  if (req.user.role !== 'ADMIN') return res.status(403).json({ message: 'Admin access required' });
+
+  try {
+    console.log(`[Admin] Manual daily reset triggered by ${req.user.username}`);
+    const result = await manualDailyReset();
+
+    res.json({
+      message: 'Daily reset completed successfully',
+      result
+    });
+  } catch (err) {
+    console.error('Manual daily reset error:', err);
+    res.status(500).json({ message: 'Failed to trigger daily reset' });
+  }
+});
+
+// Get daily reset status (ADMIN ONLY)
+router.get('/admin/daily-reset-status', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  if (req.user.role !== 'ADMIN') return res.status(403).json({ message: 'Admin access required' });
+
+  try {
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+    // Count users that need reset (last reset was before today)
+    const usersNeedingReset = await prisma.user.count({
+      where: {
+        lastDailyReset: {
+          lt: new Date(todayUTC)
+        }
+      }
+    });
+
+    const totalUsers = await prisma.user.count();
+
+    res.json({
+      currentTimeUTC: now.toISOString(),
+      todayUTC: new Date(todayUTC).toISOString(),
+      totalUsers,
+      usersNeedingReset,
+      usersUpToDate: totalUsers - usersNeedingReset,
+      nextResetInMs: new Date(todayUTC + 24 * 60 * 60 * 1000).getTime() - now.getTime()
+    });
+  } catch (err) {
+    console.error('Daily reset status error:', err);
+    res.status(500).json({ message: 'Failed to fetch reset status' });
   }
 });
 

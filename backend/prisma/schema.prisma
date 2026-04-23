@@ -8,36 +8,42 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  discordId     String         @unique
-  username      String
-  avatar        String?
-  coins         Int            @default(0)
-  totalEarned   Int            @default(0)
-  totalSpent    Int            @default(0)
-  role          String         @default("USER") // USER, ADMIN
-  notifications Boolean        @default(false) // Discord DM notifications toggle
-  referralCode  String?        @unique
-  referredById  String?
-  referredBy    User?          @relation("Referrals", fields: [referredById], references: [id])
-  referrals     User[]         @relation("Referrals")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  bids          Bid[]
-  transactions  Transaction[]
-  wonAuctions   Auction[]      @relation("Winner")
-  completedTasks UserTask[]
-  redemptions   Redemption[]
-  userNotifications Notification[]
+  id                  String         @id @default(cuid())
+  discordId           String         @unique
+  username            String
+  avatar              String?
+  coins               Int            @default(0)
+  totalEarned         Int            @default(0)
+  totalSpent          Int            @default(0)
+  role                String         @default("USER") // USER, ADMIN
+  notifications       Boolean        @default(false) // Discord DM notifications toggle
+  referralCode        String?        @unique
+  referredById        String?
+  referredBy          User?          @relation("Referrals", fields: [referredById], references: [id])
+  referrals           User[]         @relation("Referrals")
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  bids                Bid[]
+  transactions        Transaction[]
+  wonAuctions         Auction[]      @relation("Winner")
+  completedTasks      UserTask[]
+  redemptions         Redemption[]
+  userNotifications   Notification[]
   auctionSubscriptions AuctionSubscription[]
-  dailyReward   DailyReward?
-  chatRewards   ChatReward[]
+  dailyReward         DailyReward?
+  chatRewards         ChatReward[]
+
+  // Daily tracking fields (reset every 24 hours)
+  coinsEarnedToday    Int            @default(0)
+  dailyCheckInClaimed Boolean        @default(false)
+  lastDailyReset      DateTime       @default(now())
 
   @@index([notifications])
   @@index([role])
   @@index([coins])
   @@index([totalEarned])
   @@index([createdAt])
+  @@index([lastDailyReset])
 }
 
 model BonusCode {

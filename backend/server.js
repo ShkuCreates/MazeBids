@@ -59,6 +59,29 @@ app.use(passport.session());
 // Initialize Discord bot (singleton)
 require('./lib/discordBotSingleton');
 
+// Initialize daily reset cron jobs
+const { initCronJobs, stopCronJobs } = require('./lib/cronJobs');
+initCronJobs();
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[Server] SIGTERM received, shutting down gracefully...');
+  stopCronJobs();
+  server.close(() => {
+    console.log('[Server] Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('[Server] SIGINT received, shutting down gracefully...');
+  stopCronJobs();
+  server.close(() => {
+    console.log('[Server] Server closed');
+    process.exit(0);
+  });
+});
+
 // Start automator after 30 second delay
 // Temporarily disabled while circuit breaker resets
 // setTimeout(() => {
