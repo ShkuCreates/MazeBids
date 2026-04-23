@@ -20,12 +20,15 @@ export default function AdminPage() {
     }
   }, [user, loading, router]);
 
-  if (loading) return <div className="p-8">Loading...</div>;
-  if (!user || user.role !== "ADMIN") return null;
-
   return (
     <Suspense fallback={<div className="p-8 space-y-4"><CardSkeleton /><CardSkeleton /><CardSkeleton /></div>}>
-      <AdminDashboard />
+      {loading ? (
+        <div className="p-8">Loading...</div>
+      ) : !user || user.role !== "ADMIN" ? (
+        null
+      ) : (
+        <AdminDashboard />
+      )}
     </Suspense>
   );
 }

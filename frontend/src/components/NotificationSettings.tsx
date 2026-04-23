@@ -21,17 +21,21 @@ export default function NotificationSettings({ initialSettings }: NotificationSe
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("notificationSettings");
-    if (saved) {
-      setSettings(JSON.parse(saved));
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem("notificationSettings");
+      if (saved) {
+        setSettings(JSON.parse(saved));
+      }
     }
   }, []);
 
   const handleToggle = async (key: keyof typeof settings) => {
     const newSettings = { ...settings, [key]: !settings[key] };
     setSettings(newSettings);
-    localStorage.setItem("notificationSettings", JSON.stringify(newSettings));
-    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("notificationSettings", JSON.stringify(newSettings));
+    }
+
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));

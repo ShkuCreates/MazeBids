@@ -31,8 +31,13 @@ const formatTimeAgo = (dateStr: string): string => {
 export default function RecentWins() {
   const [wins, setWins] = useState<Win[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
-  // Mock data for recent wins (when API returns empty)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Mock data for recent wins (when API returns empty) - use static timestamps
   const mockWins: Win[] = [
     {
       id: "mock-1",
@@ -40,7 +45,7 @@ export default function RecentWins() {
       image: null,
       currentBid: 45000,
       highestBidder: { username: "CryptoKing", avatar: null },
-      updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      updatedAt: "2024-01-15T10:30:00.000Z",
     },
     {
       id: "mock-2",
@@ -48,7 +53,7 @@ export default function RecentWins() {
       image: null,
       currentBid: 32000,
       highestBidder: { username: "GamerPro", avatar: null },
-      updatedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+      updatedAt: "2024-01-15T10:05:00.000Z",
     },
     {
       id: "mock-3",
@@ -56,7 +61,7 @@ export default function RecentWins() {
       image: null,
       currentBid: 58000,
       highestBidder: { username: "TechNinja", avatar: null },
-      updatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      updatedAt: "2024-01-14T09:45:00.000Z",
     },
     {
       id: "mock-4",
@@ -64,11 +69,13 @@ export default function RecentWins() {
       image: null,
       currentBid: 28000,
       highestBidder: { username: "MobileMaster", avatar: null },
-      updatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      updatedAt: "2024-01-14T09:00:00.000Z",
     },
   ];
 
   useEffect(() => {
+    if (!mounted) return;
+
     const fetchRecentWins = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/auctions/recent-wins`);
@@ -88,7 +95,7 @@ export default function RecentWins() {
     };
     fetchRecentWins();
 
-    // Simulate real-time updates every 8-10 seconds
+    // Simulate real-time updates every 8-10 seconds (only on client)
     const interval = setInterval(() => {
       setWins((prev) => {
         // Add a new random win and remove oldest
@@ -108,7 +115,7 @@ export default function RecentWins() {
     }, 8000 + Math.random() * 2000); // 8-10 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   if (loading) {
     return (
