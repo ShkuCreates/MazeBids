@@ -7,6 +7,8 @@ const { sendNotificationStatusUpdate } = require('../lib/discordBotSingleton');
 router.get('/profile', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
   try {
+    console.log('Fetching profile for user ID:', req.user.id);
+    
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { 
@@ -18,19 +20,28 @@ router.get('/profile', async (req, res) => {
         totalSpent: true,
         notifications: true,
         createdAt: true,
-        discordId: true
+        discordId: true,
+        coins: true
       }
     });
 
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    console.log('User data found:', { coins: user.coins, totalEarned: user.totalEarned, totalSpent: user.totalSpent });
 
     // Count won auctions
     const auctionsWonCount = await prisma.auction.count({
       where: { highestBidderId: user.id }
     });
 
-    res.json({ ...user, auctionsWonCount });
+    console.log('Auctions won count:', auctionsWonCount);
+
+    const profileData = { ...user, auctionsWonCount };
+    console.log('Final profile data:', profileData);
+
+    res.json(profileData);
   } catch (err) {
+    console.error('Profile fetch error:', err);
     res.status(500).json({ message: 'Failed to fetch profile' });
   }
 });
@@ -184,6 +195,8 @@ router.post('/redeem-code', async (req, res) => {
 // Site stats endpoint
 router.get('/site-stats', async (req, res) => {
   try {
+    console.log('Fetching site stats...');
+    
     const userCount = await prisma.user.count();
     const auctionCount = await prisma.auction.count();
     const stats = await prisma.user.aggregate({
@@ -193,13 +206,17 @@ router.get('/site-stats', async (req, res) => {
       }
     });
 
-    res.json({
+    const siteStats = {
       registeredUsers: userCount,
       auctionsHeld: auctionCount,
       totalEarned: stats._sum.totalEarned || 0,
       totalSpent: stats._sum.totalSpent || 0
-    });
+    };
+
+    console.log('Site stats calculated:', siteStats);
+    res.json(siteStats);
   } catch (err) {
+    console.error('Site stats error:', err);
     res.status(500).json({ message: 'Failed to fetch stats' });
   }
 });

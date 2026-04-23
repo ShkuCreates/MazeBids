@@ -118,6 +118,15 @@ client.on('ready', async () => {
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     
+    // First, clear all existing commands
+    console.log('Clearing existing slash commands...');
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, MAIN_GUILD_ID),
+      { body: [] }
+    );
+    
+    // Then register the new commands
+    console.log('Registering new slash commands...');
     await rest.put(
       Routes.applicationGuildCommands(client.user.id, MAIN_GUILD_ID),
       { body: commands }

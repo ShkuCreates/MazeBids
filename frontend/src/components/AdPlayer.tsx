@@ -16,7 +16,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [isFinished, setIsFinished] = useState(false);
-  const { refreshUser } = useAuth();
+  const { user, refreshUser, updateCoins } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,13 +34,27 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
 
   const claimReward = async () => {
     try {
-      await axios.post(`${API_URL}/api/tasks/complete`, {
-        taskId
+      console.log('Claiming ad reward for task:', taskId, 'reward:', reward);
+      
+      const response = await axios.post(`${API_URL}/api/tasks/complete`, {
+        taskId,
+        score: 1,
+        reward
       }, { withCredentials: true });
-      refreshUser();
+      
+      console.log('Ad reward response:', response.data);
+      
+      // Update coins in real-time
+      if (updateCoins && user) {
+        updateCoins(user.coins + reward);
+      }
+      
+      // Also refresh to ensure data consistency
+      await refreshUser();
       onComplete();
     } catch (error) {
       console.error('Failed to claim ad reward', error);
+      alert('Failed to claim reward. Please try again.');
     }
   };
 

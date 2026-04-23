@@ -17,7 +17,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
-  const { refreshUser } = useAuth();
+  const { user, refreshUser, updateCoins } = useAuth();
 
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
@@ -28,11 +28,18 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
         score,
         reward: calculatedReward
       }, { withCredentials: true });
+      
+      // Update coins in real-time
+      if (updateCoins && user) {
+        updateCoins(user.coins + calculatedReward);
+      }
+      
+      // Also refresh to ensure data consistency
       refreshUser();
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  }, [taskId, score, refreshUser]);
+  }, [taskId, score, refreshUser, updateCoins, user]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

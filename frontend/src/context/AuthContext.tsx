@@ -22,6 +22,7 @@ interface AuthContextType {
   login: () => void;
   logout: () => void;
   refreshUser: () => Promise<boolean>;
+  updateCoins: (newCoins: number) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,8 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateCoins = (newCoins: number) => {
+    if (user) {
+      setUser({ ...user, coins: newCoins });
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, updateCoins }}>
       {children}
     </AuthContext.Provider>
   );

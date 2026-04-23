@@ -31,7 +31,7 @@ export default function AdManager() {
     contentUrl: "",
     targetUrl: "",
     placement: "DASHBOARD",
-    duration: "30",
+    duration: "24", // Default to 24 hours
     expiresAt: "",
     reward: "0",
   });
@@ -53,12 +53,19 @@ export default function AdManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting ad data:', formData);
+    
     try {
+      let response;
       if (editingAd) {
-        await axios.put(`${API_URL}/api/ads/${editingAd.id}`, formData, { withCredentials: true });
+        console.log('Updating ad:', editingAd.id);
+        response = await axios.put(`${API_URL}/api/ads/${editingAd.id}`, formData, { withCredentials: true });
       } else {
-        await axios.post(`${API_URL}/api/ads`, formData, { withCredentials: true });
+        console.log('Creating new ad');
+        response = await axios.post(`${API_URL}/api/ads`, formData, { withCredentials: true });
       }
+      
+      console.log('Ad saved successfully:', response.data);
       setShowForm(false);
       setEditingAd(null);
       setFormData({
@@ -67,13 +74,15 @@ export default function AdManager() {
         contentUrl: "",
         targetUrl: "",
         placement: "DASHBOARD",
-        duration: "30",
+        duration: "24",
         expiresAt: "",
         reward: "0",
       });
       fetchAds();
-    } catch (err) {
-      alert("Failed to save ad");
+    } catch (err: any) {
+      console.error('Failed to save ad:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      alert(`Failed to save ad: ${errorMessage}`);
     }
   };
 
@@ -95,7 +104,7 @@ export default function AdManager() {
       contentUrl: ad.contentUrl,
       targetUrl: ad.targetUrl || "",
       placement: ad.placement,
-      duration: ad.duration?.toString() || "30",
+      duration: ad.duration?.toString() || "24",
       reward: ad.reward?.toString() || "0",
       expiresAt: ad.expiresAt ? new Date(ad.expiresAt).toISOString().split('T')[0] : "",
     });
@@ -168,12 +177,27 @@ export default function AdManager() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Expiry Date (Optional)</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                Campaign Duration: {parseInt(formData.duration)} hours
+              </label>
               <input 
-                type="date"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
-                value={formData.expiresAt} onChange={e => setFormData({...formData, expiresAt: e.target.value})}
+                type="range"
+                min="1"
+                max="48"
+                value={formData.duration}
+                onChange={e => setFormData({...formData, duration: e.target.value})}
+                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                style={{
+                  background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(parseInt(formData.duration) / 48) * 100}%, rgba(255,255,255,0.1) ${(parseInt(formData.duration) / 48) * 100}%, rgba(255,255,255,0.1) 100%)`
+                }}
               />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>1hr</span>
+                <span>12hr</span>
+                <span>24hr</span>
+                <span>36hr</span>
+                <span>48hr</span>
+              </div>
             </div>
 
             <div className="space-y-2">
