@@ -13,7 +13,7 @@ passport.deserializeUser(async (id, done) => {
   try {
     console.log('[PASSPORT] Deserializing user:', id);
     // Use raw query to avoid Prisma schema mismatch during migration
-    const users = await prisma.$queryRaw`SELECT id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, "createdAt", "updatedAt", "referralCode", "referredById" FROM "User" WHERE id = ${id}`;
+    const users = await prisma.$queryRaw`SELECT id, "discordId", username, avatar, coins, "totalEarned", "totalSpent", role, notifications, "createdAt", "updatedAt", "referralCode", "referredById" FROM "User" WHERE id = ${id}`;
     const user = users[0] || null;
     console.log('[PASSPORT] User found:', !!user);
     done(null, user);
@@ -34,7 +34,7 @@ passport.use(new DiscordStrategy({
       console.log('[DISCORD AUTH] User profile received:', profile.id, profile.username);
       
       // Use raw query to find user (avoids schema mismatch)
-      const existingUsers = await prisma.$queryRaw`SELECT id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, "referralCode" FROM "User" WHERE "discordId" = ${profile.id}`;
+      const existingUsers = await prisma.$queryRaw`SELECT id, "discordId", username, avatar, coins, "totalEarned", "totalSpent", role, notifications, "referralCode" FROM "User" WHERE "discordId" = ${profile.id}`;
       let user = existingUsers[0] || null;
       
       console.log('[DISCORD AUTH] Existing user found:', !!user);
@@ -50,7 +50,7 @@ passport.use(new DiscordStrategy({
         const newUsers = await prisma.$queryRaw`
           INSERT INTO "User" (id, "discordId", username, avatar, coins, "totalEarned", "totalSpent", role, notifications, "referralCode", "referredById", "createdAt", "updatedAt")
           VALUES (gen_random_uuid(), ${profile.id}, ${profile.username}, ${avatar}, 100, 100, 0, ${role}, false, ${referralCode}, null, NOW(), NOW())
-          RETURNING id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, referralCode
+          RETURNING id, "discordId", username, avatar, coins, "totalEarned", "totalSpent", role, notifications, "referralCode"
         `;
         
         user = newUsers[0];
@@ -84,7 +84,7 @@ passport.use(new DiscordStrategy({
         `;
         
         // Refresh user data
-        const updatedUsers = await prisma.$queryRaw`SELECT id, discordId, username, avatar, coins, totalEarned, totalSpent, role, notifications, referralCode FROM "User" WHERE id = ${user.id}`;
+        const updatedUsers = await prisma.$queryRaw`SELECT id, "discordId", username, avatar, coins, "totalEarned", "totalSpent", role, notifications, "referralCode" FROM "User" WHERE id = ${user.id}`;
         user = updatedUsers[0];
       }
 
