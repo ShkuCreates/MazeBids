@@ -82,8 +82,8 @@ if (cluster.isMaster) {
   app.use('/api/auth', require('./routes/auth'));
   app.use('/api/auctions', require('./routes/auctions'));
   app.use('/api/users', require('./routes/users'));
-app.use('/api/tasks', require('./routes/tasks') || ((req, res) => res.status(404).send('Route not found')));
-app.use('/api/ads', require('./routes/ads') || ((req, res) => res.status(404).send('Route not found')));
+  app.use('/api/tasks', require('./routes/tasks'));
+  app.use('/api/ads', require('./routes/ads'));
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Worker ${process.pid} listening on ${PORT}`);
