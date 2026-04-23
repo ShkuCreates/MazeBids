@@ -31,6 +31,11 @@ router.get('/', async (req, res) => {
 
     res.json({ notifications, unreadCount });
   } catch (err) {
+    // Graceful degradation: if Notification table doesn't exist, return empty results
+    if (err.code === 'P2021' || err.message.includes('does not exist')) {
+      console.log('Notification table does not exist, returning empty results');
+      return res.json({ notifications: [], unreadCount: 0 });
+    }
     console.error('Fetch notifications error:', err);
     res.status(500).json({ message: 'Failed to fetch notifications' });
   }

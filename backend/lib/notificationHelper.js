@@ -39,7 +39,21 @@ async function createNotification(userId, type, message, options = {}) {
 
     return notification;
   } catch (err) {
-    console.error('Failed to create notification:', err);
+    // Graceful degradation: if Notification table doesn't exist, still push via socket
+    console.error('Failed to create notification (table may not exist):', err.message);
+    if (io) {
+      const notification = {
+        id: `temp-${Date.now()}`,
+        userId,
+        type,
+        message,
+        amount: options.amount || null,
+        relatedId: options.relatedId || null,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      io.to(`user:${userId}`).emit('notification', notification);
+    }
     return null;
   }
 }
