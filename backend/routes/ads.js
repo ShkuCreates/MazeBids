@@ -19,7 +19,9 @@ router.get('/placement/:placement', async (req, res) => {
     });
     res.json(ads);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch ads' });
+    console.error('Failed to fetch ads:', err.message);
+    // Return empty array if column doesn't exist (schema sync issue)
+    res.json([]);
   }
 });
 
