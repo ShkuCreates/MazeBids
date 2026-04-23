@@ -8,6 +8,7 @@ import {
   Globe,
   Trophy,
   Video,
+  Coins,
 } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
@@ -24,6 +25,12 @@ export default function Dashboard() {
   const { user, loading, refreshUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [siteStats, setSiteStats] = useState<any>(null);
+  const [animatedStats, setAnimatedStats] = useState({
+    totalUsers: 0,
+    auctionsCompleted: 0,
+    coinsSpent: 0,
+    activeUsers: 0,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +39,57 @@ export default function Dashboard() {
           axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }),
           axios.get(`${API_URL}/api/users/site-stats`),
         ]);
-        console.log('Dashboard data updated:', { profile: profileRes.data, siteStats: statsRes.data });
+        setProfile(profileRes.data);
+        setSiteStats(statsRes.data);
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Counting animation for platform metrics
+  useEffect(() => {
+    const targetStats = {
+      totalUsers: 12842,
+      auctionsCompleted: 3291,
+      coinsSpent: 2400000,
+      activeUsers: 1203,
+    };
+
+    const duration = 2000;
+    const steps = 60;
+    const stepDuration = duration / steps;
+
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+
+      setAnimatedStats({
+        totalUsers: Math.floor(targetStats.totalUsers * easeOut),
+        auctionsCompleted: Math.floor(targetStats.auctionsCompleted * easeOut),
+        coinsSpent: Math.floor(targetStats.coinsSpent * easeOut),
+        activeUsers: Math.floor(targetStats.activeUsers * easeOut),
+      });
+
+      if (step >= steps) {
+        clearInterval(interval);
+        setAnimatedStats(targetStats);
+      }
+    }, stepDuration);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, statsRes] = await Promise.all([
+          axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }),
+          axios.get(`${API_URL}/api/users/site-stats`),
+        ]);
 
         if (profile && profileRes.data.totalSpent > profile.totalSpent) {
           console.log('User won an auction! Updating stats...');
@@ -123,9 +180,17 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))
+            ) : loading ? (
+              <div className="p-6 text-center bg-white/[0.03] border border-white/5 rounded-2xl text-gray-600 text-xs font-bold animate-pulse">
+                Loading...
+              </div>
             ) : (
-              <div className="p-6 text-center bg-white/[0.03] border border-white/5 rounded-2xl text-gray-600 text-xs font-bold">
-                No auctions won yet
+              <div className="p-4 text-center bg-white/[0.03] border border-white/5 rounded-2xl">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-2">
+                  <Trophy className="w-5 h-5 text-purple-400 opacity-40" />
+                </div>
+                <p className="text-gray-500 text-xs font-medium">No auctions won yet</p>
+                <p className="text-gray-600 text-[10px] mt-1">Start bidding to win!</p>
               </div>
             )}
           </div>
@@ -133,34 +198,38 @@ export default function Dashboard() {
       </div>
 
       {/* ═══ TIER 3 — LOW PRIORITY ═══
-          Global Metrics — muted, small, no glow */}
+          Global Metrics — with counting animation */}
       <div className="pt-4">
         <div className="flex items-center justify-between px-1 mb-4">
           <div className="flex items-center gap-2">
-            <Globe className="text-gray-600 w-4 h-4" />
-            <h2 className="text-xs font-bold text-gray-600 uppercase tracking-widest">Platform Metrics</h2>
+            <Globe className="text-purple-400 w-4 h-4" />
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Platform Metrics</h2>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <Users className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
-            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Users</p>
-            <p className="text-base font-bold text-gray-400">{siteStats?.registeredUsers?.toLocaleString() || "0"}</p>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/5 border border-purple-500/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-transparent animate-pulse" />
+            <Users className="w-4 h-4 text-purple-400 mb-2 relative z-10" />
+            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 relative z-10">Total Users</p>
+            <p className="text-lg font-black text-white relative z-10">{animatedStats.totalUsers.toLocaleString()}</p>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <TrendingUp className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
-            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Earned</p>
-            <p className="text-base font-bold text-gray-400">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/5 border border-blue-500/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-transparent animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <Gavel className="w-4 h-4 text-blue-400 mb-2 relative z-10" />
+            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 relative z-10">Auctions Completed</p>
+            <p className="text-lg font-black text-white relative z-10">{animatedStats.auctionsCompleted.toLocaleString()}</p>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <Gavel className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
-            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Spent</p>
-            <p className="text-base font-bold text-gray-400">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-transparent to-transparent animate-pulse" style={{ animationDelay: '1s' }} />
+            <Coins className="w-4 h-4 text-yellow-400 mb-2 relative z-10" />
+            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 relative z-10">Coins Spent</p>
+            <p className="text-lg font-black text-white relative z-10">{(animatedStats.coinsSpent / 1000000).toFixed(1)}M</p>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-            <Award className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
-            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Auctions</p>
-            <p className="text-base font-bold text-gray-400">{siteStats?.auctionsHeld?.toLocaleString() || "0"}</p>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-transparent animate-pulse" style={{ animationDelay: '1.5s' }} />
+            <TrendingUp className="w-4 h-4 text-green-400 mb-2 relative z-10" />
+            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 relative z-10">Active Users</p>
+            <p className="text-lg font-black text-white relative z-10">{animatedStats.activeUsers.toLocaleString()}</p>
           </div>
         </div>
       </div>

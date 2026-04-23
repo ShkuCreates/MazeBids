@@ -123,34 +123,75 @@ export default function ActiveAuctionsPanel() {
           </Link>
         </div>
 
-        {/* Preview Cards (Disabled) */}
+        {/* Censored Auctions (Hype Generation) */}
         <div className="space-y-3">
-          <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">Preview</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-50">
-            <div className="relative rounded-2xl overflow-hidden border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
-              <div className="relative aspect-video overflow-hidden blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-80" />
-              </div>
-              <div className="p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-bold text-sm">Auction Preview</span>
-                  <span className="text-[9px] bg-gray-700 text-gray-400 px-2 py-1 rounded-full font-medium">PREVIEW</span>
+          <p className="text-[10px] text-purple-400 font-medium uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+            Coming Soon
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 0.7, scale: 1 }}
+              whileHover={{ opacity: 0.9, scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+              className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 group cursor-pointer"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 animate-pulse" />
+              <div className="relative aspect-video overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-sm group-hover:backdrop-blur-[2px] transition-all" />
+                <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
+                  <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                    🔒 Locked
+                  </span>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">🔮</div>
+                    <p className="text-white font-black text-sm">Mystery Reward</p>
+                    <p className="text-purple-300 text-[10px] mt-1">High Value Item (Hidden)</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="relative rounded-2xl overflow-hidden border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
-              <div className="relative aspect-video overflow-hidden blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-80" />
-              </div>
-              <div className="p-3">
+              <div className="p-3 border-t border-purple-500/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-white font-bold text-sm">Auction Preview</span>
-                  <span className="text-[9px] bg-gray-700 text-gray-400 px-2 py-1 rounded-full font-medium">PREVIEW</span>
+                  <span className="text-purple-200 font-bold text-xs">Unlock when auction starts</span>
+                  <Clock className="w-3 h-3 text-purple-400" />
                 </div>
               </div>
-            </div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 0.7, scale: 1 }}
+              whileHover={{ opacity: 0.9, scale: 1.02 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="relative rounded-2xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 group cursor-pointer"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 animate-pulse" style={{ animationDelay: "1s" }} />
+              <div className="relative aspect-video overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-sm group-hover:backdrop-blur-[2px] transition-all" />
+                <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
+                  <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                    🔒 Locked
+                  </span>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">🎁</div>
+                    <p className="text-white font-black text-sm">Secret Drop</p>
+                    <p className="text-purple-300 text-[10px] mt-1">Premium Item (Hidden)</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 border-t border-purple-500/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-purple-200 font-bold text-xs">Unlock when auction starts</span>
+                  <Clock className="w-3 h-3 text-purple-400" />
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>

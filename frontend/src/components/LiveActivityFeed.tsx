@@ -63,31 +63,33 @@ export default function LiveActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Controlled mock data for demo purposes
-  const mockActivities: Activity[] = [
-    { id: "mock-1", username: "Rahul", action: "bid", itemName: "iPhone 13", amount: 5200, timestamp: new Date(Date.now() - 120000) },
-    { id: "mock-2", username: "Sneha", action: "won", itemName: "AirPods Pro", timestamp: new Date(Date.now() - 300000) },
-    { id: "mock-3", username: "Amit", action: "bid", itemName: "PS5", amount: 25000, timestamp: new Date(Date.now() - 480000) },
-    { id: "mock-4", username: "Priya", action: "bid", itemName: "MacBook Air", amount: 38000, timestamp: new Date(Date.now() - 600000) },
-    { id: "mock-5", username: "Vikram", action: "won", itemName: "Nintendo Switch", timestamp: new Date(Date.now() - 720000) },
-  ];
+  const usernames = ["Rahul_23", "CryptoKing", "SnehaX", "TechNinja", "BidMaster", "AuctionKing", "GamerPro99", "MobileMaster"];
+  const items = ["iPhone 13", "AirPods Pro", "MacBook Air M2", "PS5", "Nintendo Switch OLED", "Samsung Galaxy S24", "iPad Pro", "Apple Watch Ultra"];
+  const actions: Activity["action"][] = ["bid", "bid", "won", "bid", "bid"];
+
+  const generateActivity = (): Activity => {
+    const action = actions[Math.floor(Math.random() * actions.length)];
+    return {
+      id: `activity-${Date.now()}-${Math.random()}`,
+      username: usernames[Math.floor(Math.random() * usernames.length)],
+      action,
+      itemName: items[Math.floor(Math.random() * items.length)],
+      amount: action === "bid" ? Math.floor(Math.random() * 40000) + 5000 : undefined,
+      timestamp: new Date(Date.now() - Math.floor(Math.random() * 300000)),
+    };
+  };
 
   useEffect(() => {
-    // Initialize with mock data
-    setActivities(mockActivities);
+    // Initialize with 5 realistic activities
+    setActivities(Array.from({ length: 5 }, () => generateActivity()));
 
-    // Rotate entries every 8 seconds with fade animation
+    // Add new activity every 4-6 seconds
     const interval = setInterval(() => {
       setActivities((prev) => {
-        const rotated = [...prev.slice(1), prev[0]];
-        // Update timestamps to simulate freshness
-        const withUpdatedTimes = rotated.map((a, i) => ({
-          ...a,
-          timestamp: new Date(Date.now() - (i * 120000)), // 2 min intervals
-        }));
-        return withUpdatedTimes;
+        const newActivity = generateActivity();
+        return [newActivity, ...prev.slice(0, 6)];
       });
-    }, 8000);
+    }, 4000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
   }, []);
@@ -104,22 +106,19 @@ export default function LiveActivityFeed() {
             <Zap className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h3 className="font-black text-white text-sm tracking-wider">DEMO ACTIVITY</h3>
-            <p className="text-[10px] text-gray-500 font-medium">Sample data for preview</p>
+            <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
+            <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
           </div>
         </div>
 
-        {/* Demo indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">DEMO</span>
+        {/* Live indicator */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
         </div>
-      </div>
-
-      {/* Disclaimer */}
-      <div className="px-6 py-2 bg-blue-500/5 border-b border-blue-500/10">
-        <p className="text-[9px] text-blue-400 font-medium text-center">
-          Live activity will appear when users start bidding
-        </p>
       </div>
 
       {/* Activity List */}
