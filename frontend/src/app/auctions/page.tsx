@@ -84,14 +84,30 @@ export default function AuctionsPage() {
     }
   }, [filter]);
 
+  // Notification toggle with instant UI feedback and backend sync
   const toggleNotifications = async () => {
     if (!user) return alert("Please login to enable notifications");
+    if (notifying) return; // Prevent double clicks
+
+    const newState = !user.notifications;
     setNotifying(true);
+
     try {
-      await axios.post(`${API_URL}/api/users/toggle-notifications`, {}, { withCredentials: true });
+      // API call to update backend + trigger Discord subscription
+      const res = await axios.post(`${API_URL}/api/users/toggle-notifications`, {}, { withCredentials: true });
+
+      // Refresh user to get updated state from backend
       await refreshUser();
+
+      // Show success feedback
+      if (res.data.notificationsEnabled) {
+        console.log("[Notifications] Enabled - Discord DM subscription active");
+      } else {
+        console.log("[Notifications] Disabled - Discord DM subscription stopped");
+      }
     } catch (err) {
-      alert("Failed to update notification settings");
+      console.error("[Notifications] Failed to update:", err);
+      alert("Failed to update notification settings. Please try again.");
     } finally {
       setNotifying(false);
     }
@@ -231,12 +247,12 @@ export default function AuctionsPage() {
     return () => clearInterval(interval);
   }, [mounted]);
 
-  // Live Activity Feed generator
+  // Live Activity Feed generator - MOCK DATA ONLY (frontend only, no backend)
   useEffect(() => {
     if (!mounted) return;
-    const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
+    const usernames = ["Rahul_23", "CryptoKing", "SnehaX", "TechNinja", "BidMaster", "AuctionKing", "GamerPro99", "MobileMaster"];
     const actions = ["placed a bid on", "joined auction for", "won", "is watching"];
-    const items = ["iPhone 15", "MacBook Air", "PS5", "AirPods Pro", "Samsung Galaxy", "iPad Pro"];
+    const items = ["iPhone 15 Pro", "MacBook Air M2", "PS5", "AirPods Pro", "Samsung Galaxy S24", "iPad Pro", "Apple Watch Ultra"];
 
     const generateActivity = (): Activity => {
       const action = actions[Math.floor(Math.random() * actions.length)];
@@ -249,14 +265,17 @@ export default function AuctionsPage() {
       };
     };
 
+    // Initialize with 5 mock activities
     setActivities(Array.from({ length: 5 }, () => generateActivity()));
 
+    // Add new mock activity every 2-5 seconds (no backend calls)
     const interval = setInterval(() => {
       setActivities((prev) => {
         const newActivity = generateActivity();
-        return [newActivity, ...prev.slice(0, 6)];
+        // Keep only last 15 entries to prevent memory issues
+        return [newActivity, ...prev.slice(0, 14)];
       });
-    }, 4000 + Math.random() * 2000);
+    }, 2000 + Math.random() * 3000);
 
     return () => clearInterval(interval);
   }, [mounted]);
@@ -304,90 +323,6 @@ export default function AuctionsPage() {
           <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 relative">
             <AdBanner placement="AUCTIONS" />
 
-            {/* Featured Mega Auction */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl shadow-purple-500/30"
-            >
-              <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-30 animate-pulse blur-sm" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                      <Flame className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="font-black text-white text-xl tracking-wider">🔥 MEGA AUCTION</h2>
-                      <p className="text-purple-300 text-xs font-medium">Premium Drop • Limited Time</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40">
-                    <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">Live Now</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-6xl mb-3">💻</div>
-                      <h3 className="font-black text-white text-2xl">MacBook Air M2</h3>
-                      <p className="text-purple-300 text-sm mt-1">Space Gray • 256GB SSD</p>
-                    </div>
-                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40">
-                      <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">💎 Premium</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col justify-center space-y-4">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                          <Coins className="w-5 h-5 text-yellow-400" />
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Entry Coins</p>
-                          <p className="font-black text-white text-xl">500</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Live Bids</p>
-                          <p className="font-black text-white text-xl">{featuredBidCount}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-red-400" />
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Time Left</p>
-                          <p className="font-black text-white text-xl font-mono">{featuredTimer}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Link
-                      href="/auctions"
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg tracking-wider transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] flex items-center justify-center gap-2"
-                    >
-                      <Gavel className="w-5 h-5" />
-                      JOIN AUCTION
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
               <div className="space-y-4">
@@ -408,16 +343,22 @@ export default function AuctionsPage() {
                   <button
                     onClick={toggleNotifications}
                     disabled={notifying}
-                    className={`p-2 rounded-xl transition-all flex items-center gap-2 group relative ${
+                    className={`p-2 rounded-xl transition-all duration-300 flex items-center gap-2 group relative ${
                       user?.notifications
-                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                        : "bg-white/5 text-gray-400 border border-white/10"
-                    }`}
-                    title={user?.notifications ? "Notifications Active" : "Enable Notifications"}
+                        ? "bg-green-500/20 text-green-400 border border-green-500/40 shadow-lg shadow-green-500/20"
+                        : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
+                    } ${notifying ? "opacity-50 cursor-wait" : ""}`}
+                    title={user?.notifications ? "Notifications ON - Discord DMs Active" : "Click to Enable Notifications"}
                   >
-                    {user?.notifications ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                    {notifying ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : user?.notifications ? (
+                      <BellRing className="w-4 h-4 animate-pulse" />
+                    ) : (
+                      <Bell className="w-4 h-4" />
+                    )}
                     <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
-                      {user?.notifications ? "Active" : "Notify Me"}
+                      {notifying ? "Updating..." : user?.notifications ? "ON" : "OFF"}
                     </span>
                   </button>
                 </div>
@@ -508,7 +449,7 @@ export default function AuctionsPage() {
               </div>
             </motion.div>
 
-            {/* Live Activity Feed */}
+            {/* Live Activity Feed - MOCK DATA ONLY (Frontend Generated) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -524,7 +465,7 @@ export default function AuctionsPage() {
                   </div>
                   <div>
                     <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
-                    <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Mock data - UI demonstration only</p>
                   </div>
                 </div>
 
@@ -680,6 +621,90 @@ export default function AuctionsPage() {
                 </AnimatePresence>
               </div>
             )}
+
+            {/* Featured Mega Auction - Moved below Live Auctions */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl shadow-purple-500/30"
+            >
+              <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-30 animate-pulse blur-sm" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                      <Flame className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-black text-white text-xl tracking-wider">🔥 MEGA AUCTION</h2>
+                      <p className="text-purple-300 text-xs font-medium">Premium Drop • Limited Time</p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40">
+                    <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">Live Now</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-6xl mb-3">💻</div>
+                      <h3 className="font-black text-white text-2xl">MacBook Air M2</h3>
+                      <p className="text-purple-300 text-sm mt-1">Space Gray • 256GB SSD</p>
+                    </div>
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40">
+                      <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">💎 Premium</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-center space-y-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                          <Coins className="w-5 h-5 text-yellow-400" />
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Entry Coins</p>
+                          <p className="font-black text-white text-xl">500</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Live Bids</p>
+                          <p className="font-black text-white text-xl">{featuredBidCount}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Time Left</p>
+                          <p className="font-black text-white text-xl font-mono">{featuredTimer}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/auctions"
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg tracking-wider transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] flex items-center justify-center gap-2"
+                    >
+                      <Gavel className="w-5 h-5" />
+                      JOIN AUCTION
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </>
       )}
