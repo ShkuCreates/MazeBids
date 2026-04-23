@@ -164,17 +164,50 @@ async function sendNotificationStatusUpdate(discordId, enabled) {
 }
 
 async function loginWithRetry(retries = 5) {
+  const token = process.env.DISCORD_TOKEN;
+  
+  if (!token) {
+    console.error('[DISCORD] DISCORD_TOKEN environment variable is not set!');
+    console.error('[DISCORD] Please add DISCORD_TOKEN to your Render environment variables');
+    process.exit(1);
+  }
+
+  // Log token format for debugging (first 10 chars, last 10 chars)
+  const tokenPreview = token.length > 20 
+    ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}`
+    : 'token too short (invalid)';
+  console.log(`[DISCORD] Attempting login with token: ${tokenPreview} (length: ${token.length})`);
+
   for (let i = 0; i < retries; i++) {
     try {
-      await client.login(process.env.DISCORD_TOKEN);
-      console.log('Discord bot logged in');
+      await client.login(token);
+      console.log('[DISCORD] Bot logged in successfully');
       return;
     } catch (err) {
-      console.error(`Login attempt ${i+1} failed:`, err.message);
-      await new Promise(r => setTimeout(r, 5000));
+      const isLastAttempt = i === retries - 1;
+      const backoffDelay = 5000 * (i + 1); // Exponential backoff: 5s, 10s, 15s, etc.
+      
+      console.error(`[DISCORD] Login attempt ${i + 1}/${retries} failed: ${err.message}`);
+      
+      if (err.message.includes('invalid token')) {
+        console.error('[DISCORD] ERROR: The token is invalid. Please:');
+        console.error('[DISCORD] 1. Go to Discord Developer Portal: https://discord.com/developers/applications');
+        console.error('[DISCORD] 2. Select your MazeBids app');
+        console.error('[DISCORD] 3. Go to "Bot" section and click "Reset Token"');
+        console.error('[DISCORD] 4. Copy the new token and update DISCORD_TOKEN in Render');
+        console.error('[DISCORD] 5. Make sure there are no extra spaces in the token');
+        if (isLastAttempt) process.exit(1);
+      }
+      
+      if (!isLastAttempt) {
+        console.log(`[DISCORD] Retrying in ${backoffDelay / 1000}s...`);
+        await new Promise(r => setTimeout(r, backoffDelay));
+      }
     }
   }
-  console.error('All login attempts failed');
+  
+  console.error('[DISCORD] All login attempts failed - giving up');
+  process.exit(1);
 }
 
 loginWithRetry();
