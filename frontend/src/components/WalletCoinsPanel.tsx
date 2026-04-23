@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Coins, Plus, ArrowUpRight, ArrowDownRight, History, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 
@@ -18,12 +19,14 @@ interface Transaction {
 }
 
 export default function WalletCoinsPanel() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(5000);
   const [mounted, setMounted] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -31,22 +34,50 @@ export default function WalletCoinsPanel() {
 
   const coinBalance = user?.coins ?? 0;
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!user) return;
-      try {
-        const res = await axios.get(`${API_URL}/api/users/transactions?limit=3`, {
-          withCredentials: true,
-        });
-        setTransactions(res.data.transactions);
-        setDailyUsed(res.data.dailyEarned);
-        setDailyLimit(res.data.dailyLimit);
-      } catch (err) {
-        console.error("Failed to fetch transactions:", err);
-      }
-    };
-    fetchTransactions();
+  const fetchTransactions = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/users/transactions?limit=3`, {
+        withCredentials: true,
+      });
+      setTransactions(res.data.transactions);
+      setDailyUsed(res.data.dailyEarned);
+      setDailyLimit(res.data.dailyLimit);
+    } catch (err) {
+      console.error("Failed to fetch transactions:", err);
+    }
   }, [user]);
+
+  const refreshBalance = useCallback(async () => {
+    if (!mounted || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await refreshUser();
+      await fetchTransactions();
+    } catch (err) {
+      console.error("Failed to refresh balance:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [mounted, isRefreshing, refreshUser, fetchTransactions]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    fetchTransactions();
+  }, [mounted, fetchTransactions]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    // Refresh balance every 30 seconds to stay in sync with backend
+    const interval = setInterval(() => {
+      refreshBalance();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [mounted, refreshBalance]);
+
+  const handleAddCoins = useCallback(() => {
+    router.push("/earn");
+  }, [router]);
 
   const dailyPercent = Math.min((dailyUsed / dailyLimit) * 100, 100);
 
@@ -119,8 +150,9 @@ export default function WalletCoinsPanel() {
           {/* Action Buttons */}
           <div className="flex gap-3 mb-6">
             <button
-              onClick={() => setShowAddModal(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-black text-sm transition-all duration-300 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98]"
+              onClick={handleAddCoins}
+              disabled={isRefreshing}
+              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-black text-sm transition-all duration-300 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <Plus className="w-4 h-4" />
               Add Coins

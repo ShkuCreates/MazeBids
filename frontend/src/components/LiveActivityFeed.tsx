@@ -4,10 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Gavel, Trophy, ShoppingBag, Clock, User } from "lucide-react";
 import Link from "next/link";
-import { io } from "socket.io-client";
-import axios from "axios";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Activity {
   id: string;
@@ -90,13 +86,14 @@ export default function LiveActivityFeed() {
     // Initialize with 5 realistic activities
     setActivities(Array.from({ length: 5 }, () => generateActivity()));
 
-    // Add new activity every 4-6 seconds
+    // Add new activity every 3-5 seconds (mock data only - no backend calls)
     const interval = setInterval(() => {
       setActivities((prev) => {
         const newActivity = generateActivity();
-        return [newActivity, ...prev.slice(0, 6)];
+        // Keep only last 10 items to prevent memory issues
+        return [newActivity, ...prev.slice(0, 9)];
       });
-    }, 4000 + Math.random() * 2000);
+    }, 3000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
   }, [mounted]);
@@ -114,7 +111,7 @@ export default function LiveActivityFeed() {
           </div>
           <div>
             <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
-            <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
+            <p className="text-[10px] text-gray-500 font-medium">Mock data - UI demonstration only</p>
           </div>
         </div>
 
