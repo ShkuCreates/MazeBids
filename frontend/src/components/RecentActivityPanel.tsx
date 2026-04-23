@@ -5,11 +5,12 @@ import { Gavel, TrendingUp, Trophy, Clock, Gift, Coins, ArrowUpRight, ArrowDownR
 import { useEffect, useState } from "react";
 
 interface Activity {
-  type: "bid" | "earn" | "win" | "lose" | "join";
+  type: "bid" | "earn" | "win" | "spend" | "join";
   amount?: number;
   item?: string;
   source?: string;
-  time: Date;
+  time: string | Date;
+  auctionId?: string;
 }
 
 interface RecentActivityPanelProps {
@@ -17,16 +18,16 @@ interface RecentActivityPanelProps {
 }
 
 const defaultActivities: Activity[] = [
-  { type: "bid", amount: 200, item: "iPhone 15", time: new Date("2024-01-15T10:28:00.000Z") },
-  { type: "earn", amount: 50, source: "video", time: new Date("2024-01-15T10:15:00.000Z") },
-  { type: "win", amount: 1500, item: "MacBook Air", time: new Date("2024-01-15T09:00:00.000Z") },
-  { type: "join", item: "Gaming Console", time: new Date("2024-01-15T08:00:00.000Z") },
-  { type: "earn", amount: 100, source: "daily bonus", time: new Date("2024-01-15T07:00:00.000Z") },
-  { type: "bid", amount: 300, item: "AirPods Pro", time: new Date("2024-01-15T05:00:00.000Z") },
-  { type: "lose", amount: 450, item: "Smart Watch", time: new Date("2024-01-15T02:00:00.000Z") },
-  { type: "earn", amount: 25, source: "referral", time: new Date("2024-01-14T22:00:00.000Z") },
-  { type: "join", item: "iPad Pro", time: new Date("2024-01-14T10:00:00.000Z") },
-  { type: "bid", amount: 100, item: "Gift Card", time: new Date("2024-01-13T22:00:00.000Z") },
+  { type: "bid", amount: 200, item: "iPhone 15", time: "2024-01-15T10:28:00.000Z" },
+  { type: "earn", amount: 50, source: "video", time: "2024-01-15T10:15:00.000Z" },
+  { type: "win", amount: 1500, item: "MacBook Air", time: "2024-01-15T09:00:00.000Z" },
+  { type: "join", item: "Gaming Console", time: "2024-01-15T08:00:00.000Z" },
+  { type: "earn", amount: 100, source: "daily bonus", time: "2024-01-15T07:00:00.000Z" },
+  { type: "bid", amount: 300, item: "AirPods Pro", time: "2024-01-15T05:00:00.000Z" },
+  { type: "spend", amount: 450, item: "Smart Watch", time: "2024-01-15T02:00:00.000Z" },
+  { type: "earn", amount: 25, source: "referral", time: "2024-01-14T22:00:00.000Z" },
+  { type: "join", item: "iPad Pro", time: "2024-01-14T10:00:00.000Z" },
+  { type: "bid", amount: 100, item: "Gift Card", time: "2024-01-13T22:00:00.000Z" },
 ];
 
 const getActivityConfig = (activity: Activity) => {
@@ -37,8 +38,8 @@ const getActivityConfig = (activity: Activity) => {
       return { icon: Coins, color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20", label: "Coins Earned" };
     case "win":
       return { icon: Trophy, color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/20", label: "Auction Won" };
-    case "lose":
-      return { icon: Clock, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", label: "Auction Lost" };
+    case "spend":
+      return { icon: TrendingUp, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", label: "Coins Spent" };
     case "join":
       return { icon: Gift, color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", label: "Auction Joined" };
     default:
@@ -46,9 +47,10 @@ const getActivityConfig = (activity: Activity) => {
   }
 };
 
-const getRelativeTime = (date: Date, mounted: boolean) => {
+const getRelativeTime = (date: string | Date, mounted: boolean) => {
   if (!mounted) return "Loading...";
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const seconds = Math.floor((Date.now() - dateObj.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;

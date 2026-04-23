@@ -1,17 +1,40 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Award, Star, Flame, Target, Zap, Lock, TrendingUp, Crown, Gem, Gavel, Coins, Trophy } from "lucide-react";
+import { Award, Star, Flame, Target, Zap, Lock, TrendingUp, Crown, Gem, Gavel, Coins, Trophy, Wallet, Users, Clock } from "lucide-react";
 import { useState } from "react";
+
+// Map icon strings to actual components
+const iconMap: { [key: string]: any } = {
+  Gavel,
+  Coins,
+  Trophy,
+  Star,
+  Flame,
+  Crown,
+  TrendingUp,
+  Zap,
+  Gem,
+  Target,
+  Wallet,
+  Users,
+  Clock,
+  Award
+};
 
 interface Badge {
   id: string;
+  key: string;
   title: string;
   description: string;
-  icon: any;
+  icon: string;
+  requirement: number;
+  type: string;
+  reward: number;
   unlocked: boolean;
-  progress?: number;
-  requirement?: number;
+  unlockedAt: string | null;
+  progress: number;
+  currentValue: number;
 }
 
 interface AchievementsBadgesProps {
@@ -19,22 +42,16 @@ interface AchievementsBadgesProps {
 }
 
 const defaultBadges: Badge[] = [
-  { id: "first-bid", title: "First Bid", description: "Place your first bid", icon: Gavel, unlocked: true },
-  { id: "100-coins", title: "100 Coins", description: "Earn 100 coins total", icon: Coins, unlocked: true, progress: 100, requirement: 100 },
-  { id: "auction-winner", title: "Winner", description: "Win your first auction", icon: Trophy, unlocked: true },
-  { id: "daily-streak", title: "Daily Streak", description: "Login 7 days in a row", icon: Flame, unlocked: false, progress: 5, requirement: 7 },
-  { id: "1000-coins", title: "Coin Master", description: "Earn 1000 coins total", icon: Star, unlocked: false, progress: 650, requirement: 1000 },
-  { id: "10-wins", title: "Champion", description: "Win 10 auctions", icon: Crown, unlocked: false, progress: 3, requirement: 10 },
-  { id: "big-spender", title: "Big Spender", description: "Spend 5000 coins", icon: TrendingUp, unlocked: false, progress: 1200, requirement: 5000 },
-  { id: "early-bird", title: "Early Bird", description: "Join auction within first hour", icon: Zap, unlocked: false },
-  { id: "collector", title: "Collector", description: "Win 5 different items", icon: Gem, unlocked: false, progress: 2, requirement: 5 },
-  { id: "veteran", title: "Veteran", description: "Active for 30 days", icon: Target, unlocked: false, progress: 15, requirement: 30 },
+  { id: "1", key: "first-bid", title: "First Bid", description: "Place your first bid", icon: "Gavel", requirement: 1, type: "BIDS", reward: 50, unlocked: false, unlockedAt: null, progress: 0, currentValue: 0 },
+  { id: "2", key: "coin-starter", title: "Coin Starter", description: "Earn 100 coins total", icon: "Coins", requirement: 100, type: "COINS", reward: 50, unlocked: false, unlockedAt: null, progress: 0, currentValue: 0 },
+  { id: "3", key: "auction-winner", title: "Winner", description: "Win your first auction", icon: "Trophy", requirement: 1, type: "WINS", reward: 200, unlocked: false, unlockedAt: null, progress: 0, currentValue: 0 },
+  { id: "4", key: "daily-streak-3", title: "Daily Streak", description: "Claim daily reward 3 days in a row", icon: "Flame", requirement: 3, type: "STREAK", reward: 100, unlocked: false, unlockedAt: null, progress: 0, currentValue: 0 },
 ];
 
 export default function AchievementsBadges({ badges = defaultBadges }: AchievementsBadgesProps) {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const unlockedCount = badges.filter(b => b.unlocked).length;
-  const totalProgress = Math.round((unlockedCount / badges.length) * 100);
+  const totalProgress = badges.length > 0 ? Math.round((unlockedCount / badges.length) * 100) : 0;
 
   return (
     <div className="bg-[#0f0f18] border border-white/5 rounded-[2.5rem] p-8 space-y-6">
@@ -65,7 +82,7 @@ export default function AchievementsBadges({ badges = defaultBadges }: Achieveme
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {badges.map((badge, index) => {
-          const Icon = badge.icon;
+          const Icon = iconMap[badge.icon] || Award;
           
           return (
             <motion.div
@@ -136,7 +153,10 @@ export default function AchievementsBadges({ badges = defaultBadges }: Achieveme
               selectedBadge.unlocked ? "bg-gradient-to-br from-purple-500 to-pink-500" : "bg-white/10"
             }`}>
               {selectedBadge.unlocked ? (
-                <selectedBadge.icon className="w-10 h-10 text-white" />
+                <>{(() => {
+                  const SelectedIcon = iconMap[selectedBadge.icon] || Award;
+                  return <SelectedIcon className="w-10 h-10 text-white" />;
+                })()}</>
               ) : (
                 <Lock className="w-10 h-10 text-gray-500" />
               )}

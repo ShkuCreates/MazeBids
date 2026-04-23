@@ -1,9 +1,10 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { User, Bell, Shield, Wallet, Clock, Award, Settings, LogOut, ExternalLink, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import AdBanner from "@/components/AdBanner";
 import RecentActivityPanel from "@/components/RecentActivityPanel";
@@ -16,44 +17,116 @@ import { Skeleton, CardSkeleton } from "@/components/Skeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+// Types
+interface Activity {
+  type: "bid" | "earn" | "win" | "spend" | "join";
+  amount?: number;
+  item?: string;
+  source?: string;
+  time: string;
+  auctionId?: string;
+}
+
+interface Achievement {
+  id: string;
+  key: string;
+  title: string;
+  description: string;
+  icon: string;
+  requirement: number;
+  type: string;
+  reward: number;
+  unlocked: boolean;
+  unlockedAt: string | null;
+  progress: number;
+  currentValue: number;
+}
+
 export default function ProfilePage() {
   const { user, loading, logout, refreshUser } = useAuth();
+  const router = useRouter();
   const [profileData, setProfileData] = useState<any>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [togglingNotify, setTogglingNotify] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/users/profile`, { withCredentials: true });
-        setProfileData(res.data);
-        console.log('Profile data updated:', res.data);
-      } catch (err) {
-        console.error("Failed to fetch profile:", err);
-      }
-    };
+  // Fetch all profile data including activities and achievements
+  const fetchProfileData = useCallback(async () => {
+    if (!user) return;
     
+    try {
+      // Fetch profile, activities, and achievements in parallel
+      const [profileRes, activityRes, achievementsRes] = await Promise.all([
+        axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/users/activity?limit=20`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/users/achievements`, { withCredentials: true })
+      ]);
+
+      setProfileData(profileRes.data);
+      setActivities(activityRes.data.activities || []);
+      setAchievements(achievementsRes.data.achievements || []);
+      
+      console.log('[Profile] Data refreshed:', {
+        profile: profileRes.data,
+        activities: activityRes.data.activities?.length || 0,
+        achievements: achievementsRes.data.achievements?.length || 0
+      });
+    } catch (err) {
+      console.error("[Profile] Failed to fetch data:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (user) {
-      fetchProfile(); // Initial fetch
-      const interval = setInterval(fetchProfile, 3000); // Update every 3 seconds for real-time updates
+      fetchProfileData(); // Initial fetch
+      const interval = setInterval(fetchProfileData, 10000); // Update every 10 seconds for real-time updates
       return () => clearInterval(interval);
     }
-  }, [user, refreshUser]);
+  }, [user, fetchProfileData]);
 
+  // Handle notification toggle with Discord sync
   const handleToggleNotifications = async () => {
+    if (togglingNotify) return; // Prevent double-clicks
     setTogglingNotify(true);
     try {
       const res = await axios.post(`${API_URL}/api/users/toggle-notifications`, {}, { withCredentials: true });
-      setProfileData({ ...profileData, notifications: res.data.notifications });
+      
+      // Update local state immediately for instant UI feedback
+      setProfileData((prev: any) => ({ ...prev, notifications: res.data.notifications }));
+      
+      // Sync with auth context
       await refreshUser();
+      
+      console.log('[Profile] Notifications toggled:', res.data.notifications);
     } catch (err) {
-      console.error("Failed to toggle notifications:", err);
+      console.error("[Profile] Failed to toggle notifications:", err);
+      alert("Failed to update notification settings. Please try again.");
     } finally {
       setTogglingNotify(false);
+    }
+  };
+
+  // Secure logout handler
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    
+    try {
+      console.log('[Profile] Initiating logout...');
+      await logout(); // This calls backend API and clears local state
+      router.push('/'); // Redirect to home
+    } catch (err) {
+      console.error('[Profile] Logout error:', err);
+      // Even if logout fails, redirect to home
+      router.push('/');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -130,10 +203,16 @@ export default function ProfilePage() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={logout}
-          className="px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-2xl font-bold transition-all flex items-center gap-2"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-2xl font-bold transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <LogOut className="w-4 h-4" /> Sign Out
+          {isLoggingOut ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <LogOut className="w-4 h-4" />
+          )}
+          {isLoggingOut ? "Signing Out..." : "Sign Out"}
         </motion.button>
       </motion.div>
 
@@ -170,8 +249,8 @@ export default function ProfilePage() {
           transition={{ delay: 0.2 }}
         >
           <WalletOverview
-            currentBalance={user.coins}
-            earnedToday={profileData?.totalEarned ? Math.round(profileData.totalEarned / 7) : 0}
+            currentBalance={user?.coins || 0}
+            earnedToday={profileData?.dailyStats?.coinsEarnedToday || 0}
             earnedWeek={profileData?.totalEarned || 0}
             spent={profileData?.totalSpent || 0}
           />
@@ -182,7 +261,7 @@ export default function ProfilePage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <RecentActivityPanel />
+          <RecentActivityPanel activities={activities} />
         </motion.div>
       </div>
 
@@ -191,7 +270,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <AchievementsBadges />
+        <AchievementsBadges badges={achievements} />
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -224,7 +303,11 @@ export default function ProfilePage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <NotificationSettings />
+          <NotificationSettings 
+            notificationsEnabled={profileData?.notifications || false}
+            onToggle={handleToggleNotifications}
+            isLoading={togglingNotify}
+          />
         </motion.div>
       </div>
         </>

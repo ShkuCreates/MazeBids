@@ -32,6 +32,7 @@ model User {
   auctionSubscriptions AuctionSubscription[]
   dailyReward         DailyReward?
   chatRewards         ChatReward[]
+  userAchievements    UserAchievement[]
 
   // Daily tracking fields (reset every 24 hours)
   coinsEarnedToday    Int            @default(0)
@@ -234,5 +235,35 @@ model Cooldown {
   @@unique([userId, command])
   @@index([userId])
   @@index([command])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String
+  icon        String   // lucide icon name
+  requirement Int      // required value to unlock
+  type        String   // COINS, BIDS, WINS, STREAK, REFERRALS
+  reward      Int      @default(0) // bonus coins for unlocking
+  createdAt   DateTime @default(now())
+  users       UserAchievement[]
+
+  @@index([key])
+  @@index([type])
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+  progress      Int         @default(0)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
 }
 

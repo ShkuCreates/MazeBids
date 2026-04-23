@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const { sendNotificationStatusUpdate } = require('../lib/discordBotSingleton');
 const { createNotification } = require('../lib/notificationHelper');
 const { checkAndResetUserDaily, getUserDailyStats, manualDailyReset } = require('../lib/dailyReset');
+const { getUserAchievements, checkAndUnlockAchievements, getUserActivity } = require('../lib/achievementHelper');
 
 // Simple in-memory cache for frequently accessed data
 const profileCache = new Map();
@@ -395,6 +396,39 @@ router.get('/admin/daily-reset-status', async (req, res) => {
   } catch (err) {
     console.error('Daily reset status error:', err);
     res.status(500).json({ message: 'Failed to fetch reset status' });
+  }
+});
+
+// Get user achievements
+router.get('/achievements', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    // Check and unlock any newly earned achievements
+    await checkAndUnlockAchievements(req.user.id);
+
+    // Get all achievements with progress
+    const achievements = await getUserAchievements(req.user.id);
+
+    res.json({ achievements });
+  } catch (err) {
+    console.error('Achievements fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch achievements' });
+  }
+});
+
+// Get user activity feed
+router.get('/activity', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const activities = await getUserActivity(req.user.id, limit);
+
+    res.json({ activities });
+  } catch (err) {
+    console.error('Activity fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch activity' });
   }
 });
 
