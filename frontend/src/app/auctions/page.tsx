@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense, useRef } from "react";
 import { io } from "socket.io-client";
 import { Gavel, Clock, Users, ChevronRight, Bell, BellRing, Coins, ShoppingBag, Trophy, ArrowUpRight, Flame, Diamond, Eye, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -10,7 +10,6 @@ import Link from "next/link";
 import { Skeleton } from "@/components/Skeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-const socket = io(API_URL, { withCredentials: true });
 
 interface Auction {
   id: string;
@@ -50,6 +49,7 @@ export default function AuctionsPage() {
   const { user, refreshUser } = useAuth();
   const [timers, setTimers] = useState<{ [key: string]: string }>({});
   const [recentBids, setRecentBids] = useState<{ [key: string]: boolean }>({});
+  const socketRef = useRef<ReturnType<typeof io> | null>(null);
 
   // Live Popups State
   const [popups, setPopups] = useState<Popup[]>([]);
@@ -98,6 +98,14 @@ export default function AuctionsPage() {
 
   useEffect(() => {
     fetchAuctions();
+
+    // Initialize socket only on client side
+    if (typeof window !== 'undefined' && !socketRef.current) {
+      socketRef.current = io(API_URL, { withCredentials: true });
+    }
+
+    const socket = socketRef.current;
+    if (!socket) return;
 
     socket.on("bidUpdated", (updatedAuction: Auction) => {
       setAuctions(prev => prev.map(a => a.id === updatedAuction.id ? updatedAuction : a));
@@ -263,404 +271,405 @@ export default function AuctionsPage() {
         </div>
       ) : (
         <>
-      {/* Live Popups */}
-      <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
-        <AnimatePresence mode="popLayout">
-          {popups.map((popup) => (
-            <motion.div
-              key={popup.id}
-              initial={{ opacity: 0, x: -50, scale: 0.8 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -20, scale: 0.9 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="bg-[#0f0f18]/95 backdrop-blur-md border border-purple-500/30 rounded-2xl px-4 py-3 shadow-2xl shadow-purple-500/20 flex items-center gap-3 pointer-events-auto"
-            >
-              {popup.icon}
-              <span className="text-white text-xs font-bold">{popup.message}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 relative">
-        <AdBanner placement="AUCTIONS" />
-
-        {/* Featured Mega Auction */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl shadow-purple-500/30"
-        >
-          <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-30 animate-pulse blur-sm" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                  <Flame className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-black text-white text-xl tracking-wider">🔥 MEGA AUCTION</h2>
-                  <p className="text-purple-300 text-xs font-medium">Premium Drop • Limited Time</p>
-                </div>
-              </div>
-              <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40">
-                <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">Live Now</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl mb-3">💻</div>
-                  <h3 className="font-black text-white text-2xl">MacBook Air M2</h3>
-                  <p className="text-purple-300 text-sm mt-1">Space Gray • 256GB SSD</p>
-                </div>
-                <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40">
-                  <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">💎 Premium</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                      <Coins className="w-5 h-5 text-yellow-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">Entry Coins</p>
-                      <p className="font-black text-white text-xl">500</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">Live Bids</p>
-                      <p className="font-black text-white text-xl">{featuredBidCount}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">Time Left</p>
-                      <p className="font-black text-white text-xl font-mono">{featuredTimer}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="/auctions"
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg tracking-wider transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] flex items-center justify-center gap-2"
-                >
-                  <Gavel className="w-5 h-5" />
-                  JOIN AUCTION
-                </Link>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-full">
-              <Trophy className="w-4 h-4 text-purple-400" />
-              <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Premium Rewards</span>
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tighter">
-              LIVE <span className="text-purple-500">AUCTIONS</span>
-            </h1>
-            <p className="text-gray-400 text-lg max-w-xl font-medium">
-              Join thousands of users bidding in real-time. Use your hard-earned coins to win exclusive digital assets and rewards.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 bg-[#0f0f18] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
-            <div className="flex items-center gap-2 mr-4 ml-2">
-              <button
-                onClick={toggleNotifications}
-                disabled={notifying}
-                className={`p-2 rounded-xl transition-all flex items-center gap-2 group relative ${
-                  user?.notifications
-                    ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                    : "bg-white/5 text-gray-400 border border-white/10"
-                }`}
-                title={user?.notifications ? "Notifications Active" : "Enable Notifications"}
-              >
-                {user?.notifications ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
-                  {user?.notifications ? "Active" : "Notify Me"}
-                </span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {(['ONGOING', 'ENDED'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setFilter(t)}
-                  className={`px-8 py-3 rounded-[1.5rem] font-black text-xs tracking-widest transition-all ${
-                    filter === t
-                      ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
-                      : "text-gray-500 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming Auctions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-
-          <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
-            <Clock className="w-5 h-5 text-purple-400" />
-            Upcoming Auctions
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
-            {upcomingAuctions.map((auction, index) => (
-              <motion.div
-                key={auction.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                className="relative group"
-              >
-                <div className="relative h-48 rounded-2xl overflow-hidden border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-blue-500/5 group-hover:border-purple-500/40 transition-all duration-300 shadow-lg shadow-purple-500/10 group-hover:shadow-purple-500/20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-md group-hover:backdrop-blur-[4px] transition-all duration-300" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-[#0f0f18]/80 to-transparent opacity-90" />
-
-                  <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
-                    <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
-                      🔒 Locked
-                    </span>
-                  </div>
-
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-2">
-                    <div className="px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30">
-                      <Flame className="w-3 h-3 text-orange-400" />
-                    </div>
-                    {auction.isPremium && (
-                      <div className="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
-                        <Diamond className="w-3 h-3 text-blue-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2 animate-pulse">🔮</div>
-                      <p className="text-white font-black text-sm">{auction.title}</p>
-                    </div>
-                  </div>
-
-                  <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
-                    <span className="text-[11px] font-black text-white">
-                      {upcomingTimers[auction.id] || "00:00:00"}
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <p className="text-[10px] text-purple-300 uppercase tracking-wider">
-                      Starts in {upcomingTimers[auction.id] || "00:00:00"}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Live Activity Feed */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-purple-500/5 relative"
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-
-          <div className="p-6 border-b border-white/5 flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                <Bell className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
-                <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-              </span>
-              <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
-            </div>
-          </div>
-
-          <div className="h-[400px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+          {/* Live Popups */}
+          <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
             <AnimatePresence mode="popLayout">
-              {activities.map((activity, index) => (
+              {popups.map((popup) => (
                 <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                  className="p-4 border-b border-white/5 hover:bg-white/[0.02] transition-all"
+                  key={popup.id}
+                  initial={{ opacity: 0, x: -50, scale: 0.8 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -20, scale: 0.9 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="bg-[#0f0f18]/95 backdrop-blur-md border border-purple-500/30 rounded-2xl px-4 py-3 shadow-2xl shadow-purple-500/20 flex items-center gap-3 pointer-events-auto"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                      <span className="text-sm font-black text-purple-300">{activity.username.charAt(0)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-300">
-                        <span className="font-bold text-white">{activity.username}</span>
-                        <span className="text-gray-500"> {activity.action} </span>
-                        {activity.item && <span className="text-purple-400 font-bold">{activity.item}</span>}
-                      </p>
-                      <p className="text-[10px] text-gray-500">{getTimeAgo(activity.timestamp)}</p>
-                    </div>
-                  </div>
+                  {popup.icon}
+                  <span className="text-white text-xs font-bold">{popup.message}</span>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
-        </motion.div>
 
-        {/* Grid */}
-        {filteredAuctions.length === 0 ? (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-            {[1, 2].map((i) => (
-              <div
-                key={i}
-                className="group relative bg-[#0f0f18] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-purple-500/40 transition-all duration-700 hover:shadow-[0_0_80px_-20px_rgba(139,92,246,0.4)] flex flex-col"
-              >
-                <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
-                  <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
-                    <Skeleton className="w-full h-full" />
+          <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 relative">
+            <AdBanner placement="AUCTIONS" />
+
+            {/* Featured Mega Auction */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl shadow-purple-500/30"
+            >
+              <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-30 animate-pulse blur-sm" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                      <Flame className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-black text-white text-xl tracking-wider">🔥 MEGA AUCTION</h2>
+                      <p className="text-purple-300 text-xs font-medium">Premium Drop • Limited Time</p>
+                    </div>
                   </div>
-                  <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-center space-y-4 sm:space-y-8 relative">
-                    <Skeleton className="h-8 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-20 w-full" />
+                  <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40">
+                    <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">Live Now</span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-            <AnimatePresence mode="popLayout">
-              {filteredAuctions.map((auction) => (
-                <motion.div
-                  layout
-                  key={auction.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="group relative bg-[#0f0f18] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-purple-500/40 transition-all duration-700 hover:shadow-[0_0_80px_-20px_rgba(139,92,246,0.4)] flex flex-col"
-                >
-                  <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
-                    <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
-                      <img
-                        src={auction.image}
-                        alt={auction.title}
-                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 group-hover:rotate-1"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-60" />
-                      <div className="absolute top-6 left-6 flex flex-col gap-2">
-                        <div className={`px-4 py-2 rounded-full text-[10px] font-black flex items-center gap-2 shadow-2xl backdrop-blur-md ${
-                          auction.status === 'ACTIVE' ? 'bg-red-600/90 text-white animate-pulse' : 'bg-blue-600/90 text-white'
-                        }`}>
-                          <div className={`w-2 h-2 rounded-full bg-white ${auction.status === 'ACTIVE' ? 'animate-ping' : ''}`} />
-                          {auction.status}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-6xl mb-3">💻</div>
+                      <h3 className="font-black text-white text-2xl">MacBook Air M2</h3>
+                      <p className="text-purple-300 text-sm mt-1">Space Gray • 256GB SSD</p>
+                    </div>
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40">
+                      <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">💎 Premium</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-center space-y-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                          <Coins className="w-5 h-5 text-yellow-400" />
                         </div>
-                        <div className="bg-black/60 backdrop-blur-md text-white/90 px-4 py-2 rounded-full text-[10px] font-black border border-white/10 flex items-center gap-2">
-                          <ShoppingBag className="w-3.5 h-3.5 text-purple-400" />
-                          {auction.product}
+                        <div>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Entry Coins</p>
+                          <p className="font-black text-white text-xl">500</p>
                         </div>
                       </div>
                     </div>
-                    <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-between space-y-4 sm:space-y-8 relative">
-                      <div className="space-y-2 sm:space-y-4">
-                        <div className="flex justify-between items-start gap-2">
-                          <h3 className="text-xl sm:text-3xl font-black text-white group-hover:text-purple-400 transition-colors leading-tight">
-                            {auction.title}
-                          </h3>
-                          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-purple-500/20 group-hover:border-purple-500/30 transition-all">
-                            <ArrowUpRight className="w-6 h-6 text-gray-500 group-hover:text-purple-400 transition-colors" />
-                          </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-blue-400" />
                         </div>
-                        <p className="text-gray-400 text-sm font-medium leading-relaxed line-clamp-3">
-                          {auction.description}
+                        <div>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Live Bids</p>
+                          <p className="font-black text-white text-xl">{featuredBidCount}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Time Left</p>
+                          <p className="font-black text-white text-xl font-mono">{featuredTimer}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/auctions"
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg tracking-wider transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] flex items-center justify-center gap-2"
+                    >
+                      <Gavel className="w-5 h-5" />
+                      JOIN AUCTION
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-full">
+                  <Trophy className="w-4 h-4 text-purple-400" />
+                  <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Premium Rewards</span>
+                </div>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tighter">
+                  LIVE <span className="text-purple-500">AUCTIONS</span>
+                </h1>
+                <p className="text-gray-400 text-lg max-w-xl font-medium">
+                  Join thousands of users bidding in real-time. Use your hard-earned coins to win exclusive digital assets and rewards.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 bg-[#0f0f18] p-2 rounded-[2rem] border border-white/5 shadow-2xl">
+                <div className="flex items-center gap-2 mr-4 ml-2">
+                  <button
+                    onClick={toggleNotifications}
+                    disabled={notifying}
+                    className={`p-2 rounded-xl transition-all flex items-center gap-2 group relative ${
+                      user?.notifications
+                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                        : "bg-white/5 text-gray-400 border border-white/10"
+                    }`}
+                    title={user?.notifications ? "Notifications Active" : "Enable Notifications"}
+                  >
+                    {user?.notifications ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                    <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
+                      {user?.notifications ? "Active" : "Notify Me"}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {(['ONGOING', 'ENDED'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setFilter(t)}
+                      className={`px-8 py-3 rounded-[1.5rem] font-black text-xs tracking-widest transition-all ${
+                        filter === t
+                          ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
+                          : "text-gray-500 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Auctions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+
+              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
+                <Clock className="w-5 h-5 text-purple-400" />
+                Upcoming Auctions
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                {upcomingAuctions.map((auction, index) => (
+                  <motion.div
+                    key={auction.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="relative group"
+                  >
+                    <div className="relative h-48 rounded-2xl overflow-hidden border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-blue-500/5 group-hover:border-purple-500/40 transition-all duration-300 shadow-lg shadow-purple-500/10 group-hover:shadow-purple-500/20">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-md group-hover:backdrop-blur-[4px] transition-all duration-300" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-[#0f0f18]/80 to-transparent opacity-90" />
+
+                      <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
+                        <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                          🔒 Locked
+                        </span>
+                      </div>
+
+                      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-2">
+                        <div className="px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30">
+                          <Flame className="w-3 h-3 text-orange-400" />
+                        </div>
+                        {auction.isPremium && (
+                          <div className="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
+                            <Diamond className="w-3 h-3 text-blue-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-4xl mb-2 animate-pulse">🔮</div>
+                          <p className="text-white font-black text-sm">{auction.title}</p>
+                        </div>
+                      </div>
+
+                      <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
+                        <span className="text-[11px] font-black text-white">
+                          {upcomingTimers[auction.id] || "00:00:00"}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <p className="text-[10px] text-purple-300 uppercase tracking-wider">
+                          Starts in {upcomingTimers[auction.id] || "00:00:00"}
                         </p>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 bg-white/[0.03] rounded-2xl sm:rounded-[2rem] border border-white/5 relative overflow-hidden">
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Current Bid</p>
-                          <div className="flex items-center gap-2">
-                            <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
-                            <p className="text-xl sm:text-3xl font-black text-white">{auction.currentBid.toLocaleString()}</p>
-                          </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Live Activity Feed */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-purple-500/5 relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+
+              <div className="p-6 border-b border-white/5 flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                    <Bell className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
+                </div>
+              </div>
+
+              <div className="h-[400px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+                <AnimatePresence mode="popLayout">
+                  {activities.map((activity, index) => (
+                    <motion.div
+                      key={activity.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className="p-4 border-b border-white/5 hover:bg-white/[0.02] transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                          <span className="text-sm font-black text-purple-300">{activity.username.charAt(0)}</span>
                         </div>
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Time Left</p>
-                          <div className="flex items-center gap-2 text-purple-400">
-                            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-                            <p className="text-2xl font-black tracking-tighter">{timers[auction.id] || "00:00:00"}</p>
-                          </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-300">
+                            <span className="font-bold text-white">{activity.username}</span>
+                            <span className="text-gray-500"> {activity.action} </span>
+                            {activity.item && <span className="text-purple-400 font-bold">{activity.item}</span>}
+                          </p>
+                          <p className="text-[10px] text-gray-500">{getTimeAgo(activity.timestamp)}</p>
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 pt-4">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center shadow-inner">
-                            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Highest Bidder</p>
-                            <p className="text-white font-bold text-sm sm:text-base">{auction.highestBidder?.username || "No bids yet"}</p>
-                          </div>
-                        </div>
-                        <Link
-                          href={`/auctions/${auction.id}`}
-                          className="group/btn relative px-6 sm:px-8 py-3 sm:py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30 w-full sm:w-auto text-center"
-                        >
-                          <span className="relative z-10 flex items-center gap-2 uppercase">
-                            {auction.status === 'ACTIVE' ? 'Bid Now' : 'View Details'}
-                            <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-                          </span>
-                          <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity blur-lg" />
-                        </Link>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+
+            {/* Grid */}
+            {filteredAuctions.length === 0 ? (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="group relative bg-[#0f0f18] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-purple-500/40 transition-all duration-700 hover:shadow-[0_0_80px_-20px_rgba(139,92,246,0.4)] flex flex-col"
+                  >
+                    <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
+                      <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
+                        <Skeleton className="w-full h-full" />
+                      </div>
+                      <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-center space-y-4 sm:space-y-8 relative">
+                        <Skeleton className="h-8 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-20 w-full" />
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                <AnimatePresence mode="popLayout">
+                  {filteredAuctions.map((auction) => (
+                    <motion.div
+                      layout
+                      key={auction.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="group relative bg-[#0f0f18] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-purple-500/40 transition-all duration-700 hover:shadow-[0_0_80px_-20px_rgba(139,92,246,0.4)] flex flex-col"
+                    >
+                      <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
+                        <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
+                          <img
+                            src={auction.image}
+                            alt={auction.title}
+                            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 group-hover:rotate-1"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-60" />
+                          <div className="absolute top-6 left-6 flex flex-col gap-2">
+                            <div className={`px-4 py-2 rounded-full text-[10px] font-black flex items-center gap-2 shadow-2xl backdrop-blur-md ${
+                              auction.status === 'ACTIVE' ? 'bg-red-600/90 text-white animate-pulse' : 'bg-blue-600/90 text-white'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full bg-white ${auction.status === 'ACTIVE' ? 'animate-ping' : ''}`} />
+                              {auction.status}
+                            </div>
+                            <div className="bg-black/60 backdrop-blur-md text-white/90 px-4 py-2 rounded-full text-[10px] font-black border border-white/10 flex items-center gap-2">
+                              <ShoppingBag className="w-3.5 h-3.5 text-purple-400" />
+                              {auction.product}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-between space-y-4 sm:space-y-8 relative">
+                          <div className="space-y-2 sm:space-y-4">
+                            <div className="flex justify-between items-start gap-2">
+                              <h3 className="text-xl sm:text-3xl font-black text-white group-hover:text-purple-400 transition-colors leading-tight">
+                                {auction.title}
+                              </h3>
+                              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-purple-500/20 group-hover:border-purple-500/30 transition-all">
+                                <ArrowUpRight className="w-6 h-6 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                              </div>
+                            </div>
+                            <p className="text-gray-400 text-sm font-medium leading-relaxed line-clamp-3">
+                              {auction.description}
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 bg-white/[0.03] rounded-2xl sm:rounded-[2rem] border border-white/5 relative overflow-hidden">
+                            <div className="space-y-2">
+                              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Current Bid</p>
+                              <div className="flex items-center gap-2">
+                                <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
+                                <p className="text-xl sm:text-3xl font-black text-white">{auction.currentBid.toLocaleString()}</p>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Time Left</p>
+                              <div className="flex items-center gap-2 text-purple-400">
+                                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <p className="text-2xl font-black tracking-tighter">{timers[auction.id] || "00:00:00"}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 pt-4">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center shadow-inner">
+                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Highest Bidder</p>
+                                <p className="text-white font-bold text-sm sm:text-base">{auction.highestBidder?.username || "No bids yet"}</p>
+                              </div>
+                            </div>
+                            <Link
+                              href={`/auctions/${auction.id}`}
+                              className="group/btn relative px-6 sm:px-8 py-3 sm:py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30 w-full sm:w-auto text-center"
+                            >
+                              <span className="relative z-10 flex items-center gap-2 uppercase">
+                                {auction.status === 'ACTIVE' ? 'Bid Now' : 'View Details'}
+                                <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                              </span>
+                              <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity blur-lg" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
-        )}
         </>
       )}
     </div>
