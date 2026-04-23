@@ -55,6 +55,9 @@ require('./lib/passport');
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Initialize Discord bot (singleton)
+require('./lib/discordBotSingleton');
+
 // Start automator after 30 second delay
 // Temporarily disabled while circuit breaker resets
 // setTimeout(() => {

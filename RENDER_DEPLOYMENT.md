@@ -22,6 +22,7 @@ In the Render dashboard, set the following environment variables:
 **For Backend Service:**
 - `DISCORD_CLIENT_ID` - Your Discord app's client ID
 - `DISCORD_CLIENT_SECRET` - Your Discord app's client secret
+- `DISCORD_TOKEN` - Your Discord bot token (from Discord Developer Portal)
 - `SESSION_SECRET` - A strong random string (generate: `openssl rand -base64 32`)
 - `DATABASE_URL` - Your Supabase connection string (Transaction Pooler):
   ```
