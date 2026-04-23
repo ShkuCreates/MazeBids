@@ -55,8 +55,8 @@ export default function Dashboard() {
       }
 
       const [profileRes, statsRes] = await Promise.all([
-        axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }),
-        axios.get(`${API_URL}/api/users/site-stats`),
+        axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API_URL}/api/users/site-stats`).catch(() => ({ data: null })),
       ]);
       
       const data = { profile: profileRes.data, siteStats: statsRes.data };
@@ -68,6 +68,8 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
       setDataLoading(false);
+      setProfile(null);
+      setSiteStats(null);
     }
   }, [user?.id]);
 

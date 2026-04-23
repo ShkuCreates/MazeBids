@@ -33,73 +33,6 @@ router.post('/:id/notify', async (req, res) => {
   }
 });
 
-// Get recent wins
-router.get('/recent-wins', async (req, res) => {
-  try {
-    const auctions = await prisma.auction.findMany({
-      where: {
-        status: 'ENDED',
-        highestBidderId: { not: null }
-      },
-      include: {
-        highestBidder: {
-          select: { username: true, avatar: true }
-        }
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: 10,
-    });
-    res.json(auctions);
-  } catch (err) {
-    console.error('Fetch recent wins error:', err);
-    res.status(500).json({ message: 'Failed to fetch recent wins' });
-  }
-});
-
-// Get upcoming auctions
-router.get('/upcoming', async (req, res) => {
-  try {
-    const auctions = await prisma.auction.findMany({
-      where: {
-        status: 'UPCOMING',
-        startTime: { gt: new Date() }
-      },
-      select: {
-        id: true,
-        title: true,
-        image: true,
-        startTime: true,
-        // Try to select isPremium, but handle if it doesn't exist
-        isPremium: true,
-      },
-      orderBy: { startTime: 'asc' },
-    });
-    res.json(auctions);
-  } catch (err) {
-    // If isPremium field doesn't exist, query without it
-    if (err.message.includes('isPremium')) {
-      console.log('isPremium field does not exist, querying without it');
-      const auctions = await prisma.auction.findMany({
-        where: {
-          status: 'UPCOMING',
-          startTime: { gt: new Date() }
-        },
-        select: {
-          id: true,
-          title: true,
-          image: true,
-          startTime: true,
-        },
-        orderBy: { startTime: 'asc' },
-      });
-      // Add default isPremium: false to each auction
-      return res.json(auctions.map(a => ({ ...a, isPremium: false })));
-    }
-    console.error('Fetch upcoming auctions error:', err);
-    res.status(500).json({ message: 'Failed to fetch upcoming auctions' });
-  }
-});
-
 // Get all active auctions (optimized with caching and reduced payload)
 router.get('/', async (req, res) => {
   try {
@@ -140,7 +73,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get ended auctions (cached)
+// Get ended auctions (cached) - REAL DATA ONLY
 router.get('/ended', async (req, res) => {
   try {
     const cacheKey = 'auctions:ended';
@@ -220,6 +153,70 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Get recent wins
+router.get('/recent-wins', async (req, res) => {
+  try {
+    const auctions = await prisma.auction.findMany({
+      where: {
+        status: 'ENDED',
+        highestBidderId: { not: null }
+      },
+      include: {
+        highestBidder: {
+          select: { username: true, avatar: true }
+        }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    });
+    res.json(auctions);
+  } catch (err) {
+    console.error('Fetch recent wins error:', err);
+    res.status(500).json({ message: 'Failed to fetch recent wins' });
+  }
+});
+
+// Get upcoming auctions
+router.get('/upcoming', async (req, res) => {
+  try {
+    const auctions = await prisma.auction.findMany({
+      where: {
+        status: 'UPCOMING',
+        startTime: { gt: new Date() }
+      },
+      select: {
+        id: true,
+        title: true,
+        image: true,
+        startTime: true,
+        isPremium: true,
+      },
+      orderBy: { startTime: 'asc' },
+    });
+    res.json(auctions);
+  } catch (err) {
+    // If isPremium field doesn't exist, query without it
+    if (err.message.includes('isPremium')) {
+      const auctions = await prisma.auction.findMany({
+        where: {
+          status: 'UPCOMING',
+          startTime: { gt: new Date() }
+        },
+        select: {
+          id: true,
+          title: true,
+          image: true,
+          startTime: true,
+        },
+        orderBy: { startTime: 'asc' },
+      });
+      return res.json(auctions.map(a => ({ ...a, isPremium: false })));
+    }
+    console.error('Fetch upcoming auctions error:', err);
+    res.status(500).json({ message: 'Failed to fetch upcoming auctions' });
+  }
+});
+
 // Admin: Create auction
 router.post('/', async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
@@ -262,6 +259,7 @@ router.post('/', async (req, res) => {
     // Clear cache
     cache.del('auctions:active');
 
+    // Notify users with notifications enabled
     const usersToNotify = await prisma.user.findMany({
       where: { notifications: true }
     });
@@ -309,27 +307,10 @@ router.post('/:id/end', async (req, res) => {
 
     cache.del('auctions:active');
     cache.del('auctions:ended');
-    cache.del(`auction:${req.params.id}`);
 
     // Announce winner in Discord
     if (auction.highestBidderId && auction.highestBidder) {
-      try {
-        await announceWinner(auction, auction.highestBidder);
-      } catch (err) {
-        console.error('Failed to announce winner:', err.message);
-      }
-
-      // Create in-app notification
-      try {
-        await createNotification(
-          auction.highestBidderId, 
-          'WIN', 
-          `You won the auction for ${auction.title}! 🎉`, 
-          { amount: auction.currentBid, relatedId: auction.id }
-        );
-      } catch (err) {
-        console.error('Failed to create notification:', err.message);
-      }
+      await announceWinner(auction, auction.highestBidder);
     }
 
     res.json(auction);
@@ -342,99 +323,70 @@ router.post('/:id/end', async (req, res) => {
 // Place bid
 router.post('/:id/bid', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  
   const { amount } = req.body;
-  const auctionId = req.params.id;
-
-  // Input validation
-  const bidAmount = parseInt(amount);
-  if (isNaN(bidAmount) || bidAmount <= 0) {
+  if (!amount || amount < 0) {
     return res.status(400).json({ message: 'Invalid bid amount' });
   }
 
   try {
-    const auction = await prisma.auction.findUnique({ where: { id: auctionId } });
-    if (!auction || auction.status !== 'ACTIVE') {
-      return res.status(400).json({ message: 'Auction not active' });
-    }
+    const auction = await prisma.auction.findUnique({
+      where: { id: req.params.id }
+    });
 
-    // Check minimum bid increment
-    const minimumBid = auction.currentBid + auction.minBidIncrement;
-    if (bidAmount < minimumBid) {
-      return res.status(400).json({ message: `Bid must be at least ${minimumBid}` });
+    if (!auction) return res.status(404).json({ message: 'Auction not found' });
+    if (auction.status !== 'ACTIVE') return res.status(400).json({ message: 'Auction is not active' });
+
+    // Check bid amount
+    if (amount < auction.currentBid + auction.minBidIncrement) {
+      return res.status(400).json({ 
+        message: `Bid must be at least ${auction.currentBid + auction.minBidIncrement}` 
+      });
     }
 
     // Check user has enough coins
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    if (!user || user.coins < bidAmount) {
+    if (!user || user.coins < amount) {
       return res.status(400).json({ message: 'Insufficient coins' });
     }
 
-    const previousBidderId = auction.highestBidderId;
-
-    await prisma.$transaction([
-      prisma.auction.update({
-        where: { id: auctionId },
-        data: { currentBid: bidAmount, highestBidderId: req.user.id }
-      }),
-      prisma.user.update({
-        where: { id: req.user.id },
-        data: { coins: { decrement: bidAmount }, totalSpent: { increment: bidAmount } }
-      }),
-      prisma.bid.create({
-        data: { amount: bidAmount, auctionId, userId: req.user.id }
-      }),
-      prisma.transaction.create({
-        data: {
-          userId: req.user.id,
-          amount: bidAmount,
-          type: 'SPEND',
-          description: `Bid on ${auction.title}`
-        }
-      })
-    ]);
-
-    // Clear relevant caches
-    cache.del('auctions:active');
-    cache.del(`auction:${auctionId}`);
-
-    // Create notifications
-    // Notify bidder
-    try {
-      await createNotification(
-        req.user.id, 
-        'BID_PLACED', 
-        `You placed a bid of ${bidAmount} coins on ${auction.title}`, 
-        { amount: bidAmount, relatedId: auctionId }
-      );
-    } catch (err) {
-      console.error('Failed to create bid notification:', err.message);
-    }
-
-    // Notify previous highest bidder they were outbid
-    if (previousBidderId && previousBidderId !== req.user.id) {
-      try {
-        await createNotification(
-          previousBidderId, 
-          'OUTBID', 
-          `You were outbid on ${auction.title}! Current bid: ${bidAmount} coins`, 
-          { amount: bidAmount, relatedId: auctionId }
-        );
-      } catch (err) {
-        console.error('Failed to create outbid notification:', err.message);
+    // Record bid
+    const bid = await prisma.bid.create({
+      data: {
+        amount,
+        userId: req.user.id,
+        auctionId: req.params.id
       }
-    }
+    });
 
-    const updatedAuction = await prisma.auction.findUnique({
-      where: { id: auctionId },
+    // Update auction
+    const updatedAuction = await prisma.auction.update({
+      where: { id: req.params.id },
+      data: {
+        currentBid: amount,
+        highestBidderId: req.user.id
+      },
       include: { highestBidder: true }
     });
 
+    // Spend coins
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { 
+        coins: { decrement: amount },
+        totalSpent: { increment: amount }
+      }
+    });
+
+    // Clear caches
+    cache.del('auctions:active');
+    cache.del(`auction:${req.params.id}`);
+
     res.json(updatedAuction);
   } catch (err) {
-    console.error('Place bid error:', err);
+    console.error('Bid error:', err);
     res.status(500).json({ message: 'Failed to place bid' });
   }
 });
 
 module.exports = router;
-

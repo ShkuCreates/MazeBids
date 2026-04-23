@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Coins, Gavel, Users, ChevronRight, Flame, Zap } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-const socket = io(API_URL, { withCredentials: true });
 
 interface Auction {
   id: string;
@@ -29,6 +28,7 @@ export default function ActiveAuctionsPanel() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [timers, setTimers] = useState<Record<string, string>>({});
   const [recentBids, setRecentBids] = useState<Record<string, boolean>>({});
+  const socketRef = useRef<Socket | null>(null);
 
   const fetchAuctions = useCallback(async () => {
     try {
@@ -46,16 +46,38 @@ export default function ActiveAuctionsPanel() {
   useEffect(() => {
     fetchAuctions();
 
-    socket.on("bidUpdated", (updated: Auction) => {
-      setAuctions((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-      setRecentBids((prev) => ({ ...prev, [updated.id]: true }));
-      setTimeout(() => setRecentBids((prev) => ({ ...prev, [updated.id]: false })), 1200);
-    });
+    // Initialize socket connection with error handling
+    try {
+      if (!socketRef.current) {
+        socketRef.current = io(API_URL, { 
+          withCredentials: true,
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 1000,
+        });
+
+        socketRef.current.on("connect_error", (err) => {
+          console.error("Socket connection error:", err);
+        });
+
+        socketRef.current.on("bidUpdated", (updated: Auction) => {
+          setAuctions((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+          setRecentBids((prev) => ({ ...prev, [updated.id]: true }));
+          setTimeout(() => setRecentBids((prev) => ({ ...prev, [updated.id]: false })), 1200);
+        });
+      }
+    } catch (err) {
+      console.error("Failed to initialize socket:", err);
+    }
 
     const refetch = setInterval(fetchAuctions, 30000);
     return () => {
       clearInterval(refetch);
-      socket.off("bidUpdated");
+      if (socketRef.current) {
+        socketRef.current.off("bidUpdated");
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
   }, [fetchAuctions]);
 

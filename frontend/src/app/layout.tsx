@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -28,11 +29,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} bg-purple-gradient min-h-screen flex flex-col`}>
         <AuthProvider>
-          <Navbar />
-          <main className="container mx-auto px-4 py-8 flex-grow">
-            {children}
-          </main>
-          <Footer />
+          <ErrorBoundary>
+            <Navbar />
+            <main className="container mx-auto px-4 py-8 flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </ErrorBoundary>
         </AuthProvider>
       </body>
     </html>
