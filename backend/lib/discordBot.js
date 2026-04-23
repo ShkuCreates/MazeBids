@@ -43,6 +43,17 @@ const statuses = [
 
 client.on('error', (error) => console.error('Discord bot error:', error.message));
 
+// Bot ready event - set up status rotation and log ready
+client.on('ready', () => {
+  console.log(`Discord bot ready as ${client.user.tag}`);
+  
+  // Status rotation - only start after bot is ready
+  setInterval(() => {
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    client.user.setActivity(status.name, { type: status.type });
+  }, 120000);
+});
+
 // Prevent invite to wrong server
 client.on('guildCreate', async (guild) => {
   if (guild.id !== MAIN_GUILD_ID) {
@@ -92,12 +103,6 @@ cron.schedule('30 16 * * *', async () => {
     console.error('Leaderboard cron error:', err);
   }
 }, { timezone: 'Asia/Kolkata' });
-
-// Status rotation
-setInterval(() => {
-  const status = statuses[Math.floor(Math.random() * statuses.length)];
-  client.user.setActivity(status.name, { type: status.type });
-}, 120000);
 
 // Slash commands
 client.on('interactionCreate', async (interaction) => {
