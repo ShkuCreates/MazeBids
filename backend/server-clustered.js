@@ -1,6 +1,5 @@
 require('dotenv').config();
 const cluster = require('cluster');
-const os = require('os');
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -12,10 +11,10 @@ const compression = require('compression');
 const { apiLimiter } = require('./middleware/rateLimit');
 const { Server } = require('socket.io');
 const passport = require('passport');
-const redis = require('redis');
-const RedisStore = require('connect-redis').default;
+const prisma = require('./lib/prisma');
+const PrismaSessionStore = require('./lib/sessionStore');
 
-const numCPUs = os.cpus().length;
+const numCPUs = parseInt(process.env.WEB_CONCURRENCY) || 1;
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -44,40 +43,12 @@ if (cluster.isMaster) {
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
 
-  // Initialize session store - try Redis, fall back to Memory
-  let sessionStore;
-  let redisConnected = false;
+// Session store using Prisma (low memory, persistent)
+  console.log('[SESSION] Initializing Prisma DB Session Store');
+  const sessionStore = new PrismaSessionStore(prisma);
 
-  // Try to connect to Redis asynchronously (non-blocking)
-  if (process.env.REDIS_URL || process.env.REDIS_HOST) {
-    const redisClient = redis.createClient({
-      url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
-      legacyMode: false,
-      socket: { reconnectStrategy: (retries) => Math.min(retries * 50, 500) }
-    });
-
-    redisClient.connect()
-      .then(() => {
-        console.log('[REDIS] Connected successfully');
-        sessionStore = new RedisStore({ client: redisClient });
-        redisConnected = true;
-      })
-      .catch(err => {
-        console.warn('[REDIS] Failed to connect, falling back to MemoryStore:', err.message);
-        sessionStore = new (require('express-session').MemoryStore)();
-      });
-
-    redisClient.on('error', (err) => {
-      console.warn('[REDIS] Runtime error:', err.message);
-    });
-  } else {
-    console.log('[SESSION] Using MemoryStore (no Redis configured)');
-    sessionStore = new (require('express-session').MemoryStore)();
-  }
-
-  // Session middleware with fallback store
   app.use(session({
-    store: sessionStore || new (require('express-session').MemoryStore)(),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'mazebids-secret',
     resave: false,
     saveUninitialized: false,
@@ -122,7 +93,7 @@ if (cluster.isMaster) {
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`[STARTUP] ✅ Worker ${process.pid} is listening on port ${PORT}`);
     console.log(`[STARTUP] API ready at http://0.0.0.0:${PORT}`);
-    console.log(`[SESSION] Using ${redisConnected ? 'Redis' : 'Memory'} session store`);
+    console.log('[SESSION] Using Prisma DB session store');
   });
 
   // Handle server errors
