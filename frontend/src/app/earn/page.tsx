@@ -257,383 +257,244 @@ export default function EarnPage() {
         </AnimatePresence>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-8 py-8 px-4 relative">
-        {/* Daily Check-in Bonus */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2rem] p-6 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-20 animate-pulse blur-sm" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-black text-white text-xl tracking-wider">DAILY CHECK-IN BONUS</h2>
-                  <p className="text-purple-300 text-xs font-medium">Day {streak}/7 • Streak active!</p>
-                </div>
-              </div>
-              <div className="px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/40">
-                <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">🔥 {streak} Day Streak</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-                <div
-                  key={day}
-                  className={`relative aspect-square rounded-xl flex flex-col items-center justify-center border transition-all ${
-                    day < streak
-                      ? "bg-green-500/20 border-green-500/40"
-                      : day === streak
-                      ? "bg-purple-500/20 border-purple-500/40 ring-2 ring-purple-500"
-                      : "bg-white/5 border-white/10"
-                  }`}
-                >
-                  <span className="text-[10px] font-black text-gray-400">Day {day}</span>
-                  <span className="text-xs font-bold text-white mt-1">+{getDailyReward(day)}</span>
-                  {day < streak && <CheckCircle2 className="w-4 h-4 text-green-400 absolute top-1 right-1" />}
-                  {day === 7 && <Crown className="w-4 h-4 text-yellow-400 absolute top-1 right-1" />}
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={handleClaimDaily}
-              disabled={!canClaimDaily}
-              className={`w-full py-4 rounded-2xl font-black text-lg tracking-wider transition-all shadow-lg ${
-                canClaimDaily
-                  ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02]"
-                  : "bg-white/5 text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              {canClaimDaily ? `CLAIM +${dailyReward} COINS` : "CLAIMED TODAY"}
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Earning Progress Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                  <TrendingUp className="w-5 h-5 text-purple-400" />
-                </div>
-                <div>
-                  <h3 className="font-black text-white text-sm tracking-wider">TODAY'S PROGRESS</h3>
-                  <p className="text-gray-400 text-xs">You earned {todayEarned.toLocaleString()} / {dailyGoal.toLocaleString()} coins</p>
-                </div>
-              </div>
-              <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
-                <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">{Math.round((todayEarned / dailyGoal) * 100)}%</span>
-              </div>
-            </div>
-
-            <div className="relative h-4 bg-white/5 rounded-full overflow-hidden mb-4">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(todayEarned / dailyGoal) * 100}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <Star className="w-3 h-3 text-yellow-400" />
-                <span className="text-gray-400">1000 coins → +100 bonus</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Gift className="w-3 h-3 text-purple-400" />
-                <span className="text-gray-400">5000 coins → 🎁 reward</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Limited-Time Offer */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-orange-600/20 via-red-600/10 to-orange-600/20 border-2 border-orange-500 rounded-[2rem] p-6 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 opacity-30 animate-pulse blur-sm" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                  <Flame className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-black text-white text-xl tracking-wider">🔥 LIMITED OFFER</h2>
-                  <p className="text-orange-300 text-xs font-medium">Watch 3 videos → +100 BONUS</p>
-                </div>
-              </div>
-              <div className="px-4 py-2 rounded-full bg-red-500/20 border border-red-500/40 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-red-400" />
-                <span className="text-red-300 text-[10px] font-black uppercase tracking-widest font-mono">{offerTimer}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Task</p>
-                <p className="text-white font-bold text-sm">Watch 3 videos</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Reward</p>
-                <p className="text-yellow-400 font-black text-sm">+100 BONUS</p>
-              </div>
-            </div>
-
-            <button className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-sm tracking-wider transition-all shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02]">
-              START OFFER
-            </button>
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Games & Guide */}
-          <div className="space-y-6">
-            {/* Earning Guide */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
-                <Star className="w-5 h-5 text-yellow-400" />
-                Best Way to Earn
-              </h3>
-              <div className="space-y-3 relative z-10">
-                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
-                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <Play className="w-4 h-4 text-green-400" />
+      <div className="max-w-6xl mx-auto space-y-6 py-8 px-4 relative">
+        {/* SECTION 1: TOP PRIORITY (FOCUS AREA) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Daily Check-in Bonus (Horizontal) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#0f0f18] border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-sm">Watch Videos</p>
-                    <p className="text-gray-400 text-[10px]">Quick coins</p>
+                  <div>
+                    <h2 className="font-black text-white text-sm tracking-wider">DAILY CHECK-IN</h2>
+                    <p className="text-purple-300 text-[10px] font-medium">Day {streak}/7</p>
                   </div>
-                  <span className="text-green-400 text-xs font-black">⚡</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Gamepad2 className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-sm">Play Games</p>
-                    <p className="text-gray-400 text-[10px]">Medium reward</p>
-                  </div>
-                  <span className="text-blue-400 text-xs font-black">💎</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-500/30 transition-all">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-sm">Referrals</p>
-                    <p className="text-gray-400 text-[10px]">High reward</p>
-                  </div>
-                  <span className="text-purple-400 text-xs font-black">🔥</span>
+                <div className="px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
+                  <span className="text-yellow-300 text-[9px] font-black uppercase tracking-widest">🔥 {streak} Day</span>
                 </div>
               </div>
-            </motion.div>
 
+              <div className="grid grid-cols-7 gap-1 mb-3">
+                {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                  <div
+                    key={day}
+                    className={`aspect-square rounded-lg flex flex-col items-center justify-center border transition-all ${
+                      day < streak
+                        ? "bg-green-500/20 border-green-500/30"
+                        : day === streak
+                        ? "bg-purple-500/20 border-purple-500/30 ring-1 ring-purple-500"
+                        : "bg-white/5 border-white/10"
+                    }`}
+                  >
+                    <span className="text-[8px] font-black text-gray-400">{day}</span>
+                    <span className="text-[9px] font-bold text-white">+{getDailyReward(day)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleClaimDaily}
+                disabled={!canClaimDaily}
+                className={`w-full py-3 rounded-xl font-black text-xs tracking-wider transition-all ${
+                  canClaimDaily
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "bg-white/5 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                {canClaimDaily ? `CLAIM +${dailyReward} COINS` : "CLAIMED"}
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Today's Progress Bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                    <TrendingUp className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm tracking-wider">TODAY'S PROGRESS</h3>
+                    <p className="text-gray-400 text-[10px]">{todayEarned.toLocaleString()} / {dailyGoal.toLocaleString()} coins</p>
+                  </div>
+                </div>
+                <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30">
+                  <span className="text-purple-300 text-[9px] font-black uppercase tracking-widest">{Math.round((todayEarned / dailyGoal) * 100)}%</span>
+                </div>
+              </div>
+
+              <div className="relative h-3 bg-white/5 rounded-full overflow-hidden mb-3">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(todayEarned / dailyGoal) * 100}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-gray-400">1000 → +100</span>
+                <span className="text-gray-400">5000 → 🎁</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* SECTION 2: QUICK ACTIONS (MAIN EARNING AREA) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* LEFT: Primary Actions (BIGGER) */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">🔥 Best Method</span>
+            </div>
+            
             {/* Play Games */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-4"
+              transition={{ delay: 0.1 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
             >
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Gamepad2 className="text-purple-400 w-5 h-5" /> PLAY GAMES
-              </h2>
-              <div className="space-y-3">
-                {tasks.map((task, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-purple-500/30 transition-all shadow-lg hover:shadow-purple-500/20"
-                  >
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <div className={`w-10 h-10 bg-gradient-to-br ${task.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        <task.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-sm font-bold text-white truncate">{task.title}</h3>
-                          <span className="text-[9px] font-black text-orange-400">{task.tag}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                    <Gamepad2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white">Play Games</h3>
+                    <p className="text-gray-400 text-xs">⚡ Fastest</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {tasks.slice(0, 3).map((task, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 + index * 0.05 }}
+                      whileHover={{ scale: 1.01 }}
+                      className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between hover:border-purple-500/30 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 bg-gradient-to-br ${task.color} rounded-lg flex items-center justify-center`}>
+                          <task.icon className="w-4 h-4 text-white" />
                         </div>
-                        <p className="text-xs text-gray-400">{task.desc}</p>
-                        {task.highScore && <p className="text-[9px] text-purple-400 font-bold mt-1">{task.highScore}</p>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                      <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                        <Coins className="w-3 h-3 text-yellow-400" />
-                        <span className="text-xs font-black text-white">
-                          {task.reward > 0 ? `+${task.reward}` : ''}
-                        </span>
+                        <div>
+                          <p className="text-white font-bold text-xs">{task.title}</p>
+                          <p className="text-gray-400 text-[9px]">{task.desc}</p>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleGameClick(task)}
-                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all whitespace-nowrap"
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-black transition-all"
                       >
                         PLAY
                       </button>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </motion.div>
-          </div>
 
-          {/* Middle Column - Videos & Live Feed */}
-          <div className="space-y-6">
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              <Play className="text-purple-400 w-5 h-5" /> WATCH VIDEOS AND EARN
-            </h2>
-
-            <AdBanner placement="WATCH_ADS" />
-
-            <div className="space-y-3">
-              {[
-                { title: "MAZE BIDS TUTORIAL", desc: "Learn how to play and win", reward: 25, color: "from-rose-500 to-pink-600" },
-                { title: "WINNING STRATEGIES", desc: "Pro tips from top players", reward: 30, color: "from-blue-500 to-cyan-600" },
-                { title: "FEATURE UPDATE", desc: "New features and improvements", reward: 20, color: "from-green-500 to-emerald-600" },
-              ].map((video, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-[#0f0f18] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/30 transition-all shadow-lg hover:shadow-purple-500/20"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${video.color} rounded-lg flex items-center justify-center`}>
-                      <Play className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">{video.title}</h3>
-                      <p className="text-xs text-gray-400">{video.desc}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                      <Coins className="w-3 h-3 text-yellow-400" />
-                      <span className="text-xs font-black text-white">+{video.reward}</span>
-                    </div>
-                    <button
-                      onClick={() => setActiveGame({ id: `ad${index}`, reward: video.reward, type: "AD" })}
-                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-black transition-all"
-                    >
-                      WATCH
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Live Earnings Feed */}
+            {/* Watch Videos */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl shadow-purple-500/5 relative"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-
-              <div className="p-4 border-b border-white/5 flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                    <Bell className="w-4 h-4 text-purple-400" />
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                    <Play className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-black text-white text-sm tracking-wider">LIVE EARNINGS</h3>
-                    <p className="text-[10px] text-gray-500 font-medium">Real-time activity</p>
+                    <h3 className="font-black text-white">Watch Videos</h3>
+                    <p className="text-gray-400 text-xs">💎 High Reward</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                  <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
-                </div>
-              </div>
-
-              <div className="h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
-                <AnimatePresence mode="popLayout">
-                  {earnings.map((earning, index) => (
+                <AdBanner placement="WATCH_ADS" />
+                <div className="space-y-2 mt-3">
+                  {[
+                    { title: "MAZE BIDS TUTORIAL", reward: 25, color: "from-rose-500 to-pink-600" },
+                    { title: "WINNING STRATEGIES", reward: 30, color: "from-blue-500 to-cyan-600" },
+                  ].map((video, index) => (
                     <motion.div
-                      key={earning.id}
-                      initial={{ opacity: 0, x: -20 }}
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3 }}
-                      className="p-3 border-b border-white/5 hover:bg-white/[0.02] transition-all"
+                      transition={{ delay: 0.25 + index * 0.05 }}
+                      whileHover={{ scale: 1.01 }}
+                      className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between hover:border-purple-500/30 transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                          <span className="text-xs font-black text-purple-300">{earning.username.charAt(0)}</span>
+                        <div className={`w-8 h-8 bg-gradient-to-br ${video.color} rounded-lg flex items-center justify-center`}>
+                          <Play className="w-4 h-4 text-white" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-300">
-                            <span className="font-bold text-white">{earning.username}</span>
-                            <span className="text-gray-500"> {earning.action}</span>
-                          </p>
-                          <p className="text-[10px] text-gray-500">{getTimeAgo(earning.timestamp)}</p>
-                        </div>
-                        <div className="flex items-center gap-1 text-yellow-400">
-                          <Coins className="w-3 h-3" />
-                          <span className="text-xs font-black">+{earning.coins}</span>
-                        </div>
+                        <p className="text-white font-bold text-xs">{video.title}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-400 text-[10px] font-black">+{video.reward}</span>
+                        <button
+                          onClick={() => setActiveGame({ id: `ad${index}`, reward: video.reward, type: "AD" })}
+                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-black transition-all"
+                        >
+                          WATCH
+                        </button>
                       </div>
                     </motion.div>
                   ))}
-                </AnimatePresence>
+                </div>
               </div>
             </motion.div>
           </div>
 
-          {/* Right Column - Referral, Leaderboard, Bonus Code */}
-          <div className="space-y-6">
+          {/* RIGHT: Secondary Actions (smaller cards) */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">⚡ Bonus</span>
+            </div>
+
             {/* Referral Boost */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
+              transition={{ delay: 0.15 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
-                <Users className="w-5 h-5 text-purple-400" />
-                Referral Boost
-              </h3>
-              <div className="space-y-4 relative z-10">
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white">Referral Boost</h3>
+                    <p className="text-gray-400 text-xs">🔥 Best Method</p>
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-xs font-bold uppercase">Progress</span>
-                    <span className="text-purple-400 text-xs font-black">{referralsInvited} / {referralsGoal}</span>
+                    <span className="text-gray-400 text-[10px] font-bold uppercase">Progress</span>
+                    <span className="text-purple-400 text-[10px] font-black">{referralsInvited} / {referralsGoal}</span>
                   </div>
                   <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
                     <motion.div
@@ -643,63 +504,40 @@ export default function EarnPage() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Star className="w-3 h-3 text-yellow-400" />
-                    <span className="text-gray-400">Invite 5 friends → +500 BONUS</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <Crown className="w-3 h-3 text-purple-400" />
-                    <span className="text-gray-400">Invite 10 → VIP unlock</span>
-                  </div>
+                <div className="space-y-1 text-[10px]">
+                  <p className="text-gray-400">• Invite 5 → +500 BONUS</p>
+                  <p className="text-gray-400">• Invite 10 → VIP unlock</p>
                 </div>
               </div>
             </motion.div>
 
-            {/* Leaderboard */}
+            {/* Limited Offer */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden"
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-orange-600/10 to-red-600/10 border border-orange-500/30 rounded-2xl p-5 relative overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
-                <Trophy className="w-5 h-5 text-yellow-400" />
-                Top Earners Today
-              </h3>
-              <div className="space-y-3 relative z-10">
-                {leaderboard.map((user, index) => (
-                  <motion.div
-                    key={user.username}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7 + index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                      index === 0
-                        ? "bg-yellow-500/10 border-yellow-500/30 shadow-lg shadow-yellow-500/20"
-                        : index === 1
-                        ? "bg-gray-500/10 border-gray-500/30"
-                        : index === 2
-                        ? "bg-orange-500/10 border-orange-500/30"
-                        : "bg-white/5 border-white/10 hover:border-purple-500/30"
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-white ${
-                      index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-500" : "bg-white/10"
-                    }`}>
-                      {user.rank}
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                      <Flame className="w-5 h-5 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-white font-bold text-sm">{user.username}</p>
+                    <div>
+                      <h3 className="font-black text-white">Limited Offer</h3>
+                      <p className="text-orange-300 text-[10px]">Watch 3 videos → +100</p>
                     </div>
-                    <div className="flex items-center gap-1 text-yellow-400">
-                      <Coins className="w-3 h-3" />
-                      <span className="text-xs font-black">{user.coins.toLocaleString()}</span>
-                    </div>
-                  </motion.div>
-                ))}
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-red-400" />
+                    <span className="text-red-300 text-[9px] font-black font-mono">{offerTimer}</span>
+                  </div>
+                </div>
+                <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black text-xs tracking-wider transition-all">
+                  START OFFER
+                </button>
               </div>
             </motion.div>
 
@@ -707,44 +545,201 @@ export default function EarnPage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 }}
-              className="bg-[#0f0f18] border border-purple-500/20 rounded-[2rem] p-6 space-y-4 relative overflow-hidden"
+              transition={{ delay: 0.25 }}
+              className="bg-[#0f0f18] border border-purple-500/20 rounded-2xl p-5 relative overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 blur-xl rounded-full" />
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
-                  <Ticket className="w-5 h-5 text-purple-400" />
+              <div className="absolute top-0 right-0 w-12 h-12 bg-purple-500/10 blur-xl rounded-full" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                    <Ticket className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm">Redeem Code</h3>
+                    <p className="text-gray-400 text-[10px]">Extra Coins</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">REDEEM BONUS CODE</h3>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Extra Coins</p>
-                </div>
+                <form onSubmit={handleRedeem} className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="ENTER CODE..."
+                    value={redeemCode}
+                    onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                    className="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl p-2.5 text-center font-black tracking-widest outline-none transition-all placeholder:text-gray-700 text-xs"
+                  />
+                  <button
+                    disabled={redeeming || !redeemCode}
+                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2"
+                  >
+                    {redeeming ? <Loader2 className="w-3 h-3 animate-spin" /> : "REDEEM NOW"}
+                  </button>
+                </form>
+                {redeemMessage && (
+                  <p className={`text-center text-[10px] font-bold ${redeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    {redeemMessage.text}
+                  </p>
+                )}
               </div>
-
-              <form onSubmit={handleRedeem} className="space-y-3 relative z-10">
-                <input
-                  type="text"
-                  placeholder="ENTER CODE..."
-                  value={redeemCode}
-                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl p-3 text-center font-black tracking-widest outline-none transition-all placeholder:text-gray-700 text-sm"
-                />
-                <button
-                  disabled={redeeming || !redeemCode}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 text-sm"
-                >
-                  {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM NOW"}
-                </button>
-              </form>
-
-              {redeemMessage && (
-                <p className={`text-center text-xs font-bold ${redeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                  {redeemMessage.text}
-                </p>
-              )}
             </motion.div>
           </div>
         </div>
+
+        {/* SECTION 3: LIVE & SOCIAL PROOF */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Live Earnings Feed */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-[#0f0f18] border border-white/10 rounded-2xl overflow-hidden h-[320px] flex flex-col"
+          >
+            <div className="p-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                  <Bell className="w-4 h-4 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-sm tracking-wider">LIVE EARNINGS</h3>
+                  <p className="text-[10px] text-gray-500">Real-time activity</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+              <AnimatePresence mode="popLayout">
+                {earnings.map((earning) => (
+                  <motion.div
+                    key={earning.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.3 }}
+                    className="p-3 border-b border-white/5 hover:bg-white/[0.02] transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
+                        <span className="text-[10px] font-black text-purple-300">{earning.username.charAt(0)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-300">
+                          <span className="font-bold text-white">{earning.username}</span>
+                          <span className="text-gray-500"> {earning.action}</span>
+                        </p>
+                        <p className="text-[9px] text-gray-500">{getTimeAgo(earning.timestamp)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-yellow-400">
+                        <Coins className="w-3 h-3" />
+                        <span className="text-[10px] font-black">+{earning.coins}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          {/* Top Earners Today */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="bg-[#0f0f18] border border-white/10 rounded-2xl overflow-hidden h-[320px] flex flex-col"
+          >
+            <div className="p-4 border-b border-white/5 flex items-center gap-3 flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center border border-yellow-500/20">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="font-black text-white text-sm tracking-wider">TOP EARNERS</h3>
+                <p className="text-[10px] text-gray-500">Today's leaderboard</p>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent p-4 space-y-2">
+              {leaderboard.map((user, index) => (
+                <motion.div
+                  key={user.username}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + index * 0.05 }}
+                  whileHover={{ scale: 1.01 }}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    index === 0
+                      ? "bg-yellow-500/10 border-yellow-500/30"
+                      : index === 1
+                      ? "bg-gray-500/10 border-gray-500/30"
+                      : index === 2
+                      ? "bg-orange-500/10 border-orange-500/30"
+                      : "bg-white/5 border-white/10"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-xs ${
+                    index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-500" : "bg-white/10"
+                  }`}>
+                    {user.rank}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-bold text-xs">{user.username}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-yellow-400">
+                    <Coins className="w-3 h-3" />
+                    <span className="text-[10px] font-black">{user.coins.toLocaleString()}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* SECTION 4: HELPER / GUIDE (BOTTOM) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-[#0f0f18] border border-white/10 rounded-2xl p-5 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+          <div className="relative z-10">
+            <h3 className="font-black text-white text-sm tracking-wider uppercase mb-4 flex items-center gap-2">
+              <Star className="w-4 h-4 text-yellow-400" />
+              Best Way to Earn
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                  <Play className="w-4 h-4 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-xs">Watch Videos</p>
+                  <p className="text-gray-400 text-[9px]">Quick coins</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <Gamepad2 className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-xs">Play Games</p>
+                  <p className="text-gray-400 text-[9px]">Medium reward</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-xs">Referrals</p>
+                  <p className="text-gray-400 text-[9px]">High reward</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Game Modals */}
         {activeGame && activeGame.id === "1" && (
