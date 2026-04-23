@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const prisma = require('../../lib/prisma');
 const { successEmbed, errorEmbed } = require('../utils/embedBuilder');
+const config = require('../config');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,11 +14,16 @@ module.exports = {
     .addIntegerOption(option => 
       option.setName('amount')
         .setDescription('Amount of coins to remove')
-        .setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setRequired(true)),
   
   async execute(interaction) {
     await interaction.deferReply();
+    
+    if (!config.ADMIN_IDS.includes(interaction.user.id)) {
+      return await interaction.editReply({ 
+        embeds: [errorEmbed('❌ Access Denied', 'This command is for administrators only.')] 
+      });
+    }
     
     const targetUser = interaction.options.getUser('user');
     const amount = interaction.options.getInteger('amount');

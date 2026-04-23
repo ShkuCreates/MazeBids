@@ -1,23 +1,23 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const prisma = require('../../lib/prisma');
 const { successEmbed, errorEmbed } = require('../utils/embedBuilder');
+const config = require('../config');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('economy')
-    .setDescription('View economy insights (Admin only)')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    .setDescription('View economy insights (Admin only)'),
   
   async execute(interaction) {
     await interaction.deferReply();
     
+    if (!config.ADMIN_IDS.includes(interaction.user.id)) {
+      return await interaction.editReply({ 
+        embeds: [errorEmbed('❌ Access Denied', 'This command is for administrators only.')] 
+      });
+    }
+    
     try {
-      const member = await interaction.guild.members.fetch(interaction.user.id);
-      if (!member.permissions.has('Administrator')) {
-        return await interaction.editReply({ 
-          embeds: [errorEmbed('❌ Access Denied', 'This command is for administrators only.')] 
-        });
-      }
       
       const [
         totalCoinsResult,

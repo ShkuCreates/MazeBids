@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const prisma = require('../../lib/prisma');
 const { successEmbed, errorEmbed } = require('../utils/embedBuilder');
+const config = require('../config');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,11 +18,16 @@ module.exports = {
     .addIntegerOption(option => 
       option.setName('uses')
         .setDescription('Maximum uses (default: 1)')
-        .setRequired(false))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setRequired(false)),
   
   async execute(interaction) {
     await interaction.deferReply();
+    
+    if (!config.ADMIN_IDS.includes(interaction.user.id)) {
+      return await interaction.editReply({ 
+        embeds: [errorEmbed('❌ Access Denied', 'This command is for administrators only.')] 
+      });
+    }
     
     const code = interaction.options.getString('code');
     const reward = interaction.options.getInteger('reward');
