@@ -75,7 +75,6 @@ model Auction {
   highestBidderId String?
   highestBidder   User?          @relation("Winner", fields: [highestBidderId], references: [id])
   bids            Bid[]
-  isPremium       Boolean        @default(false) // High value badge
   subscriptions   AuctionSubscription[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
