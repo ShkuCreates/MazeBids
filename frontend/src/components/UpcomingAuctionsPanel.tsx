@@ -76,6 +76,7 @@ export default function UpcomingAuctionsPanel() {
   const displayAuctions = auctions.length > 0 ? auctions : mockUpcoming;
 
   const getTimeLeft = (startTime: string): string => {
+    if (!mounted) return "00:00:00";
     const now = Date.now();
     const start = new Date(startTime).getTime();
     const diff = start - now;
@@ -90,6 +91,7 @@ export default function UpcomingAuctionsPanel() {
   };
 
   useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       const t: Record<string, string> = {};
       displayAuctions.forEach((a) => {
@@ -98,7 +100,7 @@ export default function UpcomingAuctionsPanel() {
       setTimers(t);
     }, 1000);
     return () => clearInterval(interval);
-  }, [displayAuctions]);
+  }, [displayAuctions, mounted]);
 
   const handleNotify = async (auctionId: string) => {
     try {

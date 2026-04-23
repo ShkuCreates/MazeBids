@@ -20,6 +20,11 @@ export default function ProfilePage() {
   const { user, loading, logout, refreshUser } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
   const [togglingNotify, setTogglingNotify] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -204,7 +209,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
               <span className="text-gray-500 text-sm">Member Since</span>
               <span className="text-white font-bold">
-                {new Date(profileData?.createdAt || Date.now()).toLocaleDateString()}
+                {mounted && new Date(profileData?.createdAt || "2024-01-01").toLocaleDateString()}
               </span>
             </div>
             <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">

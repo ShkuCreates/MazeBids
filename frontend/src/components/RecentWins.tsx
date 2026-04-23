@@ -21,7 +21,8 @@ const maskUsername = (username: string): string => {
   return username.slice(0, 2) + "***" + username.slice(-1);
 };
 
-const formatTimeAgo = (dateStr: string): string => {
+const formatTimeAgo = (dateStr: string, mounted: boolean): string => {
+  if (!mounted) return "Loading...";
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -195,7 +196,7 @@ export default function RecentWins() {
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-gray-500" />
                       <span className="text-[9px] text-gray-500">
-                        {formatTimeAgo(win.updatedAt)}
+                        {formatTimeAgo(win.updatedAt, mounted)}
                       </span>
                     </div>
                   </div>

@@ -258,6 +258,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const getTimeAgo = (timestamp: Date): string => {
+    if (!mounted) return "Loading...";
     const seconds = Math.floor((Date.now() - timestamp.getTime()) / 1000);
     if (seconds < 60) return "just now";
     if (seconds < 120) return "1 min ago";

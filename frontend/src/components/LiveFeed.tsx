@@ -13,8 +13,14 @@ interface MockActivity {
 
 const LiveActivityFeed = memo(() => {
   const [activities, setActivities] = useState<MockActivity[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
     const items = ["iPhone 13", "AirPods Pro", "MacBook Air", "PS5", "Nintendo Switch"];
     const actions = ["placed a bid on", "won", "joined auction for"];
@@ -40,7 +46,7 @@ const LiveActivityFeed = memo(() => {
     }, 4000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   return (
     <motion.div
@@ -107,8 +113,14 @@ LiveActivityFeed.displayName = 'LiveActivityFeed';
 
 const LivePopups = memo(() => {
   const [popups, setPopups] = useState<Array<{ id: string; icon: React.ReactNode; message: string }>>([]);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const messages = [
       { icon: <Eye className="w-4 h-4 text-blue-400" />, template: () => `👀 ${Math.floor(Math.random() * 450) + 50} users are watching right now` },
       { icon: <Coins className="w-4 h-4 text-yellow-400" />, template: () => `💰 ${(Math.floor(Math.random() * 4500) + 500).toLocaleString()} coins just farmed` },
@@ -125,7 +137,7 @@ const LivePopups = memo(() => {
     addPopup();
     const interval = setInterval(addPopup, 3500 + Math.random() * 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   return (
     <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">

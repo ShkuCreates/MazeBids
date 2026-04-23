@@ -98,7 +98,8 @@ const getNotificationHref = (type: NotificationType, relatedId: string | null) =
   }
 };
 
-const formatTimeAgo = (dateStr: string): string => {
+const formatTimeAgo = (dateStr: string, mounted: boolean): string => {
+  if (!mounted) return "Loading...";
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
@@ -124,6 +125,11 @@ export default function NotificationsPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch notifications from API
   const fetchNotifications = async () => {
@@ -167,6 +173,7 @@ export default function NotificationsPanel() {
 
   // Close on outside click
   useEffect(() => {
+    if (!mounted) return;
     const handleClick = (e: MouseEvent) => {
       if (
         isOpen &&
@@ -180,7 +187,7 @@ export default function NotificationsPanel() {
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen]);
+  }, [isOpen, mounted]);
 
   const markAllRead = async () => {
     try {
@@ -345,7 +352,7 @@ export default function NotificationsPanel() {
                                 {notif.type.replace(/_/g, " ")}
                               </span>
                               <span className="text-[10px] text-gray-500 shrink-0">
-                                {formatTimeAgo(notif.createdAt)}
+                                {formatTimeAgo(notif.createdAt, mounted)}
                               </span>
                             </div>
                             <p

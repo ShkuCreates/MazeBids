@@ -45,7 +45,8 @@ const getActionText = (action: Activity["action"]) => {
   }
 };
 
-const formatTimeAgo = (date: Date): string => {
+const formatTimeAgo = (date: Date, mounted: boolean): string => {
+  if (!mounted) return "Loading...";
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
@@ -62,6 +63,11 @@ const getAvatarColor = (username: string): string => {
 export default function LiveActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const usernames = ["Rahul_23", "CryptoKing", "SnehaX", "TechNinja", "BidMaster", "AuctionKing", "GamerPro99", "MobileMaster"];
   const items = ["iPhone 13", "AirPods Pro", "MacBook Air M2", "PS5", "Nintendo Switch OLED", "Samsung Galaxy S24", "iPad Pro", "Apple Watch Ultra"];
@@ -80,6 +86,7 @@ export default function LiveActivityFeed() {
   };
 
   useEffect(() => {
+    if (!mounted) return;
     // Initialize with 5 realistic activities
     setActivities(Array.from({ length: 5 }, () => generateActivity()));
 
@@ -92,7 +99,7 @@ export default function LiveActivityFeed() {
     }, 4000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   return (
     <div className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-purple-500/5 relative">
@@ -172,7 +179,7 @@ export default function LiveActivityFeed() {
                       <span className="text-gray-600">•</span>
                       <span className="flex items-center gap-1 text-[10px] text-gray-500">
                         <Clock className="w-3 h-3" />
-                        {formatTimeAgo(activity.timestamp)}
+                        {formatTimeAgo(activity.timestamp, mounted)}
                       </span>
                     </div>
                   </div>

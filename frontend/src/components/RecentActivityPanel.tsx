@@ -46,7 +46,8 @@ const getActivityConfig = (activity: Activity) => {
   }
 };
 
-const getRelativeTime = (date: Date) => {
+const getRelativeTime = (date: Date, mounted: boolean) => {
+  if (!mounted) return "Loading...";
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -59,6 +60,11 @@ const getRelativeTime = (date: Date) => {
 
 export default function RecentActivityPanel({ activities = defaultActivities }: RecentActivityPanelProps) {
   const [displayActivities, setDisplayActivities] = useState(activities);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setDisplayActivities(activities.slice(0, 10));
@@ -107,7 +113,7 @@ export default function RecentActivityPanel({ activities = defaultActivities }: 
                       {activity.amount}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">{getRelativeTime(activity.time)}</p>
+                  <p className="text-xs text-gray-500 mt-1">{getRelativeTime(activity.time, mounted)}</p>
                 </div>
               </div>
             </motion.div>

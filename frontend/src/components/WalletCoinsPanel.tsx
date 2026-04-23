@@ -23,6 +23,11 @@ export default function WalletCoinsPanel() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [dailyUsed, setDailyUsed] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(5000);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const coinBalance = user?.coins ?? 0;
 
@@ -158,7 +163,7 @@ export default function WalletCoinsPanel() {
                         {txn.description}
                       </p>
                       <p className="text-[10px] text-gray-500">
-                        {Math.floor((Date.now() - new Date(txn.timestamp).getTime()) / 60000)}m ago
+                        {mounted && Math.floor((Date.now() - new Date(txn.timestamp).getTime()) / 60000)}m ago
                       </p>
                     </div>
                     <span className={`text-sm font-black ${

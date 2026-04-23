@@ -15,6 +15,7 @@ export default function FeaturedAuction() {
   }, []);
 
   const getTimeLeft = (): string => {
+    if (!mounted) return "00:00:00";
     const endTime = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours from now
     const now = Date.now();
     const diff = endTime.getTime() - now;

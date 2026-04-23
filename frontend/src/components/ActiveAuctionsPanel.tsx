@@ -29,6 +29,11 @@ export default function ActiveAuctionsPanel() {
   const [timers, setTimers] = useState<Record<string, string>>({});
   const [recentBids, setRecentBids] = useState<Record<string, boolean>>({});
   const socketRef = useRef<Socket | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchAuctions = useCallback(async () => {
     try {
@@ -102,6 +107,7 @@ export default function ActiveAuctionsPanel() {
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       const t: Record<string, string> = {};
       auctions.forEach((a) => {
@@ -110,7 +116,7 @@ export default function ActiveAuctionsPanel() {
       setTimers(t);
     }, 1000);
     return () => clearInterval(interval);
-  }, [auctions, getTimeLeft]);
+  }, [auctions, getTimeLeft, mounted]);
 
   return (
     <div className="space-y-4">
