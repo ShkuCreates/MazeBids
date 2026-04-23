@@ -63,67 +63,33 @@ export default function LiveActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch recent bids from API on mount
+  // Controlled mock data for demo purposes
+  const mockActivities: Activity[] = [
+    { id: "mock-1", username: "Rahul", action: "bid", itemName: "iPhone 13", amount: 5200, timestamp: new Date(Date.now() - 120000) },
+    { id: "mock-2", username: "Sneha", action: "won", itemName: "AirPods Pro", timestamp: new Date(Date.now() - 300000) },
+    { id: "mock-3", username: "Amit", action: "bid", itemName: "PS5", amount: 25000, timestamp: new Date(Date.now() - 480000) },
+    { id: "mock-4", username: "Priya", action: "bid", itemName: "MacBook Air", amount: 38000, timestamp: new Date(Date.now() - 600000) },
+    { id: "mock-5", username: "Vikram", action: "won", itemName: "Nintendo Switch", timestamp: new Date(Date.now() - 720000) },
+  ];
+
   useEffect(() => {
-    const fetchRecentBids = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/auctions`);
-        const activeAuctions = res.data || [];
+    // Initialize with mock data
+    setActivities(mockActivities);
 
-        // Build activity list from recent bids across auctions
-        const recentActivities: Activity[] = [];
-        for (const auction of activeAuctions) {
-          if (auction.highestBidder) {
-            recentActivities.push({
-              id: `init-${auction.id}`,
-              username: auction.highestBidder.username,
-              action: "bid",
-              itemName: auction.title,
-              itemId: auction.id,
-              amount: auction.currentBid,
-              timestamp: new Date(auction.updatedAt || Date.now()),
-            });
-          }
-        }
-        // Sort by most recent
-        recentActivities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        setActivities(recentActivities.slice(0, 15));
-      } catch (err) {
-        console.error("Failed to fetch recent activity:", err);
-      }
-    };
-    fetchRecentBids();
-  }, []);
+    // Rotate entries every 8 seconds with fade animation
+    const interval = setInterval(() => {
+      setActivities((prev) => {
+        const rotated = [...prev.slice(1), prev[0]];
+        // Update timestamps to simulate freshness
+        const withUpdatedTimes = rotated.map((a, i) => ({
+          ...a,
+          timestamp: new Date(Date.now() - (i * 120000)), // 2 min intervals
+        }));
+        return withUpdatedTimes;
+      });
+    }, 8000);
 
-  // Listen for real-time bid updates via socket.io
-  useEffect(() => {
-    const socket = io(API_URL, { withCredentials: true });
-
-    socket.on("bidUpdated", (updatedAuction: any) => {
-      if (updatedAuction.highestBidder) {
-        const newActivity: Activity = {
-          id: `live-${Date.now()}-${updatedAuction.id}`,
-          username: updatedAuction.highestBidder.username,
-          action: "bid",
-          itemName: updatedAuction.title,
-          itemId: updatedAuction.id,
-          amount: updatedAuction.currentBid,
-          timestamp: new Date(),
-        };
-
-        setActivities((prev) => {
-          // Avoid duplicates for same auction within 5 seconds
-          const filtered = prev.filter(
-            (a) => !(a.itemId === updatedAuction.id && Date.now() - a.timestamp.getTime() < 5000)
-          );
-          return [newActivity, ...filtered].slice(0, 15);
-        });
-      }
-    });
-
-    return () => {
-      socket.disconnect();
-    };
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -138,19 +104,22 @@ export default function LiveActivityFeed() {
             <Zap className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
-            <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
+            <h3 className="font-black text-white text-sm tracking-wider">DEMO ACTIVITY</h3>
+            <p className="text-[10px] text-gray-500 font-medium">Sample data for preview</p>
           </div>
         </div>
-        
-        {/* Live indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-          </span>
-          <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
+
+        {/* Demo indicator */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">DEMO</span>
         </div>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="px-6 py-2 bg-blue-500/5 border-b border-blue-500/10">
+        <p className="text-[9px] text-blue-400 font-medium text-center">
+          Live activity will appear when users start bidding
+        </p>
       </div>
 
       {/* Activity List */}

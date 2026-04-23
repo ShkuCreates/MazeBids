@@ -37,61 +37,9 @@ export default function ActiveAuctionsPanel() {
       // Sort by ending soon first
       active.sort((a: Auction, b: Auction) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
       setAuctions(active.slice(0, 4)); // Max 4 for dashboard
-
-      // If no active auctions, use mock data
-      if (active.length === 0) {
-        const mockAuctions: Auction[] = [
-          {
-            id: "mock-active-1",
-            title: "PlayStation 5 Slim",
-            description: "Brand new gaming console with controller",
-            product: "Gaming Console",
-            image: "",
-            startTime: new Date(Date.now() - 3600000).toISOString(),
-            endTime: new Date(Date.now() + 1800000).toISOString(),
-            currentBid: 25000,
-            minBidIncrement: 500,
-            highestBidderId: "user-1",
-            highestBidder: { username: "GamerPro", avatar: "" },
-            status: "ACTIVE",
-          },
-          {
-            id: "mock-active-2",
-            title: "iPhone 15 Pro",
-            description: "Latest Apple smartphone with titanium design",
-            product: "Smartphone",
-            image: "",
-            startTime: new Date(Date.now() - 7200000).toISOString(),
-            endTime: new Date(Date.now() + 3600000).toISOString(),
-            currentBid: 38000,
-            minBidIncrement: 1000,
-            highestBidderId: "user-2",
-            highestBidder: { username: "TechNinja", avatar: "" },
-            status: "ACTIVE",
-          },
-        ];
-        setAuctions(mockAuctions);
-      }
     } catch (err) {
       console.error("Failed to fetch auctions for dashboard:", err);
-      // Use mock data on error
-      const mockAuctions: Auction[] = [
-        {
-          id: "mock-active-1",
-          title: "PlayStation 5 Slim",
-          description: "Brand new gaming console with controller",
-          product: "Gaming Console",
-          image: "",
-          startTime: new Date(Date.now() - 3600000).toISOString(),
-          endTime: new Date(Date.now() + 1800000).toISOString(),
-          currentBid: 25000,
-          minBidIncrement: 500,
-          highestBidderId: "user-1",
-          highestBidder: { username: "GamerPro", avatar: "" },
-          status: "ACTIVE",
-        },
-      ];
-      setAuctions(mockAuctions);
+      setAuctions([]); // Show empty state on error
     }
   }, []);
 
@@ -143,38 +91,7 @@ export default function ActiveAuctionsPanel() {
   }, [auctions, getTimeLeft]);
 
   if (auctions.length === 0) {
-    // Show mock auctions when no real auctions exist
-    const mockAuctions: Auction[] = [
-      {
-        id: "mock-empty-1",
-        title: "PlayStation 5 Slim",
-        description: "Brand new gaming console with controller",
-        product: "Gaming Console",
-        image: "",
-        startTime: new Date(Date.now() - 3600000).toISOString(),
-        endTime: new Date(Date.now() + 1800000).toISOString(),
-        currentBid: 25000,
-        minBidIncrement: 500,
-        highestBidderId: "user-1",
-        highestBidder: { username: "GamerPro", avatar: "" },
-        status: "ACTIVE",
-      },
-      {
-        id: "mock-empty-2",
-        title: "iPhone 15 Pro",
-        description: "Latest Apple smartphone with titanium design",
-        product: "Smartphone",
-        image: "",
-        startTime: new Date(Date.now() - 7200000).toISOString(),
-        endTime: new Date(Date.now() + 3600000).toISOString(),
-        currentBid: 38000,
-        minBidIncrement: 1000,
-        highestBidderId: "user-2",
-        highestBidder: { username: "TechNinja", avatar: "" },
-        status: "ACTIVE",
-      },
-    ];
-
+    // Show "No Live Auctions" state with preview cards
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
@@ -190,54 +107,51 @@ export default function ActiveAuctionsPanel() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {mockAuctions.map((auction) => {
-            const ending = isEndingSoon(auction.endTime);
-            const timer = timers[auction.id] || "00:00:00";
+        {/* Empty State Card */}
+        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl p-8 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4">
+            <Gavel className="w-8 h-8 text-purple-400 opacity-40" />
+          </div>
+          <h3 className="text-white font-black text-lg mb-2">No Live Auctions</h3>
+          <p className="text-gray-500 text-sm mb-6">New auctions will appear here soon</p>
+          <Link
+            href="/auctions"
+            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black text-sm transition-all shadow-lg shadow-purple-500/20"
+          >
+            Go to Auctions Page
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
 
-            return (
-              <motion.div
-                key={auction.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`group relative rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_0_60px_-15px_rgba(139,92,246,0.35)] hover:-translate-y-1 ${
-                  ending
-                    ? "border-2 border-red-500/40 shadow-[0_0_30px_-5px_rgba(239,68,68,0.3)]"
-                    : "border border-white/10 bg-gradient-to-br from-white/5 to-transparent"
-                }`}
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-80" />
-                  <div className="absolute top-3 left-3 px-3 py-1 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center gap-1 shadow-lg">
-                    <Zap className="w-3 h-3" />
-                    LIVE
-                  </div>
-                  <div className="absolute top-3 right-3 px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-black rounded-full border border-white/10">
-                    {timer}
-                  </div>
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-white font-black text-sm truncate">{auction.title}</h3>
-                    <p className="text-gray-400 text-xs mt-0.5">{auction.product}</p>
-                  </div>
+        {/* Preview Cards (Disabled) */}
+        <div className="space-y-3">
+          <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">Preview</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-50">
+            <div className="relative rounded-2xl overflow-hidden border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
+              <div className="relative aspect-video overflow-hidden blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-80" />
+              </div>
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-bold text-sm">Auction Preview</span>
+                  <span className="text-[9px] bg-gray-700 text-gray-400 px-2 py-1 rounded-full font-medium">PREVIEW</span>
                 </div>
-                <div className="p-3 flex items-center justify-between border-t border-white/5">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-yellow-500" />
-                    <span className="text-white font-bold text-sm">{auction.currentBid.toLocaleString()}</span>
-                  </div>
-                  {auction.highestBidder && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center">
-                        <Gavel className="w-3 h-3 text-purple-400" />
-                      </div>
-                      <span className="text-gray-400 text-xs">{auction.highestBidder.username}</span>
-                    </div>
-                  )}
+              </div>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden border border-white/5 bg-gradient-to-br from-white/5 to-transparent">
+              <div className="relative aspect-video overflow-hidden blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-transparent to-transparent opacity-80" />
+              </div>
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-bold text-sm">Auction Preview</span>
+                  <span className="text-[9px] bg-gray-700 text-gray-400 px-2 py-1 rounded-full font-medium">PREVIEW</span>
                 </div>
-              </motion.div>
-            );
-          })}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

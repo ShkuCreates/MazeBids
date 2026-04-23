@@ -11,6 +11,7 @@ import AdBanner from "@/components/AdBanner";
 import LiveInterestIndicator from "@/components/LiveInterestIndicator";
 import RecentWins from "@/components/RecentWins";
 import UpcomingAuctionsPanel from "@/components/UpcomingAuctionsPanel";
+import EarnWhileYouWait from "@/components/EarnWhileYouWait";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const socket = io(API_URL, {
@@ -301,6 +302,15 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
             transition={{ delay: 0.4 }}
           >
             <UpcomingAuctionsPanel />
+          </motion.div>
+
+          {/* Earn Coins While You Wait */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <EarnWhileYouWait />
           </motion.div>
 
           {/* Recent Wins */}
