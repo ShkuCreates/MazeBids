@@ -29,6 +29,7 @@ model User {
   completedTasks UserTask[]
   redemptions   Redemption[]
   userNotifications Notification[]
+  auctionSubscriptions AuctionSubscription[]
 
   @@index([notifications])
   @@index([role])
@@ -72,12 +73,26 @@ model Auction {
   highestBidderId String?
   highestBidder   User?          @relation("Winner", fields: [highestBidderId], references: [id])
   bids            Bid[]
+  isPremium       Boolean        @default(false) // High value badge
+  subscriptions   AuctionSubscription[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   @@index([status])
   @@index([startTime])
   @@index([endTime])
+}
+
+model AuctionSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  auctionId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, auctionId])
+  @@index([auctionId])
 }
 
 model Bid {

@@ -16,6 +16,7 @@ import AdBanner from "@/components/AdBanner";
 import LiveActivityFeed from "@/components/LiveActivityFeed";
 import WalletCoinsPanel from "@/components/WalletCoinsPanel";
 import ActiveAuctionsPanel from "@/components/ActiveAuctionsPanel";
+import UpcomingAuctionsPanel from "@/components/UpcomingAuctionsPanel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -78,6 +79,9 @@ export default function Dashboard() {
           <ActiveAuctionsPanel />
         </div>
       </div>
+
+      {/* ═══ UPCOMING AUCTIONS ═══ */}
+      <UpcomingAuctionsPanel />
 
       {/* ═══ TIER 2 — MEDIUM PRIORITY ═══
           Live Activity Feed + Won Auctions — supporting, subtle */}

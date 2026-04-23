@@ -5,6 +5,53 @@ const cache = require('../lib/cache');
 const { sendAuctionNotification } = require('../lib/discordBot');
 const { createNotification } = require('../lib/notificationHelper');
 
+// Subscribe to auction notification
+router.post('/:id/notify', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const auction = await prisma.auction.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!auction) return res.status(404).json({ message: 'Auction not found' });
+
+    await prisma.auctionSubscription.upsert({
+      where: {
+        userId_auctionId: {
+          userId: req.user.id,
+          auctionId: req.params.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: req.user.id,
+        auctionId: req.params.id,
+      },
+    });
+
+    res.json({ message: 'Subscribed to auction notifications' });
+  } catch (err) {
+    console.error('Subscribe error:', err);
+    res.status(500).json({ message: 'Failed to subscribe' });
+  }
+});
+
+// Get upcoming auctions
+router.get('/upcoming', async (req, res) => {
+  try {
+    const auctions = await prisma.auction.findMany({
+      where: {
+        status: 'UPCOMING',
+        startTime: { gt: new Date() }
+      },
+      orderBy: { startTime: 'asc' },
+    });
+    res.json(auctions);
+  } catch (err) {
+    console.error('Fetch upcoming auctions error:', err);
+    res.status(500).json({ message: 'Failed to fetch upcoming auctions' });
+  }
+});
+
 // Get all active auctions
 router.get('/', async (req, res) => {
   try {
