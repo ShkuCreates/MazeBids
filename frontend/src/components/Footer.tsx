@@ -1,9 +1,14 @@
 "use client";
 import { Play, Camera, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
+  const [currentYear, setCurrentYear] = useState(2024);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const socialLinks = [
     {

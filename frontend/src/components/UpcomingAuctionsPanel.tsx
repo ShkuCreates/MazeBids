@@ -21,6 +21,11 @@ export default function UpcomingAuctionsPanel() {
   const [timers, setTimers] = useState<Record<string, string>>({});
   const [subscribed, setSubscribed] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchUpcoming = async () => {
@@ -36,34 +41,34 @@ export default function UpcomingAuctionsPanel() {
     fetchUpcoming();
   }, []);
 
-  // Mock data for exciting upcoming auctions with censored images
-  const mockUpcoming = [
+  // Mock data for exciting upcoming auctions with censored images - use static timestamps
+  const mockUpcoming: Auction[] = [
     {
       id: "mock-1",
       title: "Mystery Reward 🔒",
       image: null,
-      startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      startTime: "2024-12-25T10:00:00.000Z",
       isPremium: true,
     },
     {
       id: "mock-2",
       title: "Premium Drop (Hidden)",
       image: null,
-      startTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+      startTime: "2024-12-25T13:00:00.000Z",
       isPremium: true,
     },
     {
       id: "mock-3",
       title: "Mystery Reward 🔒",
       image: null,
-      startTime: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      startTime: "2024-12-25T16:00:00.000Z",
       isPremium: false,
     },
     {
       id: "mock-4",
       title: "Premium Drop (Hidden)",
       image: null,
-      startTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      startTime: "2024-12-25T20:00:00.000Z",
       isPremium: true,
     },
   ];

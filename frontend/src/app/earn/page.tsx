@@ -33,6 +33,7 @@ export default function EarnPage() {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemMessage, setRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [redeemRefCode, setRedeemRefCode] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   // Daily Streak State
   const [streak, setStreak] = useState(3);
@@ -64,6 +65,10 @@ export default function EarnPage() {
     { username: "AryanLive", coins: 3800, rank: 4 },
     { username: "NehaOP", coins: 3200, rank: 5 },
   ]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleGameClick = (task: any) => {
     setActiveGame({ id: task.id, reward: task.reward, type: task.type });
@@ -170,6 +175,7 @@ export default function EarnPage() {
 
   // Limited offer timer
   useEffect(() => {
+    if (!mounted) return;
     const endTime = new Date(Date.now() + 2.5 * 60 * 60 * 1000);
     const timer = setInterval(() => {
       const now = Date.now();
@@ -185,10 +191,11 @@ export default function EarnPage() {
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [mounted]);
 
   // Live earnings feed generator
   useEffect(() => {
+    if (!mounted) return;
     const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
     const activities = ["earned 250 coins from game", "watched video +40 coins", "redeemed code +100 coins", "completed daily bonus +50 coins"];
 
@@ -215,10 +222,11 @@ export default function EarnPage() {
     }, 4000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   // Live popups generator
   useEffect(() => {
+    if (!mounted) return;
     const messages = [
       { icon: <Coins className="w-4 h-4 text-yellow-400" />, template: () => `💰 ${(Math.floor(Math.random() * 4500) + 500).toLocaleString()} coins just earned` },
       { icon: <Flame className="w-4 h-4 text-orange-400" />, template: () => `🔥 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} completed a task` },
@@ -234,7 +242,7 @@ export default function EarnPage() {
     addPopup();
     const interval = setInterval(addPopup, 3500 + Math.random() * 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative">

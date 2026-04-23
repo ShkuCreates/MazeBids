@@ -17,16 +17,16 @@ interface RecentActivityPanelProps {
 }
 
 const defaultActivities: Activity[] = [
-  { type: "bid", amount: 200, item: "iPhone 15", time: new Date(Date.now() - 2 * 60 * 1000) },
-  { type: "earn", amount: 50, source: "video", time: new Date(Date.now() - 15 * 60 * 1000) },
-  { type: "win", amount: 1500, item: "MacBook Air", time: new Date(Date.now() - 1 * 60 * 60 * 1000) },
-  { type: "join", item: "Gaming Console", time: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-  { type: "earn", amount: 100, source: "daily bonus", time: new Date(Date.now() - 3 * 60 * 60 * 1000) },
-  { type: "bid", amount: 300, item: "AirPods Pro", time: new Date(Date.now() - 5 * 60 * 60 * 1000) },
-  { type: "lose", amount: 450, item: "Smart Watch", time: new Date(Date.now() - 8 * 60 * 60 * 1000) },
-  { type: "earn", amount: 25, source: "referral", time: new Date(Date.now() - 12 * 60 * 60 * 1000) },
-  { type: "join", item: "iPad Pro", time: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-  { type: "bid", amount: 100, item: "Gift Card", time: new Date(Date.now() - 36 * 60 * 60 * 1000) },
+  { type: "bid", amount: 200, item: "iPhone 15", time: new Date("2024-01-15T10:28:00.000Z") },
+  { type: "earn", amount: 50, source: "video", time: new Date("2024-01-15T10:15:00.000Z") },
+  { type: "win", amount: 1500, item: "MacBook Air", time: new Date("2024-01-15T09:00:00.000Z") },
+  { type: "join", item: "Gaming Console", time: new Date("2024-01-15T08:00:00.000Z") },
+  { type: "earn", amount: 100, source: "daily bonus", time: new Date("2024-01-15T07:00:00.000Z") },
+  { type: "bid", amount: 300, item: "AirPods Pro", time: new Date("2024-01-15T05:00:00.000Z") },
+  { type: "lose", amount: 450, item: "Smart Watch", time: new Date("2024-01-15T02:00:00.000Z") },
+  { type: "earn", amount: 25, source: "referral", time: new Date("2024-01-14T22:00:00.000Z") },
+  { type: "join", item: "iPad Pro", time: new Date("2024-01-14T10:00:00.000Z") },
+  { type: "bid", amount: 100, item: "Gift Card", time: new Date("2024-01-13T22:00:00.000Z") },
 ];
 
 const getActivityConfig = (activity: Activity) => {

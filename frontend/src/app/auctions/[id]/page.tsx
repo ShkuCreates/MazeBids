@@ -61,26 +61,31 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [timeLeft, setTimeLeft] = useState("");
   const [isBidding, setIsBidding] = useState(false);
   const [showFundsError, setShowFundsError] = useState(false);
-  
+  const [mounted, setMounted] = useState(false);
+
   // Live Popups State
   const [popups, setPopups] = useState<Popup[]>([]);
-  
+
   // Live Activity Feed State
   const [activities, setActivities] = useState<Activity[]>([]);
-  
+
   // Upcoming Auctions Timers
   const [upcomingTimers, setUpcomingTimers] = useState<Record<string, string>>({});
-  
+
   // Featured Auction State
   const [featuredTimer, setFeaturedTimer] = useState("00:00:00");
   const [featuredBidCount, setFeaturedBidCount] = useState(127);
 
-  // Mock upcoming auctions with censored images
+  // Mock upcoming auctions with censored images - use static timestamps
   const upcomingAuctions = [
-    { id: "up-1", title: "Mystery Reward 🔒", startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), isPremium: true },
-    { id: "up-2", title: "Premium Drop (Hidden)", startTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(), isPremium: true },
-    { id: "up-3", title: "Mystery Reward 🔒", startTime: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), isPremium: false },
+    { id: "up-1", title: "Mystery Reward 🔒", startTime: "2024-12-25T10:00:00.000Z", isPremium: true },
+    { id: "up-2", title: "Premium Drop (Hidden)", startTime: "2024-12-25T13:00:00.000Z", isPremium: true },
+    { id: "up-3", title: "Mystery Reward 🔒", startTime: "2024-12-25T16:00:00.000Z", isPremium: false },
   ];
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch auction data
   useEffect(() => {
@@ -142,6 +147,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
 
   // Featured auction timer
   useEffect(() => {
+    if (!mounted) return;
     const endTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
     const timer = setInterval(() => {
       const now = Date.now();
@@ -157,18 +163,20 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [mounted]);
 
   // Featured auction bid count
   useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       setFeaturedBidCount((prev) => prev + Math.floor(Math.random() * 3));
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   // Upcoming auctions timers
   useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       const t: Record<string, string> = {};
       upcomingAuctions.forEach((a) => {
@@ -187,10 +195,11 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       setUpcomingTimers(t);
     }, 1000);
     return () => clearInterval(interval);
-  }, [upcomingAuctions]);
+  }, [upcomingAuctions, mounted]);
 
   // Live Popups generator
   useEffect(() => {
+    if (!mounted) return;
     const messages = [
       { icon: <Eye className="w-4 h-4 text-blue-400" />, template: () => `👀 ${Math.floor(Math.random() * 450) + 50} users are watching right now` },
       { icon: <Coins className="w-4 h-4 text-yellow-400" />, template: () => `💰 ${(Math.floor(Math.random() * 4500) + 500).toLocaleString()} coins just farmed` },
@@ -207,13 +216,14 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     addPopup();
     const interval = setInterval(addPopup, 3500 + Math.random() * 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   // Live Activity Feed generator
   useEffect(() => {
+    if (!mounted) return;
     const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
-    const items = ["iPhone 13", "AirPods Pro", "MacBook Air", "PS5", "Nintendo Switch"];
-    const actions = ["placed a bid on", "won", "joined auction for"];
+    const actions = ["placed a bid on", "joined auction for", "won", "is watching"];
+    const items = ["iPhone 15", "MacBook Air", "PS5", "AirPods Pro", "Samsung Galaxy", "iPad Pro"];
 
     const generateActivity = (): Activity => {
       const action = actions[Math.floor(Math.random() * actions.length)];
@@ -221,7 +231,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
         id: `activity-${Date.now()}-${Math.random()}`,
         username: usernames[Math.floor(Math.random() * usernames.length)],
         action,
-        item: action !== "joined auction for" ? items[Math.floor(Math.random() * items.length)] : undefined,
+        item: action !== "joined auction for" && action !== "is watching" ? items[Math.floor(Math.random() * items.length)] : undefined,
         timestamp: new Date(),
       };
     };
@@ -236,7 +246,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     }, 4000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   const handleBid = () => {
     if (!user) return alert("Please login to bid");

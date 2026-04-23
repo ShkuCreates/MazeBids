@@ -8,6 +8,11 @@ import Link from "next/link";
 export default function FeaturedAuction() {
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [bidCount, setBidCount] = useState(127);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getTimeLeft = (): string => {
     const endTime = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours from now
@@ -24,19 +29,21 @@ export default function FeaturedAuction() {
   };
 
   useEffect(() => {
+    if (!mounted) return;
     setTimeLeft(getTimeLeft());
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft());
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       setBidCount((prev) => prev + Math.floor(Math.random() * 3));
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   return (
     <motion.div
