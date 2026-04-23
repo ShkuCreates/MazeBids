@@ -120,7 +120,7 @@ const Footer = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     title={social.name}
-                    className={`text-gray-400 transition-colors ${social.color}`}
+                    className={`text-gray-400 transition-all duration-300 hover:scale-110 ${social.color}`}
                   >
                     <Icon className="w-5 h-5" />
                   </a>

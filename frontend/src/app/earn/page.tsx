@@ -344,7 +344,6 @@ export default function EarnPage() {
               </div>
             </div>
           </motion.div>
-          </div>
 
           {/* RIGHT: Secondary Actions (smaller cards) */}
           <div className="space-y-4">
