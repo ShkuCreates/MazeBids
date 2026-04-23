@@ -140,8 +140,8 @@ router.get('/dashboard-stats', async (req, res) => {
     const dailyBidsData = days.map((day, index) => {
       const date = new Date(startOfWeek.getTime() + index * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
-      const bidsForDay = recentBids.find((b: any) => b.date?.toISOString?.()?.split('T')[0] === dateStr);
-      const usersForDay = recentUsers.find((u: any) => u.date?.toISOString?.()?.split('T')[0] === dateStr);
+      const bidsForDay = recentBids.find((b) => b.date?.toISOString?.()?.split('T')[0] === dateStr);
+      const usersForDay = recentUsers.find((u) => u.date?.toISOString?.()?.split('T')[0] === dateStr);
       return {
         day,
         bids: parseInt(bidsForDay?.count || 0),
