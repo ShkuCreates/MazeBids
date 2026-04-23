@@ -122,8 +122,7 @@ router.get('/me', async (req, res) => {
   // Passport already deserializes the current user from the session.
   if (req.user) {
     console.log('[AUTH /me] Returning deserialized passport user');
-    const { discordNotifications, ...rest } = req.user;
-    return res.json({ ...rest, notifications: discordNotifications });
+    return res.json(req.user);
   }
 
   const userId = req.session.user?.id;
@@ -135,8 +134,7 @@ router.get('/me', async (req, res) => {
       });
       if (user) {
         console.log('[AUTH /me] Returning session fallback user');
-        const { discordNotifications, ...rest } = user;
-        return res.json({ ...rest, notifications: discordNotifications });
+        return res.json(user);
       }
     } catch (err) {
       console.error('[AUTH /me] User lookup error:', err);

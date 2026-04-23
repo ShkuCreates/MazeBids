@@ -16,7 +16,7 @@ model User {
   totalEarned   Int            @default(0)
   totalSpent    Int            @default(0)
   role          String         @default("USER") // USER, ADMIN
-  discordNotifications Boolean        @default(false) // Discord DM notifications toggle
+  notifications Boolean        @default(false) // Discord DM notifications toggle
   referralCode  String?        @unique
   referredById  String?
   referredBy    User?          @relation("Referrals", fields: [referredById], references: [id])
@@ -30,7 +30,7 @@ model User {
   redemptions   Redemption[]
   userNotifications Notification[]
 
-  @@index([discordNotifications])
+  @@index([notifications])
   @@index([role])
 }
 

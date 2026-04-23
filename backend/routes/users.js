@@ -19,7 +19,7 @@ router.get('/profile', async (req, res) => {
         avatar: true, 
         totalEarned: true, 
         totalSpent: true,
-        discordNotifications: true,
+        notifications: true,
         createdAt: true,
         discordId: true,
         coins: true
@@ -47,7 +47,7 @@ router.get('/profile', async (req, res) => {
 
     console.log('Auctions won count:', wonAuctions.length);
 
-    const profileData = { ...user, notifications: user.discordNotifications, wonAuctions, auctionsWonCount: wonAuctions.length };
+    const profileData = { ...user, wonAuctions, auctionsWonCount: wonAuctions.length };
     console.log('Final profile data:', profileData);
 
     res.json(profileData);
@@ -78,15 +78,15 @@ router.post('/toggle-notifications', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { discordNotifications: true, discordId: true }
+      select: { notifications: true, discordId: true }
     });
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const newNotificationStatus = !user.discordNotifications;
+    const newNotificationStatus = !user.notifications;
     const updated = await prisma.user.update({
       where: { id: req.user.id },
-      data: { discordNotifications: newNotificationStatus }
+      data: { notifications: newNotificationStatus }
     });
 
     // Send Discord DM notification
@@ -99,7 +99,7 @@ router.post('/toggle-notifications', async (req, res) => {
       }
     }
 
-    res.json({ notifications: updated.discordNotifications });
+    res.json({ notifications: updated.notifications });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update notification settings' });
   }

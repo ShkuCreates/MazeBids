@@ -123,7 +123,7 @@ router.post('/', async (req, res) => {
     cache.del('auctions:active');
 
     const usersToNotify = await prisma.user.findMany({
-      where: { discordNotifications: true }
+      where: { notifications: true }
     });
 
     usersToNotify.forEach(user => {
