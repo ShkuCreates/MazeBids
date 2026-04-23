@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const cache = require('../lib/cache');
@@ -27,6 +27,7 @@ router.get('/', async (req, res) => {
 
     res.json(auctions);
   } catch (err) {
+    console.error('Fetch auctions error:', err);
     res.status(500).json({ message: 'Failed to fetch auctions' });
   }
 });
@@ -61,6 +62,22 @@ router.post('/', async (req, res) => {
   }
   const { title, description, product, image, endTime, startingBid, minBidIncrement } = req.body;
   
+  // Input validation
+  if (!title || !description || !product || !image) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+  
+  const endDate = new Date(endTime);
+  if (isNaN(endDate.getTime()) || endDate <= new Date()) {
+    return res.status(400).json({ message: 'End time must be a valid future date' });
+  }
+  
+  const bid = parseInt(startingBid) || 0;
+  const increment = parseInt(minBidIncrement) || 100;
+  if (bid < 0 || increment < 0) {
+    return res.status(400).json({ message: 'Bid amounts must be non-negative' });
+  }
+  
   try {
     const auction = await prisma.auction.create({
       data: {
@@ -69,13 +86,16 @@ router.post('/', async (req, res) => {
         product,
         image,
         startTime: new Date(),
-        endTime: new Date(endTime),
-        startingBid: parseInt(startingBid) || 0,
-        currentBid: parseInt(startingBid) || 0,
-        minBidIncrement: parseInt(minBidIncrement) || 100,
+        endTime: endDate,
+        startingBid: bid,
+        currentBid: bid,
+        minBidIncrement: increment,
         status: 'ACTIVE'
       }
     });
+
+    // Clear cache
+    cache.del('auctions:active');
 
     const usersToNotify = await prisma.user.findMany({
       where: { notifications: true }
@@ -102,8 +122,10 @@ router.delete('/:id', async (req, res) => {
   try {
     await prisma.bid.deleteMany({ where: { auctionId: req.params.id } });
     await prisma.auction.delete({ where: { id: req.params.id } });
+    cache.del('auctions:active');
     res.json({ message: 'Auction deleted' });
   } catch (err) {
+    console.error('Auction deletion error:', err);
     res.status(500).json({ message: 'Failed to delete auction' });
   }
 });
@@ -120,6 +142,8 @@ router.post('/:id/end', async (req, res) => {
       include: { highestBidder: true }
     });
 
+    cache.del('auctions:active');
+
     if (auction.highestBidder) {
       const { announceWinner } = require('../lib/discordBot');
       await announceWinner(auction, auction.highestBidder);
@@ -127,6 +151,7 @@ router.post('/:id/end', async (req, res) => {
 
     res.json(auction);
   } catch (err) {
+    console.error('Auction end error:', err);
     res.status(500).json({ message: 'Failed to end auction' });
   }
 });
@@ -137,32 +162,48 @@ router.post('/:id/bid', async (req, res) => {
   const { amount } = req.body;
   const auctionId = req.params.id;
 
+  // Input validation
+  const bidAmount = parseInt(amount);
+  if (isNaN(bidAmount) || bidAmount <= 0) {
+    return res.status(400).json({ message: 'Invalid bid amount' });
+  }
+
   try {
     const auction = await prisma.auction.findUnique({ where: { id: auctionId } });
     if (!auction || auction.status !== 'ACTIVE') {
       return res.status(400).json({ message: 'Auction not active' });
     }
 
-    if (amount <= auction.currentBid) {
-      return res.status(400).json({ message: 'Bid too low' });
+    // Check minimum bid increment
+    const minimumBid = auction.currentBid + auction.minBidIncrement;
+    if (bidAmount < minimumBid) {
+      return res.status(400).json({ message: `Bid must be at least ${minimumBid}` });
+    }
+
+    // Check user has enough coins
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user || user.coins < bidAmount) {
+      return res.status(400).json({ message: 'Insufficient coins' });
     }
 
     await prisma.$transaction([
       prisma.auction.update({
         where: { id: auctionId },
-        data: { currentBid: amount, highestBidderId: req.user.id }
+        data: { currentBid: bidAmount, highestBidderId: req.user.id }
       }),
       prisma.user.update({
         where: { id: req.user.id },
-        data: { coins: { decrement: amount }, totalSpent: { increment: amount } }
+        data: { coins: { decrement: bidAmount }, totalSpent: { increment: bidAmount } }
       }),
       prisma.bid.create({
-        data: { amount, auctionId, userId: req.user.id }
+        data: { amount: bidAmount, auctionId, userId: req.user.id }
       })
     ]);
 
+    cache.del('auctions:active');
     res.json({ message: 'Bid placed successfully' });
   } catch (err) {
+    console.error('Place bid error:', err);
     res.status(500).json({ message: 'Failed to place bid' });
   }
 });

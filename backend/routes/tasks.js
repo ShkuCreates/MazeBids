@@ -54,8 +54,11 @@ router.post('/complete', async (req, res) => {
 
     // 3. Validation Logic (Score check for games)
     if (task.type === 'GAME' && score !== undefined) {
-      // Basic validation: ensure score is not impossibly high
-      if (score > 1000) return res.status(400).json({ message: 'Invalid score' });
+      // Validate score is a non-negative number
+      const scoreNum = parseInt(score);
+      if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 999999) {
+        return res.status(400).json({ message: 'Invalid score' });
+      }
     }
 
     await prisma.$transaction([

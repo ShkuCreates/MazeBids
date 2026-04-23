@@ -43,7 +43,20 @@ router.post('/', async (req, res) => {
     return res.status(403).json({ message: 'Forbidden' });
   }
   const { title, type, contentUrl, targetUrl, placement, duration, reward, expiresAt } = req.body;
+  
+  // Input validation
+  if (!title || !type || !contentUrl || !targetUrl || !placement) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+  
   try {
+    const rewardNum = reward ? parseInt(reward) : 0;
+    const durationNum = duration ? parseInt(duration) : null;
+    
+    if (rewardNum < 0 || (durationNum && durationNum < 0)) {
+      return res.status(400).json({ message: 'Duration and reward must be non-negative' });
+    }
+    
     const ad = await prisma.ad.create({
       data: {
         title,
@@ -51,14 +64,15 @@ router.post('/', async (req, res) => {
         contentUrl,
         targetUrl,
         placement: placement.toUpperCase(),
-        duration: duration ? parseInt(duration) : null,
-        reward: reward ? parseInt(reward) : 0,
+        duration: durationNum,
+        reward: rewardNum,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         status: 'ACTIVE'
       }
     });
     res.json(ad);
   } catch (err) {
+    console.error('Ad creation error:', err);
     res.status(500).json({ message: 'Failed to create ad' });
   }
 });
@@ -69,23 +83,38 @@ router.put('/:id', async (req, res) => {
     return res.status(403).json({ message: 'Forbidden' });
   }
   const { title, type, contentUrl, targetUrl, placement, duration, reward, expiresAt, status } = req.body;
+  
+  // Input validation
+  if (title && !title.trim()) {
+    return res.status(400).json({ message: 'Title cannot be empty' });
+  }
+  
   try {
+    const rewardNum = reward ? parseInt(reward) : undefined;
+    const durationNum = duration ? parseInt(duration) : undefined;
+    
+    if ((rewardNum !== undefined && rewardNum < 0) || (durationNum !== undefined && durationNum < 0)) {
+      return res.status(400).json({ message: 'Duration and reward must be non-negative' });
+    }
+    
+    const updateData = {};
+    if (title) updateData.title = title;
+    if (type) updateData.type = type;
+    if (contentUrl) updateData.contentUrl = contentUrl;
+    if (targetUrl) updateData.targetUrl = targetUrl;
+    if (placement) updateData.placement = placement.toUpperCase();
+    if (rewardNum !== undefined) updateData.reward = rewardNum;
+    if (durationNum !== undefined) updateData.duration = durationNum;
+    if (expiresAt) updateData.expiresAt = new Date(expiresAt);
+    if (status) updateData.status = status;
+    
     const ad = await prisma.ad.update({
       where: { id: req.params.id },
-      data: {
-        title,
-        type,
-        contentUrl,
-        targetUrl,
-        placement: placement.toUpperCase(),
-        duration: duration ? parseInt(duration) : null,
-        reward: reward ? parseInt(reward) : 0,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        status
-      }
+      data: updateData
     });
     res.json(ad);
   } catch (err) {
+    console.error('Ad update error:', err);
     res.status(500).json({ message: 'Failed to update ad' });
   }
 });
