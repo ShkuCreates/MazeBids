@@ -99,7 +99,8 @@ client.on('error', (error) => console.error('Discord bot error:', error.message)
 
 client.on('ready', () => {
   console.log(`[DISCORD] Ready as ${client.user.tag}`);
-  registerSlashCommands();
+  // Command registration disabled - handled by main discordBot.js
+  // registerSlashCommands();
 });
 
 // Prevent invite to wrong server

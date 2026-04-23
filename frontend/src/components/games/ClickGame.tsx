@@ -21,10 +21,12 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
 
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
+    const calculatedReward = score * 10; // Clicks * 10 coins
     try {
       await axios.post(`${API_URL}/api/tasks/complete`, {
         taskId,
-        score
+        score,
+        reward: calculatedReward
       }, { withCredentials: true });
       refreshUser();
     } catch (error) {
@@ -105,8 +107,8 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
             </div>
             <div className="space-y-2">
               <h2 className="text-3xl font-black">TIME'S UP!</h2>
-              <p className="text-purple-300">You scored <span className="text-white font-black">{score}</span> points!</p>
-              <p className="text-green-400 font-bold">+{reward} Coins earned!</p>
+              <p className="text-purple-300">You clicked <span className="text-white font-black">{score}</span> times!</p>
+              <p className="text-green-400 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
               onClick={onComplete}

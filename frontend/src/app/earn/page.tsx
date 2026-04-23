@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Coins, Gamepad2, Play, CheckCircle2, Trophy, ArrowRight, Ticket, Loader2, Zap } from "lucide-react";
+import { Coins, Gamepad2, Play, CheckCircle2, Trophy, ArrowRight, Ticket, Loader2, Zap, Brain, Target } from "lucide-react";
 import ClickGame from "@/components/games/ClickGame";
+import MemoryMatchGame from "@/components/games/MemoryMatchGame";
+import EmojiHitGame from "@/components/games/EmojiHitGame";
 import AdPlayer from "@/components/AdPlayer";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
@@ -38,29 +40,38 @@ export default function EarnPage() {
     {
       id: "1",
       title: "Speed Clicker",
-      reward: 50,
+      reward: 0, // Will be calculated as clicks * 10
       type: "GAME",
-      icon: Gamepad2,
-      desc: "Click as many times as you can in 30 seconds!",
+      icon: Target,
+      desc: "Click as many times as you can in 10 seconds!",
       color: "from-purple-500 to-indigo-600"
     },
     {
       id: "2",
       title: "Memory Match",
-      reward: 75,
+      reward: 0, // Will be calculated as matches * 10
       type: "GAME",
-      icon: Gamepad2,
+      icon: Brain,
       desc: "Find all pairs in the shortest time.",
       color: "from-blue-500 to-cyan-600"
     },
     {
       id: "3",
+      title: "Emoji Hit",
+      reward: 0, // Will be calculated as hits * 10
+      type: "GAME",
+      icon: Target,
+      desc: "Hit as many emojis as you can!",
+      color: "from-rose-500 to-pink-600"
+    },
+    {
+      id: "4",
       title: "Watch Ad",
       reward: 25,
       type: "AD",
       icon: Play,
       desc: "Support us by watching a short video.",
-      color: "from-rose-500 to-pink-600"
+      color: "from-green-500 to-emerald-600"
     }
   ];
 
@@ -134,8 +145,26 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {activeGame && activeGame.type === "GAME" && (
+      {activeGame && activeGame.id === "1" && (
         <ClickGame 
+          taskId={activeGame.id} 
+          reward={activeGame.reward} 
+          onComplete={() => setActiveGame(null)}
+          onCancel={() => setActiveGame(null)}
+        />
+      )}
+
+      {activeGame && activeGame.id === "2" && (
+        <MemoryMatchGame 
+          taskId={activeGame.id} 
+          reward={activeGame.reward} 
+          onComplete={() => setActiveGame(null)}
+          onCancel={() => setActiveGame(null)}
+        />
+      )}
+
+      {activeGame && activeGame.id === "3" && (
+        <EmojiHitGame 
           taskId={activeGame.id} 
           reward={activeGame.reward} 
           onComplete={() => setActiveGame(null)}
@@ -162,7 +191,7 @@ export default function EarnPage() {
           <h2 className="text-xl font-black text-white flex items-center gap-2">
             <Gamepad2 className="text-purple-400" /> GAMES
           </h2>
-          {tasks.filter(task => task.type === 'GAME').map((task) => (
+          {tasks.filter(task => task.id !== "4").map((task) => (
             <div
               key={task.id}
               className="group relative bg-[#0f0f18] border border-white/5 rounded-xl p-4 overflow-hidden hover:border-purple-500/30 transition-all"
@@ -182,7 +211,9 @@ export default function EarnPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
                     <Coins className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs font-black text-white">+{task.reward}</span>
+                    <span className="text-xs font-black text-white">
+                      {task.reward > 0 ? `+${task.reward}` : 'Variable'}
+                    </span>
                   </div>
                   <button 
                     onClick={() => setActiveGame({ id: task.id, reward: task.reward, type: task.type })}
