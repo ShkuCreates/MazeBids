@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const cache = require('../lib/cache');
 const { sendAuctionNotification } = require('../lib/discordBot');
+const { createNotification } = require('../lib/notificationHelper');
 
 // Get all active auctions
 router.get('/', async (req, res) => {
@@ -122,7 +123,7 @@ router.post('/', async (req, res) => {
     cache.del('auctions:active');
 
     const usersToNotify = await prisma.user.findMany({
-      where: { notifications: true }
+      where: { discordNotifications: true }
     });
 
     usersToNotify.forEach(user => {
@@ -171,6 +172,9 @@ router.post('/:id/end', async (req, res) => {
     if (auction.highestBidder) {
       const { announceWinner } = require('../lib/discordBot');
       await announceWinner(auction, auction.highestBidder);
+
+      // Notify the winner
+      await createNotification(auction.highestBidderId, 'WIN', `You won the auction for ${auction.title}! 🎉`, { amount: auction.currentBid, relatedId: auction.id });
     }
 
     res.json(auction);
@@ -225,6 +229,16 @@ router.post('/:id/bid', async (req, res) => {
     ]);
 
     cache.del('auctions:active');
+
+    // Create notifications
+    // Notify bidder
+    await createNotification(req.user.id, 'BID_PLACED', `You placed a bid of ${bidAmount} coins on ${auction.title}`, { amount: bidAmount, relatedId: auctionId });
+
+    // Notify previous highest bidder they were outbid
+    if (auction.highestBidderId && auction.highestBidderId !== req.user.id) {
+      await createNotification(auction.highestBidderId, 'OUTBID', `You were outbid on ${auction.title}! Current bid: ${bidAmount} coins`, { amount: bidAmount, relatedId: auctionId });
+    }
+
     res.json({ message: 'Bid placed successfully' });
   } catch (err) {
     console.error('Place bid error:', err);

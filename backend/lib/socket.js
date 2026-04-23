@@ -1,8 +1,21 @@
 const prisma = require('./prisma');
+const { setIo, createNotification } = require('./notificationHelper');
 
 module.exports = (io) => {
+  // Store io singleton for notification helper
+  setIo(io);
+
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
+    // Join user-specific room for targeted notifications
+    socket.on('authenticate', (userId) => {
+      if (userId) {
+        socket.join(`user:${userId}`);
+        socket.userId = userId;
+        console.log(`Socket ${socket.id} authenticated as user:${userId}`);
+      }
+    });
 
     socket.on('joinAuction', (auctionId) => {
       socket.join(`auction:${auctionId}`);
@@ -110,6 +123,16 @@ module.exports = (io) => {
         });
 
         io.emit('bidUpdated', updatedAuction);
+
+        // Create notifications
+        // 1. Notify the bidder that their bid was placed
+        await createNotification(userId, 'BID_PLACED', `You placed a bid of ${amount} coins on ${auction.title}`, { amount, relatedId: auctionId });
+
+        // 2. Notify the previous highest bidder they were outbid
+        if (auction.highestBidderId && auction.highestBidderId !== userId) {
+          await createNotification(auction.highestBidderId, 'OUTBID', `You were outbid on ${auction.title}! Current bid: ${amount} coins`, { amount, relatedId: auctionId });
+          await createNotification(auction.highestBidderId, 'REFUND', `${auction.currentBid} coins refunded for outbid on ${auction.title}`, { amount: auction.currentBid, relatedId: auctionId });
+        }
       } catch (err) {
         console.error('Bid error:', err);
         socket.emit('error', { message: 'Failed to place bid' });

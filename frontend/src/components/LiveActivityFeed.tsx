@@ -4,43 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Gavel, Trophy, ShoppingBag, Clock, User } from "lucide-react";
 import Link from "next/link";
+import { io } from "socket.io-client";
+import axios from "axios";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Activity {
   id: string;
   username: string;
-  avatar?: string;
   action: "bid" | "won" | "listed" | "joined";
   itemName: string;
   itemId?: string;
   amount?: number;
   timestamp: Date;
 }
-
-const generateMockActivities = (): Activity[] => {
-  const users = ["Rahul", "Ankit", "Sneha", "Vikram", "Priya", "Arjun", "Neha", "Karan"];
-  const items = ["iPhone 13", "PS5", "MacBook Air", "Nike Dunks", "Rolex Submariner", "RTX 4090", "AirPods Pro", "OLED TV"];
-  const actions: Activity["action"][] = ["bid", "won", "listed", "joined"];
-  
-  const activities: Activity[] = [];
-  
-  for (let i = 0; i < 12; i++) {
-    const action = actions[Math.floor(Math.random() * actions.length)];
-    const user = users[Math.floor(Math.random() * users.length)];
-    const item = items[Math.floor(Math.random() * items.length)];
-    
-    activities.push({
-      id: `activity-${Date.now()}-${i}`,
-      username: user,
-      action,
-      itemName: item,
-      itemId: `auction-${i}`,
-      amount: action === "bid" ? Math.floor(Math.random() * 50000) + 1000 : undefined,
-      timestamp: new Date(Date.now() - i * 45000 - Math.random() * 30000),
-    });
-  }
-  
-  return activities;
-};
 
 const getActionIcon = (action: Activity["action"]) => {
   switch (action) {
@@ -70,7 +47,6 @@ const getActionText = (action: Activity["action"]) => {
 
 const formatTimeAgo = (date: Date): string => {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -87,41 +63,67 @@ export default function LiveActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Fetch recent bids from API on mount
   useEffect(() => {
-    // Initial activities
-    setActivities(generateMockActivities());
+    const fetchRecentBids = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/auctions`);
+        const activeAuctions = res.data || [];
 
-    // Simulate real-time updates every 8-15 seconds
-    const addNewActivity = () => {
-      const users = ["Rahul", "Ankit", "Sneha", "Vikram", "Priya", "Arjun", "Neha", "Karan", "Amit", "Riya"];
-      const items = ["iPhone 13", "PS5", "MacBook Air", "Nike Dunks", "Rolex Submariner", "RTX 4090", "AirPods Pro", "OLED TV", "Drone", "Gaming Chair"];
-      const actions: Activity["action"][] = ["bid", "won", "listed", "joined"];
-      
-      const action = actions[Math.floor(Math.random() * actions.length)];
-      const user = users[Math.floor(Math.random() * users.length)];
-      const item = items[Math.floor(Math.random() * items.length)];
-      
-      const newActivity: Activity = {
-        id: `activity-${Date.now()}`,
-        username: user,
-        action,
-        itemName: item,
-        itemId: `auction-${Math.floor(Math.random() * 100)}`,
-        amount: action === "bid" ? Math.floor(Math.random() * 50000) + 1000 : undefined,
-        timestamp: new Date(),
-      };
-
-      setActivities(prev => {
-        const updated = [newActivity, ...prev].slice(0, 15);
-        return updated;
-      });
+        // Build activity list from recent bids across auctions
+        const recentActivities: Activity[] = [];
+        for (const auction of activeAuctions) {
+          if (auction.highestBidder) {
+            recentActivities.push({
+              id: `init-${auction.id}`,
+              username: auction.highestBidder.username,
+              action: "bid",
+              itemName: auction.title,
+              itemId: auction.id,
+              amount: auction.currentBid,
+              timestamp: new Date(auction.updatedAt || Date.now()),
+            });
+          }
+        }
+        // Sort by most recent
+        recentActivities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        setActivities(recentActivities.slice(0, 15));
+      } catch (err) {
+        console.error("Failed to fetch recent activity:", err);
+      }
     };
+    fetchRecentBids();
+  }, []);
 
-    const interval = setInterval(() => {
-      addNewActivity();
-    }, 8000 + Math.random() * 7000);
+  // Listen for real-time bid updates via socket.io
+  useEffect(() => {
+    const socket = io(API_URL, { withCredentials: true });
 
-    return () => clearInterval(interval);
+    socket.on("bidUpdated", (updatedAuction: any) => {
+      if (updatedAuction.highestBidder) {
+        const newActivity: Activity = {
+          id: `live-${Date.now()}-${updatedAuction.id}`,
+          username: updatedAuction.highestBidder.username,
+          action: "bid",
+          itemName: updatedAuction.title,
+          itemId: updatedAuction.id,
+          amount: updatedAuction.currentBid,
+          timestamp: new Date(),
+        };
+
+        setActivities((prev) => {
+          // Avoid duplicates for same auction within 5 seconds
+          const filtered = prev.filter(
+            (a) => !(a.itemId === updatedAuction.id && Date.now() - a.timestamp.getTime() < 5000)
+          );
+          return [newActivity, ...filtered].slice(0, 15);
+        });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   return (

@@ -16,7 +16,7 @@ model User {
   totalEarned   Int            @default(0)
   totalSpent    Int            @default(0)
   role          String         @default("USER") // USER, ADMIN
-  notifications Boolean        @default(false)
+  discordNotifications Boolean        @default(false) // Discord DM notifications toggle
   referralCode  String?        @unique
   referredById  String?
   referredBy    User?          @relation("Referrals", fields: [referredById], references: [id])
@@ -28,8 +28,9 @@ model User {
   wonAuctions   Auction[]      @relation("Winner")
   completedTasks UserTask[]
   redemptions   Redemption[]
+  userNotifications Notification[]
 
-  @@index([notifications])
+  @@index([discordNotifications])
   @@index([role])
 }
 
@@ -128,6 +129,23 @@ model UserTask {
 
   @@index([userId])
   @@index([taskId])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String    // BID_PLACED, OUTBID, WIN, COINS_EARNED, COINS_SPENT, REWARD, REFUND, SYSTEM
+  message    String
+  amount     Int?
+  relatedId  String?   // auction_id or transaction_id
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model Ad {

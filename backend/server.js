@@ -75,6 +75,7 @@ app.use('/api/auctions', require('./routes/auctions'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/ads', require('./routes/ads'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

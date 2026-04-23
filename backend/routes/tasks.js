@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const { createNotification } = require('../lib/notificationHelper');
 
 // Get available tasks
 router.get('/', async (req, res) => {
@@ -86,6 +87,9 @@ router.post('/complete', async (req, res) => {
         }
       })
     ]);
+
+    // Notify user of coins earned
+    await createNotification(req.user.id, 'COINS_EARNED', `+${actualReward} coins earned from: ${task.title}`, { amount: actualReward });
 
     res.json({ message: 'Task completed', reward: actualReward });
   } catch (err) {

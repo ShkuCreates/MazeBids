@@ -11,59 +11,37 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Transaction {
   id: string;
-  type: "earned" | "spent";
+  type: string;
   amount: number;
   description: string;
-  timestamp: Date;
+  timestamp: string;
 }
-
-const generateMockTransactions = (): Transaction[] => {
-  const earned = [
-    "Daily login reward",
-    "Referral bonus",
-    "Ad watch reward",
-    "Quiz completed",
-    "Survey reward",
-  ];
-  const spent = [
-    "Bid on iPhone 13",
-    "Bid on PS5",
-    "Bid on MacBook Air",
-    "Bid on Nike Dunks",
-  ];
-
-  const txns: Transaction[] = [];
-  for (let i = 0; i < 3; i++) {
-    const isEarned = Math.random() > 0.4;
-    txns.push({
-      id: `txn-${Date.now()}-${i}`,
-      type: isEarned ? "earned" : "spent",
-      amount: isEarned
-        ? Math.floor(Math.random() * 80) + 10
-        : Math.floor(Math.random() * 200) + 20,
-      description: isEarned
-        ? earned[Math.floor(Math.random() * earned.length)]
-        : spent[Math.floor(Math.random() * spent.length)],
-      timestamp: new Date(Date.now() - (i + 1) * 3600000 * Math.random() * 3),
-    });
-  }
-  return txns;
-};
 
 export default function WalletCoinsPanel() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [dailyUsed, setDailyUsed] = useState(0);
-  const [dailyLimit] = useState(500);
+  const [dailyLimit, setDailyLimit] = useState(5000);
 
   const coinBalance = user?.coins ?? 0;
 
   useEffect(() => {
-    setTransactions(generateMockTransactions());
-    // Simulate daily usage
-    setDailyUsed(Math.floor(Math.random() * 400) + 50);
-  }, []);
+    const fetchTransactions = async () => {
+      if (!user) return;
+      try {
+        const res = await axios.get(`${API_URL}/api/users/transactions?limit=3`, {
+          withCredentials: true,
+        });
+        setTransactions(res.data.transactions);
+        setDailyUsed(res.data.dailyEarned);
+        setDailyLimit(res.data.dailyLimit);
+      } catch (err) {
+        console.error("Failed to fetch transactions:", err);
+      }
+    };
+    fetchTransactions();
+  }, [user]);
 
   const dailyPercent = Math.min((dailyUsed / dailyLimit) * 100, 100);
 
@@ -165,11 +143,11 @@ export default function WalletCoinsPanel() {
                     className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-purple-500/20 transition-all duration-200 group"
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      txn.type === "earned"
+                      txn.type === "EARN"
                         ? "bg-green-500/10 border border-green-500/20"
                         : "bg-red-500/10 border border-red-500/20"
                     }`}>
-                      {txn.type === "earned" ? (
+                      {txn.type === "EARN" ? (
                         <ArrowUpRight className="w-4 h-4 text-green-400" />
                       ) : (
                         <ArrowDownRight className="w-4 h-4 text-red-400" />
@@ -180,13 +158,13 @@ export default function WalletCoinsPanel() {
                         {txn.description}
                       </p>
                       <p className="text-[10px] text-gray-500">
-                        {Math.floor((Date.now() - txn.timestamp.getTime()) / 60000)}m ago
+                        {Math.floor((Date.now() - new Date(txn.timestamp).getTime()) / 60000)}m ago
                       </p>
                     </div>
                     <span className={`text-sm font-black ${
-                      txn.type === "earned" ? "text-green-400" : "text-red-400"
+                      txn.type === "EARN" ? "text-green-400" : "text-red-400"
                     }`}>
-                      {txn.type === "earned" ? "+" : "-"}{txn.amount}
+                      {txn.type === "EARN" ? "+" : "-"}{txn.amount}
                     </span>
                   </motion.div>
                 ))}

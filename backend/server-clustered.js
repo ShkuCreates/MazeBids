@@ -89,6 +89,7 @@ if (cluster.isMaster) {
   app.use('/api/users', require('./routes/users'));
   app.use('/api/tasks', require('./routes/tasks'));
   app.use('/api/ads', require('./routes/ads'));
+  app.use('/api/notifications', require('./routes/notifications'));
 
   console.log(`[STARTUP] Worker ${process.pid} preparing to listen on port ${PORT}...`);
   

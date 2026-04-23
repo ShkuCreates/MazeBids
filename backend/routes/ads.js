@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const { createNotification } = require('../lib/notificationHelper');
 
 // Get ads by placement
 router.get('/placement/:placement', async (req, res) => {
@@ -167,6 +168,9 @@ router.post('/:id/claim', async (req, res) => {
         }
       })
     ]);
+
+    // Notify user of coins earned
+    await createNotification(req.user.id, 'COINS_EARNED', `+${ad.reward} coins earned from watching: ${ad.title}`, { amount: ad.reward });
 
     res.json({ message: `Successfully claimed ${ad.reward} coins!` });
   } catch (err) {
