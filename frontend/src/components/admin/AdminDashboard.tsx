@@ -1,47 +1,67 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, Activity, Coins, DollarSign, Gavel, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Users, Activity, Coins, Gavel, TrendingUp, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import AnimatedCounter from "../AnimatedCounter";
+import axios from "axios";
 
-const dailyBidsData = [
-  { day: "Mon", bids: 120, users: 45 },
-  { day: "Tue", bids: 180, users: 62 },
-  { day: "Wed", bids: 150, users: 55 },
-  { day: "Thu", bids: 220, users: 78 },
-  { day: "Fri", bids: 280, users: 95 },
-  { day: "Sat", bids: 350, users: 120 },
-  { day: "Sun", bids: 310, users: 110 },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const coinsData = [
-  { day: "Mon", earned: 5000, spent: 3200 },
-  { day: "Tue", earned: 6200, spent: 4100 },
-  { day: "Wed", earned: 4800, spent: 3800 },
-  { day: "Thu", earned: 7500, spent: 5200 },
-  { day: "Fri", earned: 8900, spent: 6100 },
-  { day: "Sat", earned: 12000, spent: 8500 },
-  { day: "Sun", earned: 10500, spent: 7200 },
-];
-
-const userGrowthData = [
-  { month: "Jan", users: 120 },
-  { month: "Feb", users: 180 },
-  { month: "Mar", users: 250 },
-  { month: "Apr", users: 320 },
-  { month: "May", users: 450 },
-  { month: "Jun", users: 580 },
-];
+interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalCoins: number;
+  totalEarned: number;
+  totalSpent: number;
+  activeAuctions: number;
+  endedAuctions: number;
+  todayBids: number;
+  weekBids: number;
+  todayEarned: number;
+  todaySpent: number;
+  inflationRate: number;
+}
 
 export default function AdminDashboard() {
-  const stats = [
-    { label: "Total Users", value: 15847, icon: Users, color: "text-purple-400", bg: "bg-purple-500/10", change: "+12.5%", positive: true },
-    { label: "Active Users", value: 342, icon: Activity, color: "text-green-400", bg: "bg-green-500/10", change: "+8.2%", positive: true },
-    { label: "Coins in Circulation", value: 2450000, icon: Coins, color: "text-yellow-400", bg: "bg-yellow-500/10", change: "+5.1%", positive: true },
-    { label: "Total Revenue", value: 18500, icon: DollarSign, color: "text-blue-400", bg: "bg-blue-500/10", change: "-2.3%", positive: false },
-    { label: "Active Auctions", value: 24, icon: Gavel, color: "text-pink-400", bg: "bg-pink-500/10", change: "+3", positive: true },
-  ];
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [dailyBidsData, setDailyBidsData] = useState([]);
+  const [coinsData, setCoinsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  const fetchDashboardData = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/admin/dashboard-stats`, {
+        withCredentials: true
+      });
+      
+      setStats(res.data.stats);
+      setDailyBidsData(res.data.dailyBidsData);
+      setCoinsData(res.data.coinsData);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("[Admin] Failed to fetch dashboard stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const statCards = stats ? [
+    { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-purple-400", bg: "bg-purple-500/10", change: `+${stats.activeUsers} active`, positive: true },
+    { label: "Coins in Circulation", value: stats.totalCoins, icon: Coins, color: "text-yellow-400", bg: "bg-yellow-500/10", change: `${stats.inflationRate}% inflation`, positive: stats.inflationRate < 5 },
+    { label: "Total Earned", value: stats.totalEarned, icon: TrendingUp, color: "text-green-400", bg: "bg-green-500/10", change: `+${stats.todayEarned} today`, positive: true },
+    { label: "Total Spent", value: stats.totalSpent, icon: ArrowDownRight, color: "text-red-400", bg: "bg-red-500/10", change: `${stats.todaySpent} today`, positive: false },
+    { label: "Active Auctions", value: stats.activeAuctions, icon: Gavel, color: "text-pink-400", bg: "bg-pink-500/10", change: `${stats.endedAuctions} ended`, positive: true },
+  ] : [];
 
   return (
     <div className="space-y-8">
@@ -49,15 +69,34 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-black text-white">Dashboard</h1>
           <p className="text-gray-500 mt-1">Overview of platform performance</p>
+          <p className="text-xs text-gray-600 mt-1">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-green-400">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          Live Data
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <div className="flex items-center gap-2 text-sm text-green-400">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            Live Data
+          </div>
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {stats.map((stat, index) => {
+        {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div
@@ -145,12 +184,12 @@ export default function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6"
       >
-        <h3 className="text-lg font-bold text-white mb-6">User Growth</h3>
+        <h3 className="text-lg font-bold text-white mb-6">User Activity</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={userGrowthData}>
+            <LineChart data={dailyBidsData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} />
+              <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} />
               <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} />
               <Tooltip
                 contentStyle={{
@@ -178,6 +217,8 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
         </div>
       </motion.div>
+        </>
+      )}
     </div>
   );
 }

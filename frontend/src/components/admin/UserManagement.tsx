@@ -1,69 +1,125 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Search, Filter, MoreVertical, Ban, Shield, Coins, Eye, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Ban, Shield, Coins, Eye, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import Modal from "./Modal";
 import EmptyState from "./EmptyState";
+import axios from "axios";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface User {
   id: string;
   username: string;
   discordId: string;
   coins: number;
+  totalEarned: number;
+  totalSpent: number;
   status: "active" | "banned";
+  role: string;
+  notifications: boolean;
   joinDate: string;
+  lastActive: string;
   totalBids: number;
   auctionsWon: number;
 }
 
-const mockUsers: User[] = [
-  { id: "1", username: "CryptoKing", discordId: "123456789", coins: 5420, status: "active", joinDate: "2024-01-15", totalBids: 45, auctionsWon: 8 },
-  { id: "2", username: "BidMaster", discordId: "987654321", coins: 3210, status: "active", joinDate: "2024-02-20", totalBids: 32, auctionsWon: 5 },
-  { id: "3", username: "AuctionPro", discordId: "456789123", coins: 8900, status: "active", joinDate: "2024-01-10", totalBids: 67, auctionsWon: 12 },
-  { id: "4", username: "Spammer123", discordId: "789123456", coins: 150, status: "banned", joinDate: "2024-03-05", totalBids: 5, auctionsWon: 0 },
-  { id: "5", username: "LuckyWinner", discordId: "321654987", coins: 12000, status: "active", joinDate: "2023-12-01", totalBids: 89, auctionsWon: 15 },
-  { id: "6", username: "NewBidder", discordId: "654987321", coins: 500, status: "active", joinDate: "2024-04-10", totalBids: 3, auctionsWon: 0 },
-  { id: "7", username: "CoinCollector", discordId: "147258369", coins: 25000, status: "active", joinDate: "2023-11-20", totalBids: 120, auctionsWon: 22 },
-  { id: "8", username: "QuickFingers", discordId: "369258147", coins: 1800, status: "active", joinDate: "2024-02-28", totalBids: 28, auctionsWon: 4 },
-];
-
 export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"view" | "ban" | "coins" | null>(null);
   const [coinAmount, setCoinAmount] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [totalPages, setTotalPages] = useState(1);
+  const [actionLoading, setActionLoading] = useState(false);
+  const itemsPerPage = 10;
 
-  const filteredUsers = users.filter(user =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.discordId.includes(searchQuery)
-  );
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_URL}/api/admin/users`, {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage,
+          search: searchQuery
+        },
+        withCredentials: true
+      });
+      
+      setUsers(res.data.users);
+      setTotalPages(res.data.pagination.totalPages);
+    } catch (err) {
+      console.error("[Admin] Failed to fetch users:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, searchQuery]);
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-  const handleBanUser = (userId: string) => {
-    setUsers(users.map(u => u.id === userId ? { ...u, status: u.status === "active" ? "banned" : "active" } : u));
-    setModalOpen(false);
+  const handleBanUser = async (userId: string, currentlyBanned: boolean) => {
+    setActionLoading(true);
+    try {
+      await axios.post(`${API_URL}/api/admin/users/${userId}/ban`, {
+        banned: !currentlyBanned,
+        reason: currentlyBanned ? "Unbanned by admin" : "Banned by admin"
+      }, {
+        withCredentials: true
+      });
+      
+      await fetchUsers();
+      setModalOpen(false);
+    } catch (err) {
+      console.error("[Admin] Failed to ban/unban user:", err);
+      alert("Failed to update user status");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleAddCoins = (userId: string) => {
+  const handleAddCoins = async (userId: string) => {
     const amount = parseInt(coinAmount);
-    if (isNaN(amount)) return;
-    setUsers(users.map(u => u.id === userId ? { ...u, coins: u.coins + amount } : u));
-    setModalOpen(false);
-    setCoinAmount("");
+    if (isNaN(amount) || amount === 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await axios.post(`${API_URL}/api/admin/users/${userId}/coins`, {
+        amount,
+        reason: amount > 0 ? "Admin coin addition" : "Admin coin removal"
+      }, {
+        withCredentials: true
+      });
+      
+      await fetchUsers();
+      setModalOpen(false);
+      setCoinAmount("");
+    } catch (err) {
+      console.error("[Admin] Failed to update coins:", err);
+      alert("Failed to update coins");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const openModal = (user: User, type: "view" | "ban" | "coins") => {
     setSelectedUser(user);
     setModalType(type);
     setModalOpen(true);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchUsers();
   };
 
   return (
@@ -74,7 +130,7 @@ export default function UserManagement() {
           <p className="text-gray-500 mt-1">Manage platform users and accounts</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
             <input
               type="text"
@@ -83,10 +139,14 @@ export default function UserManagement() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 w-64 focus:border-purple-500/50 focus:bg-white/10 outline-none transition-all text-sm text-white"
             />
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-all">
-            <Filter className="w-4 h-4" />
-            Filter
+          </form>
+          <button
+            onClick={fetchUsers}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
           </button>
         </div>
       </div>
@@ -106,7 +166,13 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody>
-              {paginatedUsers.map((user, index) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center">
+                    <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : users.map((user, index) => (
                 <motion.tr
                   key={user.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -173,7 +239,7 @@ export default function UserManagement() {
           </table>
         </div>
 
-        {paginatedUsers.length === 0 && (
+        {users.length === 0 && !loading && (
           <EmptyState
             icon="users"
             title="No users found"
@@ -184,7 +250,7 @@ export default function UserManagement() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t border-white/5">
             <p className="text-sm text-gray-500">
-              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length}
+              Page {currentPage} of {totalPages}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -279,14 +345,24 @@ export default function UserManagement() {
               }
             </p>
             <button
-              onClick={() => handleBanUser(selectedUser.id)}
-              className={`w-full py-3 rounded-xl font-bold transition-all ${
+              onClick={() => handleBanUser(selectedUser.id, selectedUser.status === 'banned')}
+              disabled={actionLoading}
+              className={`w-full py-3 rounded-xl font-bold transition-all disabled:opacity-50 ${
                 selectedUser.status === "active"
                   ? "bg-red-600 hover:bg-red-700 text-white"
                   : "bg-green-600 hover:bg-green-700 text-white"
               }`}
             >
-              {selectedUser.status === "active" ? "Ban User" : "Unban User"}
+              {actionLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </span>
+              ) : selectedUser.status === "active" ? (
+                "Ban User"
+              ) : (
+                "Unban User"
+              )}
             </button>
           </div>
         )}
@@ -316,9 +392,17 @@ export default function UserManagement() {
             </div>
             <button
               onClick={() => handleAddCoins(selectedUser.id)}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all"
+              disabled={actionLoading}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all disabled:opacity-50"
             >
-              Update Coins
+              {actionLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </span>
+              ) : (
+                "Update Coins"
+              )}
             </button>
           </div>
         )}

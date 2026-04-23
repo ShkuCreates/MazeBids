@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Users, Coins, Gavel, BarChart3, Shield, 
   Image as ImageIcon, Bell, Settings, Menu, X, ChevronRight,
-  LogOut, Search, Plus, Activity, Calendar, Zap
+  LogOut, Search, Activity, Zap
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -28,8 +29,19 @@ const sidebarItems = [
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (err) {
+      console.error('[Admin] Logout error:', err);
+      router.push('/');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -87,10 +99,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </nav>
 
               <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
-                <button className="flex items-center gap-3 px-4 py-3 w-full text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
-                  <LogOut className="w-5 h-5" />
-                  <span className="font-medium">Sign Out</span>
-                </button>
+                <button 
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-3 w-full text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Sign Out</span>
+              </button>
               </div>
             </motion.aside>
           )}
@@ -133,11 +148,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="text-sm font-bold text-white">Admin User</p>
-                    <p className="text-[10px] text-gray-500">Super Admin</p>
+                    <p className="text-sm font-bold text-white">{user?.username || 'Admin'}</p>
+                    <p className="text-[10px] text-gray-500">{user?.role || 'Admin'}</p>
                   </div>
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-                    <span className="font-bold text-white">A</span>
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center overflow-hidden">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-bold text-white">{(user?.username?.[0] || 'A').toUpperCase()}</span>
+                    )}
                   </div>
                 </div>
               </div>
