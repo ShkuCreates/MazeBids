@@ -12,6 +12,8 @@ const compression = require('compression');
 const { apiLimiter } = require('./middleware/rateLimit');
 const { Server } = require('socket.io');
 const passport = require('passport');
+const redis = require('redis');
+const RedisStore = require('connect-redis').default;
 
 const numCPUs = os.cpus().length;
 const PORT = process.env.PORT || 5000;
@@ -29,6 +31,25 @@ if (cluster.isMaster) {
 } else {
   console.log(`Worker ${process.pid} started`);
 
+  // Initialize Redis client
+  const redisClient = redis.createClient({
+    url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
+    legacyMode: false
+  });
+
+  redisClient.connect().catch(err => {
+    console.error('[REDIS] Connection failed:', err.message);
+    process.exit(1);
+  });
+
+  redisClient.on('error', (err) => {
+    console.error('[REDIS] Error:', err);
+  });
+
+  redisClient.on('connect', () => {
+    console.log('[REDIS] Connected to Redis');
+  });
+
   const app = express();
   app.set('trust proxy', 1);
 
@@ -42,8 +63,9 @@ if (cluster.isMaster) {
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
 
-  // Fallback to memory session for Render (add Redis service later)
+  // Redis-backed session store for clustered workers
   app.use(session({
+    store: new RedisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET || 'mazebids-secret',
     resave: false,
     saveUninitialized: false,
