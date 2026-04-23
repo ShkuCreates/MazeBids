@@ -1,11 +1,21 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
-import { motion } from "framer-motion";
-import { Coins, Gavel, History, TrendingUp, Award, Clock, Users, ArrowUpRight, ArrowDownRight, Globe, Trophy, Play, Info, Video, Activity } from "lucide-react";
+import {
+  Gavel,
+  TrendingUp,
+  Award,
+  Users,
+  Globe,
+  Trophy,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import AdBanner from "@/components/AdBanner";
+import LiveActivityFeed from "@/components/LiveActivityFeed";
+import WalletCoinsPanel from "@/components/WalletCoinsPanel";
+import ActiveAuctionsPanel from "@/components/ActiveAuctionsPanel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -19,27 +29,25 @@ export default function Dashboard() {
       try {
         const [profileRes, statsRes] = await Promise.all([
           axios.get(`${API_URL}/api/users/profile`, { withCredentials: true }),
-          axios.get(`${API_URL}/api/users/site-stats`)
+          axios.get(`${API_URL}/api/users/site-stats`),
         ]);
         console.log('Dashboard data updated:', { profile: profileRes.data, siteStats: statsRes.data });
-        
-        // Check if user won an auction since last update
+
         if (profile && profileRes.data.totalSpent > profile.totalSpent) {
           console.log('User won an auction! Updating stats...');
-          // Force a refresh to get the latest data
           refreshUser();
         }
-        
+
         setProfile(profileRes.data);
         setSiteStats(statsRes.data);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
       }
     };
-    
+
     if (user) {
-      fetchData(); // Initial fetch
-      const interval = setInterval(fetchData, 5000); // Update every 5 seconds for better real-time feel
+      fetchData();
+      const interval = setInterval(fetchData, 5000);
       return () => clearInterval(interval);
     }
   }, [user, refreshUser]);
@@ -53,115 +61,105 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-12 py-8">
+    <div className="space-y-10 py-8">
       {/* Ad Banner */}
       <AdBanner placement="DASHBOARD" />
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-[#0f0f18] border border-white/5 p-8 rounded-[2.5rem]">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter">PLATFORM <span className="text-purple-400">OVERVIEW</span></h1>
-          <p className="text-gray-500 font-medium">Real-time statistics and activity across Mazebids.</p>
+      {/* ═══ TIER 1 — HIGHEST PRIORITY ═══
+          Wallet + Active Auctions — large, glowing, action-driven */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Wallet Card — prominent, 4 cols */}
+        <div className="lg:col-span-4">
+          <WalletCoinsPanel />
         </div>
-        <div className="flex gap-4">
-          <Link href="/earn" className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black transition-all shadow-lg shadow-purple-500/20 text-center">
-            EARN COINS
-          </Link>
+
+        {/* Active Auctions — 8 cols, the main attraction */}
+        <div className="lg:col-span-8">
+          <ActiveAuctionsPanel />
         </div>
       </div>
 
-      {/* Site-wide Statistics */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2 px-2">
-          <Globe className="text-purple-400 w-6 h-6" /> GLOBAL METRICS
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mb-2 sm:mb-3" />
-            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Registered Users</p>
-            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.registeredUsers?.toLocaleString() || "0"}</p>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mb-2 sm:mb-3" />
-            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Earned</p>
-            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <Gavel className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mb-2 sm:mb-3" />
-            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Spent</p>
-            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 group hover:border-purple-500/30 transition-all">
-            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 mb-2 sm:mb-3" />
-            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Auctions Held</p>
-            <p className="text-xl sm:text-2xl font-black text-white">{siteStats?.auctionsHeld?.toLocaleString() || "0"}</p>
-          </div>
-        </div>
-
-        {/* Real platform stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 group hover:border-green-500/40 transition-all">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-[8px] sm:text-xs text-green-400 font-bold">REAL</span>
-              </div>
-            </div>
-            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Earned</p>
-            <p className="text-2xl sm:text-3xl font-black text-white">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
-            <p className="text-xs text-gray-400 mt-2">Coins earned by all users</p>
-          </div>
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 group hover:border-blue-500/40 transition-all">
-            <Gavel className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mb-2 sm:mb-3" />
-            <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Spent</p>
-            <p className="text-2xl sm:text-3xl font-black text-white">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
-            <p className="text-xs text-gray-400 mt-2">Coins spent on auctions</p>
-          </div>
-        </div>
-      </div>
-
+      {/* ═══ TIER 2 — MEDIUM PRIORITY ═══
+          Live Activity Feed + Won Auctions — supporting, subtle */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Tutorial Section */}
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2 px-2">
-            <Video className="text-red-500 w-6 h-6" /> TUTORIAL SECTION
-          </h2>
-          <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-[#0f0f18] border border-white/5 shadow-2xl">
-            <iframe 
+        {/* Tutorial Section — medium weight */}
+        <div className="lg:col-span-2 space-y-5">
+          <div className="flex items-center gap-2 px-1">
+            <Video className="text-red-500 w-5 h-5" />
+            <h2 className="text-lg font-bold text-gray-300">Tutorial</h2>
+          </div>
+          <div className="aspect-video rounded-2xl overflow-hidden bg-[#0f0f18] border border-white/5">
+            <iframe
               src="https://www.youtube.com/embed/dQw4w9WgXcQ" // Replace with actual tutorial URL
               className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           </div>
-          <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
-            <p className="text-sm text-gray-400 leading-relaxed font-medium">
+          <div className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
+            <p className="text-xs text-gray-500 leading-relaxed font-medium">
               New to MazeBids? Watch this quick guide to learn how to earn coins, participate in auctions, and link your Discord account for instant notifications.
             </p>
           </div>
         </div>
 
+        {/* Right sidebar — Activity + Won Auctions */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2 px-2">
-            <Trophy className="text-purple-400" /> WON AUCTIONS
-          </h2>
-          <div className="space-y-4">
+          <LiveActivityFeed />
+
+          <div className="flex items-center gap-2 px-1">
+            <Trophy className="text-purple-400 w-5 h-5" />
+            <h2 className="text-lg font-bold text-gray-300">Won Auctions</h2>
+          </div>
+          <div className="space-y-3">
             {profile?.wonAuctions?.length > 0 ? (
               profile.wonAuctions.map((auc: any, i: number) => (
-                <div key={i} className="p-4 rounded-3xl bg-white/5 border border-white/10 flex items-center gap-4 hover:border-purple-500/30 transition-all">
-                  <img src={auc.image} className="w-16 h-16 rounded-2xl object-cover" />
-                  <div>
-                    <h3 className="font-bold text-sm">{auc.title}</h3>
-                    <p className="text-xs text-purple-400 font-black">{auc.currentBid} Coins</p>
+                <div key={i} className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3 hover:border-purple-500/20 transition-all">
+                  <img src={auc.image} className="w-12 h-12 rounded-xl object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-xs text-gray-300 truncate">{auc.title}</h3>
+                    <p className="text-[10px] text-purple-400 font-black">{auc.currentBid} Coins</p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center bg-white/5 border border-white/10 rounded-3xl text-gray-500 text-sm font-bold">
+              <div className="p-6 text-center bg-white/[0.03] border border-white/5 rounded-2xl text-gray-600 text-xs font-bold">
                 No auctions won yet
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ TIER 3 — LOW PRIORITY ═══
+          Global Metrics — muted, small, no glow */}
+      <div className="pt-4">
+        <div className="flex items-center justify-between px-1 mb-4">
+          <div className="flex items-center gap-2">
+            <Globe className="text-gray-600 w-4 h-4" />
+            <h2 className="text-xs font-bold text-gray-600 uppercase tracking-widest">Platform Metrics</h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <Users className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
+            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Users</p>
+            <p className="text-base font-bold text-gray-400">{siteStats?.registeredUsers?.toLocaleString() || "0"}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <TrendingUp className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
+            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Earned</p>
+            <p className="text-base font-bold text-gray-400">{siteStats?.totalEarned?.toLocaleString() || "0"}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <Gavel className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
+            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Spent</p>
+            <p className="text-base font-bold text-gray-400">{siteStats?.totalSpent?.toLocaleString() || "0"}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <Award className="w-3.5 h-3.5 text-gray-600 mb-1.5" />
+            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Auctions</p>
+            <p className="text-base font-bold text-gray-400">{siteStats?.auctionsHeld?.toLocaleString() || "0"}</p>
           </div>
         </div>
       </div>

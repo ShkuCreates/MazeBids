@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Coins, Gavel, LayoutDashboard, User as UserIcon, LogOut, ShieldCheck, Menu, X } from "lucide-react";
+import NotificationsPanel from "@/components/NotificationsPanel";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 
@@ -91,6 +92,7 @@ const Navbar = () => {
               <div className="text-sm text-gray-400">Checking session...</div>
             ) : user ? (
               <>
+                <NotificationsPanel />
                 <div className="flex items-center space-x-2 bg-purple-900/30 px-3 py-1.5 rounded-full border border-purple-500/30">
                   <Coins className="w-4 h-4 text-yellow-500" />
                   <span className="font-bold text-sm">{user.coins.toLocaleString()}</span>
@@ -171,6 +173,7 @@ const Navbar = () => {
                   <>
                     <div className="flex items-center justify-between px-4 py-3">
                       <div className="flex items-center space-x-3">
+                        <NotificationsPanel />
                         {user.avatar ? (
                           <img src={user.avatar} alt={user.username} className="w-10 h-10 rounded-full" />
                         ) : (
