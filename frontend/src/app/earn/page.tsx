@@ -119,6 +119,7 @@ function EarnPage() {
   const [redeemMessage, setRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Live Earnings Feed State
   const [earnings, setEarnings] = useState<EarningActivity[]>([]);
@@ -198,6 +199,20 @@ function EarnPage() {
   useEffect(() => {
     setMounted(true);
     refreshState();
+    
+    // Check if user is admin
+    const checkAdmin = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/auth/me`, { withCredentials: true });
+        // Admin is determined by discordId being in ADMIN_IDS env var (handled on backend)
+        // We'll check role for now, but backend validates properly
+        setIsAdmin(res.data?.role === 'ADMIN' || false);
+      } catch (err) {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+    
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, [refreshState]);
@@ -687,7 +702,7 @@ function EarnPage() {
         </motion.div>
 
         {/* Secret Admin: Reset Coins Button - ADMIN ONLY */}
-        {user?.role === 'ADMIN' && (
+        {isAdmin && (
           <div className="flex justify-center mt-8">
             <button
               onClick={handleResetCoins}

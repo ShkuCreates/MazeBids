@@ -6,6 +6,9 @@ const { createNotification } = require('../lib/notificationHelper');
 const { checkAndResetUserDaily, getUserDailyStats, manualDailyReset } = require('../lib/dailyReset');
 const { getUserAchievements, checkAndUnlockAchievements, getUserActivity } = require('../lib/achievementHelper');
 
+// Admin IDs from environment
+const ADMIN_IDS = process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : [];
+
 // Simple in-memory cache for frequently accessed data
 const profileCache = new Map();
 const CACHE_TTL = 30000; // 30 seconds
@@ -554,6 +557,11 @@ router.get('/activity', async (req, res) => {
 // SECRET ADMIN: Reset current user's coins to 0 (for testing only)
 router.post('/admin/reset-my-coins', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  
+  // Check if user's Discord ID is in ADMIN_IDS
+  if (!ADMIN_IDS.includes(req.user.discordId)) {
+    return res.status(403).json({ message: 'Forbidden - Admin only' });
+  }
 
   try {
     const updatedUser = await prisma.user.update({
