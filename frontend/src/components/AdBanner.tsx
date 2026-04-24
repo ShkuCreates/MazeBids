@@ -77,7 +77,7 @@ export default function AdBanner({ placement }: { placement: string }) {
       
       // Sync with global state for real-time update
       if (res.data.coins !== undefined && updateCoins && user) {
-        updateCoins(res.data.coins, res.data.coins - user.coins);
+        updateCoins(res.data.coins);
       }
       
       alert(res.data.message);

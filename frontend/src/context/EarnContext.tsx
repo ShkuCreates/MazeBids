@@ -123,7 +123,7 @@ const addToTodayProgress = useCallback((amount: number) => {
       // Sync with actual server response and global state
       if (res.data.coins !== undefined && updateCoins && user) {
         // Sync with global AuthContext state
-        updateCoins(res.data.coins, res.data.coins - user.coins);
+        updateCoins(res.data.coins);
         // Also update local state
         setTotalBalance(res.data.coins);
         animateNumber(animatedBalance, res.data.coins, setAnimatedBalance, 400);
