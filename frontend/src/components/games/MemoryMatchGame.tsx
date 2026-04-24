@@ -28,6 +28,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
     const calculatedReward = score * 10; // Matches * 10 coins
     const rewardAmount = calculatedReward;
 
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: rewardAmount });
     console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
     console.log("GAME REWARD TRIGGERED", rewardAmount);
 
@@ -73,10 +74,11 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
     if (gameState === 'PLAYING' && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft === 0 && gameState === 'PLAYING') {
+      console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
       finishGame();
     }
     return () => clearInterval(timer);
-  }, [gameState, timeLeft, finishGame]);
+  }, [gameState, timeLeft, finishGame, score]);
 
   const initializeCards = useCallback(() => {
     const shuffledCards = [...CARDS, ...CARDS]
@@ -118,6 +120,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
           matchedCards[first].isMatched = true;
           matchedCards[second].isMatched = true;
           setCards(matchedCards);
+          console.log("🔥 POSSIBLE REWARD POINT", { score: score + 1, coins: (score + 1) * 10 });
           setScore(prev => prev + 1);
           setFlippedCards([]);
         }, 500);

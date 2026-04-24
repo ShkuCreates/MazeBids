@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef, createContext, useContext } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
-import { playCoinSound } from '@/lib/sounds';
+import { playRewardSound } from '@/lib/sounds';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -92,16 +92,18 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
 
   // Optimistic update balance with animation - also syncs with AuthContext
   const updateBalance = useCallback((amount: number) => {
+    console.log("🔥 POSSIBLE REWARD POINT", { score: null, coins: amount });
     setTotalBalance(prev => prev + amount);
     setAnimatedBalance(prev => prev + amount);
     // Play coin sound effect
-    playCoinSound();
+    playRewardSound();
   }, []);
 
   // Add to today's progress with animation
   // Remove local progress accumulation - always use backend truth
 // Progress is now fetched from backend via coinsEarnedToday
 const addToTodayProgress = useCallback((amount: number) => {
+  console.log("🔥 POSSIBLE REWARD POINT", { score: null, coins: amount });
   // This is now a no-op - progress is managed by backend
   // Kept for backwards compatibility but does nothing
 }, []);

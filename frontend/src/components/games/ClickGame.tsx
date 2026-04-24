@@ -24,6 +24,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
     const calculatedReward = score * 10; // Clicks * 10 coins
     const rewardAmount = calculatedReward;
 
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: rewardAmount });
     console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
     console.log("GAME REWARD TRIGGERED", rewardAmount);
 
@@ -71,6 +72,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
         setTimeLeft((prev) => {
           const newTime = prev - 1;
           if (newTime === 0) {
+            console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
             setGameState('FINISHED');
           }
           return newTime;
@@ -81,8 +83,9 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   }, [gameState]);
 
   const handleClick = useCallback(() => {
+    console.log("🔥 POSSIBLE REWARD POINT", { score: score + 1, coins: (score + 1) * 10 });
     setScore(prev => prev + 1);
-  }, []);
+  }, [score]);
 
   const startGame = useCallback(() => {
     setScore(0);

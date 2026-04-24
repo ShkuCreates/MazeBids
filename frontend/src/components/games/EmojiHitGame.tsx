@@ -48,6 +48,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     const calculatedReward = score * 10; // Hits * 10 coins
     const rewardAmount = calculatedReward;
 
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: rewardAmount });
     console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
     console.log("GAME REWARD TRIGGERED", rewardAmount);
 
@@ -102,6 +103,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
           setTimeLeft(remainingTime);
           
           if (remainingTime <= 0) {
+            console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
             setGameState('FINISHED');
             return;
           }
@@ -148,12 +150,13 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     lastClickTimeRef.current = now;
 
     // Prevent stuck counter by using functional updates
+    console.log("🔥 POSSIBLE REWARD POINT", { score: score + 1, coins: (score + 1) * 10 });
     setScore(prev => {
       const newScore = prev + 1;
       return newScore;
     });
     setEmojis(prev => prev.filter(emoji => emoji.id !== emojiId));
-  }, []);
+  }, [score]);
 
   const startGame = useCallback(() => {
     setScore(0);

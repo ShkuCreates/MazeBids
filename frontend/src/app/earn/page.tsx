@@ -180,6 +180,7 @@ function EarnPage() {
 
   // Handle game completion - receives actual reward from game (score * 10)
   const handleGameComplete = (reward: number) => {
+    console.log("🔥 POSSIBLE REWARD POINT", { score: null, coins: reward });
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
@@ -189,6 +190,7 @@ function EarnPage() {
 
   // Handle ad completion
   const handleAdComplete = (reward: number) => {
+    console.log("🔥 POSSIBLE REWARD POINT", { score: null, coins: reward });
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
