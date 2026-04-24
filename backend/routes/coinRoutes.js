@@ -3,6 +3,13 @@ const { updateUserCoins } = require('../services/coinService');
 
 const router = express.Router();
 
+router.get('/update', (req, res) => {
+  return res.status(405).json({
+    error: 'Method not allowed',
+    allowed: ['POST']
+  });
+});
+
 router.post('/update', async (req, res) => {
   const userId = req.user?.id || req.user?._id;
   const { amount, source } = req.body || {};
@@ -37,6 +44,13 @@ router.post('/update', async (req, res) => {
 
     return res.status(500).json({ success: false, message: 'Failed to update coins' });
   }
+});
+
+router.all('/update', (req, res) => {
+  return res.status(405).json({
+    error: 'Method not allowed',
+    allowed: ['POST']
+  });
 });
 
 module.exports = router;
