@@ -11,7 +11,7 @@
  * - Transactions ensure atomic updates
  */
 
-const { prisma } = require('./prisma');
+const prisma = require('./prisma');
 
 // Daily limit for coins earned (safety cap)
 const DAILY_EARN_LIMIT = 5000;
