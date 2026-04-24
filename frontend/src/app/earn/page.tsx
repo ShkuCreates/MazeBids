@@ -702,16 +702,14 @@ function EarnPage() {
         </motion.div>
 
         {/* Secret Admin: Reset Coins Button - ADMIN ONLY */}
-        {isAdmin && (
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={handleResetCoins}
-              className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 text-xs font-bold rounded-lg border border-red-500/30 transition-all"
-            >
-              🚨 RESET MY COINS TO 0 (ADMIN)
-            </button>
-          </div>
-        )}
+        <div className="flex justify-center mt-8">
+          <button
+            onClick={handleResetCoins}
+            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 text-xs font-bold rounded-lg border border-red-500/30 transition-all"
+          >
+            🚨 RESET MY COINS TO 0
+          </button>
+        </div>
 
       </div>
 
