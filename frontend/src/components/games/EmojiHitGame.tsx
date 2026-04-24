@@ -55,7 +55,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
       
       // Use backend response for real-time update (single source of truth)
       if (res.data.coins !== undefined && updateCoins) {
-        updateCoins(res.data.coins, res.data.coins - (user?.coins || 0));
+        updateCoins(res.data.coins);
       }
     } catch (error) {
       console.error('Failed to save score', error);

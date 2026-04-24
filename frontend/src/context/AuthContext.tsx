@@ -23,7 +23,7 @@ interface AuthContextType {
   login: () => void;
   logout: () => void;
   refreshUser: () => Promise<boolean>;
-  updateCoins: (newCoins: number, earnedAmount?: number) => void;
+  updateCoins: (newCoins: number) => void;
   updateTotalSpent: (newSpent: number, spentAmount: number) => void;
 }
 
@@ -98,12 +98,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateCoins = (newCoins: number, earnedAmount?: number) => {
+  const updateCoins = (newCoins: number) => {
     if (user) {
-      setUser({ 
-        ...user, 
-        coins: newCoins,
-        totalEarned: earnedAmount ? user.totalEarned + earnedAmount : user.totalEarned
+      setUser({
+        ...user,
+        coins: newCoins
       });
     }
   };
