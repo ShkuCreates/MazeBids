@@ -28,6 +28,7 @@ export default function CoinEconomy() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [socket, setSocket] = useState<any>(null);
+  const [resetMyCoinsLoading, setResetMyCoinsLoading] = useState(false);
 
   const [rewardSettings, setRewardSettings] = useState({
     dailyLimit: 5000,
@@ -154,6 +155,24 @@ export default function CoinEconomy() {
       alert(err.response?.data?.message || "Failed to reset economy");
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  // Reset current admin's coins to 0
+  const handleResetMyCoins = async () => {
+    if (!confirm("WARNING: This will reset YOUR coins to 0. Are you sure?")) return;
+
+    setResetMyCoinsLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/users/admin/reset-my-coins`, {}, { withCredentials: true });
+      if (res.data.success) {
+        alert(`✅ ${res.data.message}\nYour coins: ${res.data.coins}`);
+        fetchEconomyData();
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to reset your coins");
+    } finally {
+      setResetMyCoinsLoading(false);
     }
   };
 
@@ -389,6 +408,29 @@ export default function CoinEconomy() {
         </div>
 
         <div className="space-y-6">
+          {/* Reset My Coins Button */}
+          <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-orange-500 mb-1">Reset My Coins</p>
+                  <p className="text-xs text-gray-400">
+                    Reset YOUR coins to 0. This will not affect other users.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleResetMyCoins}
+                disabled={resetMyCoinsLoading}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm transition-all"
+              >
+                {resetMyCoinsLoading ? "Resetting..." : "Reset My Coins"}
+              </button>
+            </div>
+          </div>
+
+          {/* Reset All Users Coins */}
           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
