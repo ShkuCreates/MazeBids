@@ -39,6 +39,8 @@ module.exports = {
     const uses = interaction.options.getInteger('uses') || 1;
 
     try {
+      console.log('[GenBonus] Creating code:', code.toUpperCase(), 'reward:', reward, 'uses:', uses);
+      
       await prisma.bonusCode.create({
         data: {
           code: code.toUpperCase(),
@@ -47,14 +49,17 @@ module.exports = {
         }
       });
 
+      console.log('[GenBonus] Code created successfully');
+      
       await interaction.editReply({ 
         embeds: [successEmbed('✅ Bonus Code Created', 
           `**Code:** ${code.toUpperCase()}\n**Reward:** ${reward} coins\n**Uses:** ${uses}`)] 
       });
     } catch (err) {
-      console.error('Bonus code error:', err);
+      console.error('[GenBonus] Error creating code:', err);
+      const errorMessage = err.message || 'Unknown error';
       await interaction.editReply({ 
-        embeds: [errorEmbed('❌ Error', 'Failed to create bonus code!')] 
+        embeds: [errorEmbed('❌ Error', `Failed to create bonus code: ${errorMessage}`)] 
       });
     }
   }
