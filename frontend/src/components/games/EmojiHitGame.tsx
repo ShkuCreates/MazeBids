@@ -48,13 +48,11 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     const calculatedReward = score * 10; // Hits * 10 coins
     try {
       const res = await axios.post(`${API_URL}/api/tasks/complete`, {
-        score,
-        reward: calculatedReward,
-        source: 'Emoji Hit'
+        reward: calculatedReward
       }, { withCredentials: true });
 
       // On success, reload page to get fresh data from backend
-      if (res.data.success === true || res.data.coins !== undefined) {
+      if (res.data.success === true) {
         alert(`+${calculatedReward} coins added!`);
         window.location.reload();
       }
