@@ -316,8 +316,8 @@ function EarnPage() {
       setRedeemCode("");
       
       // Use centralized coin update (same as games/ads/daily)
-      if (res.data.coins !== undefined && updateCoins && user) {
-        updateCoins(res.data.coins, res.data.coins - user.coins);
+      if (res.data.coins !== undefined && updateCoins) {
+        updateCoins(res.data.coins);
       }
       
       triggerConfetti();
