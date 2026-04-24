@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const cache = require('../lib/cache');
 const { sendAuctionNotification, announceWinner, sendNotificationStatusUpdate } = require('../lib/discordBot');
 const { createNotification } = require('../lib/notificationHelper');
+const { updateUserCoins } = require('../lib/coinHelper');
 
 // Subscribe to auction notification
 router.post('/:id/notify', async (req, res) => {
@@ -371,27 +372,28 @@ router.post('/:id/bid', async (req, res) => {
 
     const previousBidderId = auction.highestBidderId;
 
+    // Update auction and create bid record
     await prisma.$transaction([
       prisma.auction.update({
         where: { id: auctionId },
         data: { currentBid: bidAmount, highestBidderId: req.user.id }
       }),
-      prisma.user.update({
-        where: { id: req.user.id },
-        data: { coins: { decrement: bidAmount }, totalSpent: { increment: bidAmount } }
-      }),
       prisma.bid.create({
         data: { amount: bidAmount, auctionId, userId: req.user.id }
-      }),
-      prisma.transaction.create({
-        data: {
-          userId: req.user.id,
-          amount: bidAmount,
-          type: 'SPEND',
-          description: `Bid on ${auction.title}`
-        }
       })
     ]);
+
+    // Update coins using centralized function (negative for spending)
+    const coinResult = await updateUserCoins(req.user.id, -bidAmount, `Bid on ${auction.title}`);
+
+    if (!coinResult.success) {
+      // Rollback auction update if coin update fails
+      await prisma.auction.update({
+        where: { id: auctionId },
+        data: { currentBid: auction.currentBid, highestBidderId: previousBidderId }
+      });
+      return res.status(500).json({ message: 'Failed to process bid' });
+    }
 
     // Clear relevant caches
     cache.del('auctions:active');

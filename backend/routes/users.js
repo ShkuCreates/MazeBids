@@ -5,6 +5,7 @@ const { sendNotificationStatusUpdate } = require('../lib/discordBotSingleton');
 const { createNotification } = require('../lib/notificationHelper');
 const { checkAndResetUserDaily, getUserDailyStats, manualDailyReset } = require('../lib/dailyReset');
 const { getUserAchievements, checkAndUnlockAchievements, getUserActivity } = require('../lib/achievementHelper');
+const { updateUserCoins } = require('../lib/coinHelper');
 
 // Admin IDs from environment
 const ADMIN_IDS = process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : [];
@@ -200,8 +201,8 @@ router.post('/redeem-code', async (req, res) => {
 
       console.log('Proceeding with redemption...');
 
-      // Create redemption and update user coins with coinsEarnedToday
-      const updatedUser = await prisma.$transaction([
+      // Create redemption and update bonus code usage
+      await prisma.$transaction([
         prisma.redemption.create({
           data: {
             userId: req.user.id,
@@ -211,24 +212,16 @@ router.post('/redeem-code', async (req, res) => {
         prisma.bonusCode.update({
           where: { id: bonusCode.id },
           data: { usedCount: { increment: 1 } }
-        }),
-        prisma.user.update({
-          where: { id: req.user.id },
-          data: { 
-            coins: { increment: bonusCode.reward },
-            totalEarned: { increment: bonusCode.reward },
-            coinsEarnedToday: { increment: bonusCode.reward }
-          }
-        }),
-        prisma.transaction.create({
-          data: {
-            userId: req.user.id,
-            amount: bonusCode.reward,
-            type: 'EARN',
-            description: `Bonus code: ${code.toUpperCase()}`
-          }
         })
       ]);
+
+      // Update coins using centralized function
+      const coinResult = await updateUserCoins(req.user.id, bonusCode.reward, `Bonus code: ${code.toUpperCase()}`);
+
+      if (!coinResult.success) {
+        console.error('[Redeem] Coin update failed:', coinResult.error);
+        return res.status(500).json({ message: 'Failed to process reward' });
+      }
 
       // Clear profile cache
       const cacheKey = `profile-${req.user.id}`;
@@ -236,7 +229,7 @@ router.post('/redeem-code', async (req, res) => {
 
       console.log('Redemption successful!');
 
-      console.log('[Redeem] Code redeemed successfully:', { userId: req.user.id, reward: bonusCode.reward, newBalance: updatedUser[2].coins });
+      console.log('[Redeem] Code redeemed successfully:', { userId: req.user.id, reward: bonusCode.reward, newBalance: coinResult.newBalance });
 
       // Notify user of reward
       await createNotification(req.user.id, 'REWARD', `+${bonusCode.reward} coins from bonus code: ${code.toUpperCase()}`, { amount: bonusCode.reward });
@@ -244,7 +237,7 @@ router.post('/redeem-code', async (req, res) => {
       res.json({ 
         message: `Successfully redeemed! You earned ${bonusCode.reward} coins!`,
         reward: bonusCode.reward,
-        coins: updatedUser[2].coins
+        coins: coinResult.newBalance
       });
     } catch (tableError) {
       console.error('Table access error:', tableError);
@@ -455,47 +448,36 @@ router.post('/daily-claim', async (req, res) => {
     const currentStreak = 1;
     const reward = getDailyReward(currentStreak);
 
-    // Mark daily check-in as claimed and add coins (with coinsEarnedToday update)
-    const updatedUser = await prisma.user.update({
+    // Mark daily check-in as claimed
+    await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        dailyCheckInClaimed: true,
-        coins: { increment: reward },
-        totalEarned: { increment: reward },
-        coinsEarnedToday: { increment: reward }
-      },
-      select: {
-        id: true,
-        coins: true,
-        dailyCheckInClaimed: true,
-        coinsEarnedToday: true
+        dailyCheckInClaimed: true
       }
     });
 
-    // Create transaction record
-    await prisma.transaction.create({
-      data: {
-        userId: req.user.id,
-        amount: reward,
-        type: 'EARN',
-        description: `Daily check-in reward (Day ${currentStreak})`
-      }
-    });
+    // Update coins using centralized function
+    const coinResult = await updateUserCoins(req.user.id, reward, `Daily check-in reward (Day ${currentStreak})`);
+
+    if (!coinResult.success) {
+      console.error('[DailyClaim] Coin update failed:', coinResult.error);
+      return res.status(500).json({ message: 'Failed to process reward' });
+    }
 
     // Clear profile cache
     const cacheKey = `profile-${req.user.id}`;
     profileCache.delete(cacheKey);
 
-    console.log(`[DailyClaim] User ${req.user.id} claimed ${reward} coins (Day ${currentStreak}), new balance: ${updatedUser.coins}`);
+    console.log(`[DailyClaim] User ${req.user.id} claimed ${reward} coins (Day ${currentStreak}), new balance: ${coinResult.newBalance}`);
 
     res.json({
       success: true,
       message: `Daily reward claimed! +${reward} coins!`,
       reward: reward,
-      coins: updatedUser.coins,
+      coins: coinResult.newBalance,
       streak: 1, // Fixed value since no streak field in DB
-      dailyCheckInClaimed: updatedUser.dailyCheckInClaimed,
-      coinsEarnedToday: updatedUser.coinsEarnedToday
+      dailyCheckInClaimed: true,
+      coinsEarnedToday: coinResult.user.coinsEarnedToday
     });
 
   } catch (err) {

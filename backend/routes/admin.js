@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { sendDirectMessage } = require('../lib/discordBotSingleton');
+const { updateUserCoins } = require('../lib/coinHelper');
 
 // Middleware to check admin role
 const requireAdmin = (req, res, next) => {
@@ -324,35 +325,20 @@ router.post('/users/:id/coins', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Calculate new balance (prevent negative)
-    const newBalance = Math.max(0, user.coins + amount);
+    // Update coins using centralized function
+    const coinResult = await updateUserCoins(id, amount, reason || `Admin ${amount > 0 ? 'added' : 'removed'} coins: ${Math.abs(amount)}`);
 
-    // Update user coins
-    const updatedUser = await prisma.$transaction([
-      prisma.user.update({
-        where: { id },
-        data: {
-          coins: newBalance,
-          totalEarned: amount > 0 ? { increment: amount } : undefined
-        }
-      }),
-      prisma.transaction.create({
-        data: {
-          userId: id,
-          amount: Math.abs(amount),
-          type: amount > 0 ? 'EARN' : 'SPEND',
-          description: reason || `Admin ${amount > 0 ? 'added' : 'removed'} coins: ${Math.abs(amount)}`
-        }
-      })
-    ]);
+    if (!coinResult.success) {
+      return res.status(500).json({ message: 'Failed to update user coins', error: coinResult.error });
+    }
 
     // Send Discord notification
     if (user.notifications && user.discordId) {
       try {
         const message = amount > 0
-          ? `💰 **Coins Added!**\n\n${amount} coins have been added to your account.\nNew Balance: ${newBalance} coins\nReason: ${reason || 'Admin adjustment'}`
-          : `⚠️ **Coins Removed**\n\n${Math.abs(amount)} coins have been removed from your account.\nNew Balance: ${newBalance} coins\nReason: ${reason || 'Admin adjustment'}`;
-        
+          ? `💰 **Coins Added!**\n\n${amount} coins have been added to your account.\nNew Balance: ${coinResult.newBalance} coins\nReason: ${reason || 'Admin adjustment'}`
+          : `⚠️ **Coins Removed**\n\n${Math.abs(amount)} coins have been removed from your account.\nNew Balance: ${coinResult.newBalance} coins\nReason: ${reason || 'Admin adjustment'}`;
+
         await sendDirectMessage(user.discordId, message);
       } catch (dmErr) {
         console.error('[Admin] Failed to send coin notification DM:', dmErr);
@@ -361,8 +347,8 @@ router.post('/users/:id/coins', async (req, res) => {
 
     res.json({
       message: `Successfully ${amount > 0 ? 'added' : 'removed'} ${Math.abs(amount)} coins`,
-      newBalance,
-      user: updatedUser[0]
+      newBalance: coinResult.newBalance,
+      user: coinResult.user
     });
   } catch (err) {
     console.error('[Admin] Coin update error:', err);

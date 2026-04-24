@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const prisma = require('../../lib/prisma');
 const { successEmbed, errorEmbed } = require('../utils/embedBuilder');
 const config = require('../config');
+const { updateUserCoins } = require('../../lib/coinHelper');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -34,28 +35,22 @@ module.exports = {
       });
 
       if (!user) {
-        return await interaction.editReply({ 
-          embeds: [errorEmbed('❌ Error', 'User not found in database!')] 
+        return await interaction.editReply({
+          embeds: [errorEmbed('❌ Error', 'User not found in database!')]
         });
       }
 
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: user.id },
-          data: { coins: { increment: amount }, totalEarned: { increment: amount } }
-        }),
-        prisma.transaction.create({
-          data: {
-            userId: user.id,
-            amount,
-            type: 'EARN',
-            description: `Admin adjustment by ${interaction.user.username}`
-          }
-        })
-      ]);
+      // Update coins using centralized function
+      const coinResult = await updateUserCoins(user.id, amount, `Admin adjustment by ${interaction.user.username}`);
 
-      await interaction.editReply({ 
-        embeds: [successEmbed('✅ Coins Added', `Added ${amount} coins to ${targetUser.username}!`)] 
+      if (!coinResult.success) {
+        return await interaction.editReply({
+          embeds: [errorEmbed('❌ Error', `Failed to add coins: ${coinResult.error}`)]
+        });
+      }
+
+      await interaction.editReply({
+        embeds: [successEmbed('✅ Coins Added', `Added ${amount} coins to ${targetUser.username}!`)]
       });
     } catch (err) {
       console.error('Add coins error:', err);

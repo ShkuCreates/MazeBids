@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const { createNotification } = require('../lib/notificationHelper');
 const { checkAndResetUserDaily, addDailyEarnings } = require('../lib/dailyReset');
+const { updateUserCoins } = require('../lib/coinHelper');
 
 // Get available tasks
 router.get('/', async (req, res) => {
@@ -71,42 +72,29 @@ router.post('/complete', async (req, res) => {
       }
     }
 
-    // 4. Update daily earnings and complete task
-    const updatedUser = await prisma.$transaction([
-      prisma.userTask.create({
-        data: { userId: req.user.id, taskId }
-      }),
-      prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-          coins: { increment: actualReward },
-          totalEarned: { increment: actualReward },
-          coinsEarnedToday: { increment: actualReward } // Track daily earnings
-        },
-        select: {
-          coins: true,
-          coinsEarnedToday: true
-        }
-      }),
-      prisma.transaction.create({
-        data: {
-          userId: req.user.id,
-          amount: actualReward,
-          type: 'EARN',
-          description: `Completed task: ${task.title}`
-        }
-      })
-    ]);
+    // 4. Update daily earnings and complete task using centralized coin helper
+    // First, create the task completion record
+    await prisma.userTask.create({
+      data: { userId: req.user.id, taskId }
+    });
+
+    // Then update coins using centralized function
+    const coinResult = await updateUserCoins(req.user.id, actualReward, `Completed task: ${task.title}`);
+
+    if (!coinResult.success) {
+      console.error('[Tasks] Coin update failed:', coinResult.error);
+      return res.status(500).json({ message: 'Failed to process reward' });
+    }
 
     // Notify user of coins earned
     await createNotification(req.user.id, 'COINS_EARNED', `+${actualReward} coins earned from: ${task.title}`, { amount: actualReward });
 
-    console.log('[Tasks] Task completed successfully:', { userId: req.user.id, reward: actualReward, newBalance: updatedUser[1].coins });
+    console.log('[Tasks] Task completed successfully:', { userId: req.user.id, reward: actualReward, newBalance: coinResult.newBalance });
 
     res.json({
       message: 'Task completed',
       reward: actualReward,
-      coins: updatedUser[1].coins,
+      coins: coinResult.newBalance,
       dailyEarned: dailyTotal + actualReward,
       dailyLimit: 5000
     });

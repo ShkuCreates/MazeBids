@@ -4,6 +4,7 @@ const config = require('../config');
 const { successEmbed, errorEmbed, infoEmbed } = require('../utils/embedBuilder');
 const { checkCooldown, setCooldown } = require('../utils/cooldownManager');
 const personalityService = require('../services/personalityService');
+const { updateUserCoins } = require('../../lib/coinHelper');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -56,38 +57,31 @@ module.exports = {
       
       const streakBonus = Math.min(streak * config.DAILY_STREAK_BONUS, config.DAILY_STREAK_MAX_BONUS);
       const totalReward = config.DAILY_BASE_REWARD + streakBonus;
-      
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: user.id },
-          data: { 
-            coins: { increment: totalReward },
-            totalEarned: { increment: totalReward }
-          }
-        }),
-        prisma.transaction.create({
-          data: {
-            userId: user.id,
-            amount: totalReward,
-            type: 'EARN',
-            description: 'Daily reward claim'
-          }
-        }),
-        prisma.dailyReward.upsert({
-          where: { userId: user.id },
-          update: {
-            lastClaimedAt: now,
-            streak,
-            totalClaims: { increment: 1 }
-          },
-          create: {
-            userId: user.id,
-            lastClaimedAt: now,
-            streak,
-            totalClaims: 1
-          }
-        })
-      ]);
+
+      // Update coins using centralized function
+      const coinResult = await updateUserCoins(user.id, totalReward, 'Daily reward claim');
+
+      if (!coinResult.success) {
+        return await interaction.editReply({
+          embeds: [errorEmbed('❌ Error', 'Failed to process reward.')]
+        });
+      }
+
+      // Update daily reward tracking
+      await prisma.dailyReward.upsert({
+        where: { userId: user.id },
+        update: {
+          lastClaimedAt: now,
+          streak,
+          totalClaims: { increment: 1 }
+        },
+        create: {
+          userId: user.id,
+          lastClaimedAt: now,
+          streak,
+          totalClaims: 1
+        }
+      });
       
       const nextStreakBonus = Math.min((streak + 1) * config.DAILY_STREAK_BONUS, config.DAILY_STREAK_MAX_BONUS);
       const nextReward = config.DAILY_BASE_REWARD + nextStreakBonus;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { createNotification } = require('../lib/notificationHelper');
+const { updateUserCoins } = require('../lib/coinHelper');
 
 // Get ads by placement
 router.get('/placement/:placement', async (req, res) => {
@@ -185,35 +186,23 @@ router.post('/:id/claim', async (req, res) => {
       }
     }
 
-    // Process reward with coinsEarnedToday update
-    const updatedUser = await prisma.$transaction([
-      prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-          coins: { increment: ad.reward },
-          totalEarned: { increment: ad.reward },
-          coinsEarnedToday: { increment: ad.reward }
-        }
-      }),
-      prisma.transaction.create({
-        data: {
-          userId: req.user.id,
-          amount: ad.reward,
-          type: 'EARN',
-          description: `Watched ad: ${ad.title}`
-        }
-      })
-    ]);
+    // Process reward using centralized coin helper
+    const coinResult = await updateUserCoins(req.user.id, ad.reward, `Watched ad: ${ad.title}`);
+
+    if (!coinResult.success) {
+      console.error('[Ads] Coin update failed:', coinResult.error);
+      return res.status(500).json({ message: 'Failed to process reward' });
+    }
 
     // Notify user of coins earned
     await createNotification(req.user.id, 'COINS_EARNED', `+${ad.reward} coins earned from watching: ${ad.title}`, { amount: ad.reward });
 
-    console.log('[Ads] Claim successful:', { userId: req.user.id, reward: ad.reward, newBalance: updatedUser[0].coins });
+    console.log('[Ads] Claim successful:', { userId: req.user.id, reward: ad.reward, newBalance: coinResult.newBalance });
 
     // Return updated balance for real-time sync
     res.json({ 
       message: `Successfully claimed ${ad.reward} coins!`,
-      coins: updatedUser[0].coins,
+      coins: coinResult.newBalance,
       dailyEarned: dailyTotal + ad.reward
     });
   } catch (err) {
