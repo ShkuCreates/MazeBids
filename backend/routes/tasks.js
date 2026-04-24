@@ -17,30 +17,48 @@ router.get('/', async (req, res) => {
 
 // Complete a task (game, ad, etc.)
 router.post('/complete', async (req, res) => {
-  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  console.log('[Tasks] Request received:', { hasUser: !!req.user, userId: req.user?.id, body: req.body });
+
+  // Validate authentication
+  if (!req.user || !req.user.id) {
+    console.error('[Tasks] ERROR: Unauthorized - no user or userId');
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
   const { taskId, score, reward, source } = req.body;
 
   console.log('[Tasks] Complete request:', { userId: req.user.id, taskId, score, reward, source });
 
   try {
     // LAZY RESET: Check and reset daily fields if needed
+    console.log('[Tasks] Step 1: Check and reset daily fields');
     await checkAndResetUserDaily(req.user.id);
 
     // 1. Anti-Cheat: Daily Coin Limit (using coinsEarnedToday field)
+    console.log('[Tasks] Step 2: Fetch user for daily limit check');
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { coinsEarnedToday: true }
     });
 
-    const dailyTotal = user?.coinsEarnedToday || 0;
+    if (!user) {
+      console.error('[Tasks] ERROR: User not found in database:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const dailyTotal = user.coinsEarnedToday || 0;
 
     let actualReward = reward;
     let taskTitle = source || 'Game reward';
 
     // If taskId is provided, validate against database task
     if (taskId) {
+      console.log('[Tasks] Step 3: Validate taskId against database');
       const task = await prisma.task.findUnique({ where: { id: taskId } });
-      if (!task) return res.status(404).json({ message: 'Task not found' });
+      if (!task) {
+        console.error('[Tasks] ERROR: Task not found:', taskId);
+        return res.status(404).json({ message: 'Task not found' });
+      }
 
       actualReward = reward || task.reward;
       taskTitle = task.title;
@@ -74,14 +92,24 @@ router.post('/complete', async (req, res) => {
       });
     } else {
       // For games without taskId (standalone games)
+      console.log('[Tasks] Step 3: No taskId provided, validating reward');
       if (!reward) {
+        console.error('[Tasks] ERROR: Reward required when no taskId provided');
         return res.status(400).json({ message: 'Reward amount required when no taskId provided' });
       }
       actualReward = reward;
       console.log('Game reward (no taskId):', { score, actualReward, source });
     }
 
+    // Validate reward value
+    console.log('[Tasks] Step 4: Validate reward value');
+    if (!actualReward || actualReward <= 0 || isNaN(actualReward)) {
+      console.error('[Tasks] ERROR: Invalid reward value:', actualReward);
+      return res.status(400).json({ message: 'Invalid reward amount' });
+    }
+
     // Check daily limit
+    console.log('[Tasks] Step 5: Check daily limit');
     if (dailyTotal + actualReward > 5000) { // Max 5000 coins per day
       return res.status(429).json({
         message: 'Daily earning limit reached',
@@ -92,19 +120,22 @@ router.post('/complete', async (req, res) => {
     }
 
     // Update coins using centralized function
+    console.log('[Tasks] Step 6: Call updateUserCoins', { userId: req.user.id, reward: actualReward, source: taskTitle });
     const coinResult = await updateUserCoins(req.user.id, actualReward, `Completed: ${taskTitle}`);
 
     if (!coinResult.success) {
-      console.error('[Tasks] Coin update failed:', coinResult.error);
-      return res.status(500).json({ message: 'Failed to process reward' });
+      console.error('[Tasks] ERROR: Coin update failed:', coinResult.error);
+      return res.status(500).json({ message: 'Failed to process reward', error: coinResult.error });
     }
 
     // Notify user of coins earned
+    console.log('[Tasks] Step 7: Create notification');
     await createNotification(req.user.id, 'COINS_EARNED', `+${actualReward} coins earned from: ${taskTitle}`, { amount: actualReward });
 
-    console.log('[Tasks] Reward processed successfully:', { userId: req.user.id, reward: actualReward, newBalance: coinResult.newBalance });
+    console.log('[Tasks] SUCCESS: Reward processed:', { userId: req.user.id, reward: actualReward, newBalance: coinResult.newBalance });
 
     res.json({
+      success: true,
       message: 'Reward processed',
       reward: actualReward,
       coins: coinResult.newBalance,
@@ -112,8 +143,14 @@ router.post('/complete', async (req, res) => {
       dailyLimit: 5000
     });
   } catch (err) {
-    console.error('Task completion error:', err);
-    res.status(500).json({ message: 'Failed to complete task' });
+    console.error('[Tasks] CRITICAL ERROR:', err);
+    console.error('[Tasks] Error stack:', err.stack);
+    console.error('[Tasks] Error details:', {
+      message: err.message,
+      code: err.code,
+      meta: err.meta
+    });
+    res.status(500).json({ message: 'Failed to complete task', error: err.message });
   }
 });
 
