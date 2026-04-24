@@ -551,4 +551,43 @@ router.get('/activity', async (req, res) => {
   }
 });
 
+// SECRET ADMIN: Reset current user's coins to 0 (for testing only)
+router.post('/admin/reset-my-coins', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        coins: 0,
+        totalEarned: 0,
+        coinsEarnedToday: 0,
+        dailyCheckInClaimed: false
+      },
+      select: {
+        id: true,
+        coins: true,
+        totalEarned: true,
+        dailyCheckInClaimed: true
+      }
+    });
+
+    // Clear profile cache
+    const cacheKey = `profile-${req.user.id}`;
+    profileCache.delete(cacheKey);
+
+    console.log(`[Admin] User ${req.user.id} reset their coins to 0`);
+
+    res.json({
+      success: true,
+      message: 'Coins reset to 0 successfully',
+      coins: updatedUser.coins,
+      totalEarned: updatedUser.totalEarned
+    });
+  } catch (err) {
+    console.error('Reset coins error:', err);
+    res.status(500).json({ message: 'Failed to reset coins' });
+  }
+});
+
 module.exports = router;

@@ -282,6 +282,22 @@ function EarnPage() {
     }
   };
 
+  // Secret admin: Reset coins to 0
+  const handleResetCoins = async () => {
+    if (!confirm('WARNING: This will reset ALL your coins to 0. Are you sure?')) return;
+    try {
+      const res = await axios.post(`${API_URL}/api/users/admin/reset-my-coins`, {}, { withCredentials: true });
+      if (res.data.success) {
+        // Force refresh all contexts
+        await refreshUser();
+        refreshState();
+        showToast('Coins reset to 0!', 'success');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to reset coins', 'error');
+    }
+  };
+
   const getTimeAgo = (timestamp: Date): string => {
     if (!mounted) return "Loading...";
     const seconds = Math.floor((Date.now() - timestamp.getTime()) / 1000);
@@ -669,6 +685,16 @@ function EarnPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Secret Admin: Reset Coins Button */}
+        <div className="flex justify-center mt-8">
+          <button
+            onClick={handleResetCoins}
+            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 text-xs font-bold rounded-lg border border-red-500/30 transition-all"
+          >
+            🚨 RESET MY COINS TO 0 (ADMIN)
+          </button>
+        </div>
 
       </div>
 
