@@ -4,6 +4,7 @@ import { Play, ShieldCheck, X, Loader2, Coins } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { useAuth } from '@/context/AuthContext';
 
 interface AdPlayerProps {
   taskId: string;
@@ -15,6 +16,7 @@ interface AdPlayerProps {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCancel }) => {
+  const { updateCoins } = useAuth();
   const [timeLeft, setTimeLeft] = useState(15);
   const [isFinished, setIsFinished] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -46,31 +48,37 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
 
   const claimReward = async () => {
     if (isClaiming) return; // Prevent double-clicks
-    
+
     setIsClaiming(true);
     setClaimError(null);
-    
+
     try {
       console.log('[AdPlayer] Claiming reward for ad:', taskId, 'reward:', reward);
-      
+
       // Use correct API endpoint for ad rewards
       const response = await axios.post(
         `${API_URL}/api/ads/${taskId}/claim`,
         {},
         { withCredentials: true }
       );
-      
+
       console.log('[AdPlayer] Claim response:', response.data);
-      
+
+      // Update global coin state from backend response (single source of truth)
+      if (response.data.coins !== undefined && updateCoins) {
+        console.log('[AdPlayer] Updating coins from backend:', response.data.coins);
+        updateCoins(response.data.coins);
+      }
+
       // Trigger confetti on success
       triggerConfetti();
       setClaimSuccess(true);
-      
+
       // Wait for confetti then close
       setTimeout(() => {
         onComplete();
       }, 1500);
-      
+
     } catch (error: any) {
       console.error('[AdPlayer] Failed to claim ad reward:', error);
       const errorMsg = error.response?.data?.message || 'Failed to claim reward. Please try again.';
