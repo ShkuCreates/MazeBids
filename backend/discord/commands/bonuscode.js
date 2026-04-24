@@ -5,7 +5,7 @@ const config = require('../config');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('bonuscode')
+    .setName('genbonus')
     .setDescription('Create a bonus code (Admin only)')
     .addStringOption(option => 
       option.setName('code')
