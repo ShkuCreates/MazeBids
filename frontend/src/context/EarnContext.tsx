@@ -144,18 +144,12 @@ const addToTodayProgress = useCallback((amount: number) => {
       // Refresh user in auth context
       await refreshUser();
     } catch (error) {
-      // Rollback on error
       console.error("Daily claim failed:", error);
-      setTotalBalance(previousBalance);
-      setAnimatedBalance(previousBalance);
-      setTodayEarned(previousToday);
-      setAnimatedToday(previousToday);
-      setCanClaimDaily(true);
-      setStreak((prev) => Math.max(prev - 1, 1));
+      // No rollback needed - backend is single source of truth
     } finally {
       setIsLoading(false);
     }
-  }, [canClaimDaily, isLoading, dailyReward, totalBalance, todayEarned, animatedBalance, animatedToday, updateBalance, addToTodayProgress, refreshUser]);
+  }, [canClaimDaily, isLoading, refreshUser, updateCoins, user]);
 
   // Refresh state from server
   const refreshState = useCallback(async () => {
