@@ -346,6 +346,129 @@ router.get('/daily-stats', async (req, res) => {
   }
 });
 
+// GET /daily-progress - Get daily progress for Earn page
+router.get('/daily-progress', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    // Auto-reset if needed before returning data
+    const dailyStats = await getUserDailyStats(req.user.id);
+    
+    if (!dailyStats) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user streak
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { streak: true }
+    });
+
+    res.json({
+      earned: dailyStats.coinsEarnedToday,
+      claimed: dailyStats.dailyCheckInClaimed,
+      canClaimCheckIn: dailyStats.canClaimCheckIn,
+      streak: user?.streak || 1,
+      dailyLimit: dailyStats.dailyEarnLimit,
+      remainingAllowance: dailyStats.remainingDailyAllowance
+    });
+
+  } catch (err) {
+    console.error('Daily progress fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch daily progress' });
+  }
+});
+
+// POST /daily-claim - Claim daily check-in reward
+router.post('/daily-claim', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    // First, ensure daily reset is up to date and check if already claimed
+    const dailyStats = await getUserDailyStats(req.user.id);
+    
+    if (!dailyStats) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if already claimed today
+    if (dailyStats.dailyCheckInClaimed) {
+      return res.status(400).json({ 
+        message: 'Daily reward already claimed. Come back tomorrow!',
+        alreadyClaimed: true,
+        nextClaimIn: 'Tomorrow'
+      });
+    }
+
+    // Calculate reward based on streak (matches frontend logic)
+    const getDailyReward = (day) => {
+      const rewards = [50, 75, 100, 125, 150, 175, 500];
+      return rewards[day - 1] || 50;
+    };
+
+    // Get user's current streak
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { 
+        streak: true,
+        coins: true
+      }
+    });
+
+    const currentStreak = user?.streak || 1;
+    const reward = getDailyReward(currentStreak);
+
+    // Mark daily check-in as claimed and add coins
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        dailyCheckInClaimed: true,
+        streak: { increment: 1 },
+        coins: { increment: reward },
+        totalEarned: { increment: reward },
+        coinsEarnedToday: { increment: reward }
+      },
+      select: {
+        id: true,
+        coins: true,
+        streak: true,
+        dailyCheckInClaimed: true,
+        coinsEarnedToday: true
+      }
+    });
+
+    // Create transaction record
+    await prisma.transaction.create({
+      data: {
+        userId: req.user.id,
+        amount: reward,
+        type: 'EARN',
+        description: `Daily check-in reward (Day ${currentStreak})`
+      }
+    });
+
+    // Clear profile cache
+    const cacheKey = `profile-${req.user.id}`;
+    profileCache.delete(cacheKey);
+
+    console.log(`[DailyClaim] User ${req.user.id} claimed ${reward} coins (Day ${currentStreak})`);
+
+    res.json({
+      success: true,
+      message: `Daily reward claimed! +${reward} coins!`,
+      reward: reward,
+      coins: updatedUser.coins,
+      streak: updatedUser.streak,
+      dailyCheckInClaimed: updatedUser.dailyCheckInClaimed,
+      coinsEarnedToday: updatedUser.coinsEarnedToday
+    });
+
+  } catch (err) {
+    console.error('Daily claim error:', err);
+    res.status(500).json({ message: 'Failed to claim daily reward' });
+  }
+});
+
 // Manual daily reset trigger (ADMIN ONLY - for testing/debugging)
 router.post('/admin/trigger-daily-reset', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
