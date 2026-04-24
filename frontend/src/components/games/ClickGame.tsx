@@ -22,6 +22,31 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
     const calculatedReward = score * 10; // Clicks * 10 coins
+    const rewardAmount = calculatedReward;
+
+    console.log("GAME REWARD TRIGGERED", rewardAmount);
+
+    try {
+      console.log("COIN API REQUEST START", rewardAmount);
+      const res = await fetch(`${API_URL}/api/coins/update`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: rewardAmount,
+          source: "game"
+        })
+      });
+
+      const data = await res.json();
+      console.log("COIN API RESPONSE", data);
+      console.log("COIN API REQUEST END", rewardAmount);
+    } catch (err) {
+      console.error("COIN API ERROR", err);
+    }
+
     try {
       const res = await axios.post(`${API_URL}/api/tasks/complete`, {
         taskId,
@@ -32,22 +57,6 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
       // Use backend response for real-time update (single source of truth)
       if (res.data.coins !== undefined && updateCoins) {
         updateCoins(res.data.coins);
-      }
-
-      try {
-        console.log('Game reward API called');
-        const coinRes = await axios.post(`${API_URL}/api/coins/update`, {
-          amount: calculatedReward,
-          source: 'game'
-        }, { withCredentials: true });
-
-        if (coinRes.data.coins !== undefined && updateCoins) {
-          updateCoins(coinRes.data.coins);
-        }
-
-        console.log('Game reward API success');
-      } catch (apiError) {
-        console.log('Game reward API failed', apiError);
       }
     } catch (error) {
       console.error('Failed to save score', error);
