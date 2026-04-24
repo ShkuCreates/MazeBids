@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { ExternalLink, Play, Info, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -23,6 +24,7 @@ export default function AdBanner({ placement }: { placement: string }) {
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
+  const { user, updateCoins } = useAuth();
 
   // Helper function to get size classes
   const getSizeClasses = (size: string) => {
@@ -72,6 +74,12 @@ export default function AdBanner({ placement }: { placement: string }) {
     setClaiming(adId);
     try {
       const res = await axios.post(`${API_URL}/api/ads/${adId}/claim`, {}, { withCredentials: true });
+      
+      // Sync with global state for real-time update
+      if (res.data.coins !== undefined && updateCoins && user) {
+        updateCoins(res.data.coins, res.data.coins - user.coins);
+      }
+      
       alert(res.data.message);
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to claim reward");

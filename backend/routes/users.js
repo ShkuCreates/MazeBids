@@ -198,8 +198,8 @@ router.post('/redeem-code', async (req, res) => {
 
       console.log('Proceeding with redemption...');
 
-      // Create redemption and update user coins
-      await prisma.$transaction([
+      // Create redemption and update user coins with coinsEarnedToday
+      const updatedUser = await prisma.$transaction([
         prisma.redemption.create({
           data: {
             userId: req.user.id,
@@ -214,7 +214,8 @@ router.post('/redeem-code', async (req, res) => {
           where: { id: req.user.id },
           data: { 
             coins: { increment: bonusCode.reward },
-            totalEarned: { increment: bonusCode.reward }
+            totalEarned: { increment: bonusCode.reward },
+            coinsEarnedToday: { increment: bonusCode.reward }
           }
         }),
         prisma.transaction.create({
@@ -227,7 +228,7 @@ router.post('/redeem-code', async (req, res) => {
         })
       ]);
 
-      // Clear cache
+      // Clear profile cache
       const cacheKey = `profile-${req.user.id}`;
       profileCache.delete(cacheKey);
 
@@ -238,7 +239,8 @@ router.post('/redeem-code', async (req, res) => {
 
       res.json({ 
         message: `Successfully redeemed! You earned ${bonusCode.reward} coins!`,
-        reward: bonusCode.reward
+        reward: bonusCode.reward,
+        coins: updatedUser[2].coins
       });
     } catch (tableError) {
       console.error('Table access error:', tableError);

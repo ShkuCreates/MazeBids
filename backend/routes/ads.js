@@ -152,13 +152,45 @@ router.post('/:id/claim', async (req, res) => {
       return res.status(400).json({ message: 'This ad does not offer a reward' });
     }
 
-    // Process reward
-    await prisma.$transaction([
+    // Check daily limit
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { coinsEarnedToday: true }
+    });
+
+    const dailyTotal = user?.coinsEarnedToday || 0;
+    if (dailyTotal + ad.reward > 5000) {
+      return res.status(429).json({
+        message: 'Daily earning limit reached',
+        current: dailyTotal,
+        limit: 5000
+      });
+    }
+
+    // Check for cooldown (prevent double claims)
+    const lastClaim = await prisma.transaction.findFirst({
+      where: {
+        userId: req.user.id,
+        description: `Watched ad: ${ad.title}`
+      },
+      orderBy: { timestamp: 'desc' }
+    });
+
+    if (lastClaim) {
+      const diff = (new Date() - lastClaim.timestamp) / 1000 / 60; // in minutes
+      if (diff < 1) { // 1 minute cooldown
+        return res.status(429).json({ message: 'Please wait before claiming again' });
+      }
+    }
+
+    // Process reward with coinsEarnedToday update
+    const updatedUser = await prisma.$transaction([
       prisma.user.update({
         where: { id: req.user.id },
         data: {
           coins: { increment: ad.reward },
-          totalEarned: { increment: ad.reward }
+          totalEarned: { increment: ad.reward },
+          coinsEarnedToday: { increment: ad.reward }
         }
       }),
       prisma.transaction.create({
@@ -174,8 +206,14 @@ router.post('/:id/claim', async (req, res) => {
     // Notify user of coins earned
     await createNotification(req.user.id, 'COINS_EARNED', `+${ad.reward} coins earned from watching: ${ad.title}`, { amount: ad.reward });
 
-    res.json({ message: `Successfully claimed ${ad.reward} coins!` });
+    // Return updated balance for real-time sync
+    res.json({ 
+      message: `Successfully claimed ${ad.reward} coins!`,
+      coins: updatedUser[0].coins,
+      dailyEarned: dailyTotal + ad.reward
+    });
   } catch (err) {
+    console.error('Ad claim error:', err);
     res.status(500).json({ message: 'Failed to claim ad reward' });
   }
 });
