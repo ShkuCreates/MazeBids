@@ -32,10 +32,10 @@ interface EarnContextType {
 const EarnContext = createContext<EarnContextType | undefined>(undefined);
 
 export function EarnProvider({ children }: { children: React.ReactNode }) {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, updateCoins } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Core state
+  // Core state - initialize from 0 to avoid undefined
   const [todayEarned, setTodayEarned] = useState(0);
   const [dailyGoal] = useState(5000);
   const [totalBalance, setTotalBalance] = useState(user?.coins || 0);

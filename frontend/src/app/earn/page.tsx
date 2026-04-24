@@ -178,7 +178,7 @@ function EarnPage() {
     }
   };
 
-  // Handle game completion
+  // Handle game completion - receives actual reward from game (score * 10)
   const handleGameComplete = (reward: number) => {
     updateBalance(reward);
     addToTodayProgress(reward);
@@ -715,15 +715,15 @@ function EarnPage() {
 
       </div>
 
-      {/* Game Modals */}
+      {/* Game Modals - NOW USES ACTUAL REWARD FROM GAMES (score * 10) */}
       {activeGame && activeGame.id === "1" && (
-        <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleGameComplete(50)} onCancel={() => setActiveGame(null)} />
+        <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.id === "2" && (
-        <MemoryMatchGame taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleGameComplete(75)} onCancel={() => setActiveGame(null)} />
+        <MemoryMatchGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.id === "3" && (
-        <EmojiHitGame taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleGameComplete(100)} onCancel={() => setActiveGame(null)} />
+        <EmojiHitGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.type === "AD" && (
         <AdPlayer taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleAdComplete(25)} onCancel={() => setActiveGame(null)} />

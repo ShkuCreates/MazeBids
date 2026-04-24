@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 interface MemoryMatchGameProps {
   taskId: string;
   reward: number;
-  onComplete: () => void;
+  onComplete: (actualReward: number) => void;
   onCancel: () => void;
 }
 
@@ -179,7 +179,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
               <p className="text-green-400 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={onComplete}
+              onClick={() => onComplete(score * 10)}
               className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD

@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 interface EmojiHitGameProps {
   taskId: string;
   reward: number;
-  onComplete: () => void;
+  onComplete: (actualReward: number) => void;
   onCancel: () => void;
 }
 
@@ -160,7 +160,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
               <p className="text-yellow-300 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={onComplete}
+              onClick={() => onComplete(score * 10)}
               className="w-full py-4 bg-white text-purple-600 hover:bg-gray-100 rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD

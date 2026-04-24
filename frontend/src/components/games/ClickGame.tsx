@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 interface ClickGameProps {
   taskId: string;
   reward: number;
-  onComplete: () => void;
+  onComplete: (actualReward: number) => void;
   onCancel: () => void;
 }
 
@@ -118,7 +118,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
               <p className="text-green-400 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={onComplete}
+              onClick={() => onComplete(score * 10)}
               className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD
