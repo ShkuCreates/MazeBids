@@ -351,28 +351,56 @@ router.get('/daily-stats', async (req, res) => {
   }
 });
 
-// GET /daily-progress - Get daily progress for Earn page
+// GET /daily-progress - Get daily progress for Earn page (NO AUTO-RESET)
 router.get('/daily-progress', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
   try {
-    // Auto-reset if needed before returning data
-    const dailyStats = await getUserDailyStats(req.user.id);
-    
-    if (!dailyStats) {
+    // Get user stats WITHOUT auto-reset to prevent progress loss on refresh
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        coinsEarnedToday: true,
+        dailyCheckInClaimed: true,
+        lastDailyReset: true,
+        coins: true
+      }
+    });
+
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Return fixed streak of 1 (no streak field in DB yet)
-    res.json({
-      earned: dailyStats.coinsEarnedToday,
-      claimed: dailyStats.dailyCheckInClaimed,
-      canClaimCheckIn: dailyStats.canClaimCheckIn,
-      streak: 1, // Fixed value since no streak field in DB
-      dailyLimit: dailyStats.dailyEarnLimit,
-      remainingAllowance: dailyStats.remainingDailyAllowance
-    });
+    // Check if it's actually a new day before resetting
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const lastResetUTC = Date.UTC(user.lastDailyReset.getUTCFullYear(), user.lastDailyReset.getUTCMonth(), user.lastDailyReset.getUTCDate());
 
+    const isActuallyNewDay = todayUTC > lastResetUTC;
+
+    // Only reset if it's genuinely a new day
+    if (isActuallyNewDay) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          coinsEarnedToday: 0,
+          dailyCheckInClaimed: false,
+          lastDailyReset: new Date()
+        }
+      });
+      user.coinsEarnedToday = 0;
+      user.dailyCheckInClaimed = false;
+    }
+
+    // Return stats
+    res.json({
+      earned: user.coinsEarnedToday || 0,
+      claimed: user.dailyCheckInClaimed || false,
+      canClaimCheckIn: !user.dailyCheckInClaimed,
+      streak: 1, // Fixed value since no streak field in DB
+      dailyLimit: 5000,
+      remainingAllowance: Math.max(0, 5000 - (user.coinsEarnedToday || 0))
+    });
   } catch (err) {
     console.error('Daily progress fetch error:', err);
     res.status(500).json({ message: 'Failed to fetch daily progress' });

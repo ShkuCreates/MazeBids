@@ -44,12 +44,18 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameState === 'PLAYING' && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0 && gameState === 'PLAYING') {
-      finishGame();
+      timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          const newTime = prev - 1;
+          if (newTime === 0) {
+            setGameState('FINISHED');
+          }
+          return newTime;
+        });
+      }, 1000);
     }
     return () => clearInterval(timer);
-  }, [gameState, timeLeft, finishGame]);
+  }, [gameState]);
 
   const handleClick = useCallback(() => {
     setScore(prev => prev + 1);

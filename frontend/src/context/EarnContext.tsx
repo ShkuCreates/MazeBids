@@ -196,6 +196,13 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      // Fetch fresh data from backend on mount
+      refreshState();
+    }
+  }, [user]);
+
   const state: EarningState = {
     todayEarned,
     dailyGoal,
