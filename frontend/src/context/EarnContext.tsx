@@ -166,27 +166,26 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
 
   // Refresh state from server
   const refreshState = useCallback(async () => {
-    if (!user) return;
-    
     try {
-      // Fetch daily progress
-      const progressRes = await axios.get(
-        `${API_URL}/api/users/daily-progress`,
-        { withCredentials: true }
-      );
+      setIsLoading(true);
+      // Fetch fresh daily progress from backend
+      const response = await axios.get(`${API_URL}/api/users/daily-progress`, { withCredentials: true });
       
-      if (progressRes.data) {
-        setTodayEarned(progressRes.data.earned || 0);
-        setAnimatedToday(progressRes.data.earned || 0);
-        setCanClaimDaily(!progressRes.data.claimed);
-        setStreak(progressRes.data.streak || 1);
+      // Hydrate state with backend data
+      setTodayEarned(response.data.earned || 0);
+      setAnimatedToday(response.data.earned || 0);
+      setCanClaimDaily(response.data.canClaimCheckIn || false);
+      setStreak(response.data.streak || 1);
+      
+      // Sync balance with auth user (which is fetched separately)
+      if (user) {
+        setTotalBalance(user.coins || 0);
+        setAnimatedBalance(user.coins || 0);
       }
-      
-      // Sync balance with auth user
-      setTotalBalance(user.coins || 0);
-      setAnimatedBalance(user.coins || 0);
     } catch (error) {
       console.error("Failed to refresh earn state:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [user]);
 

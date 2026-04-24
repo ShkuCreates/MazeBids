@@ -51,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AUTH]', AUTH_BUILD_MARKER, 'Fetching user from /api/auth/me');
       const response = await apiClient.get('/api/auth/me');
       console.log('[AUTH] User fetched:', response.data);
+      // Ensure we set the user with the backend's coin balance
       setUser(response.data);
       return true;
     } catch (error) {

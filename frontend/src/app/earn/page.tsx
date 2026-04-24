@@ -476,10 +476,6 @@ function EarnPage() {
                         <h4 className="font-bold text-white text-sm truncate">{task.title}</h4>
                         <p className="text-gray-400 text-[11px] truncate">{task.desc}</p>
                       </div>
-                      <div className="flex items-center gap-1 text-yellow-400">
-                        <Coins className="w-4 h-4" />
-                        <span className="text-sm font-black">Unlimited</span>
-                      </div>
                       <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-colors" />
                     </motion.button>
                   ))}

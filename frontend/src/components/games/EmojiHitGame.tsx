@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Target, Timer, Trophy, X } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import { Target, Timer, Trophy } from 'lucide-react';
 
 interface EmojiHitGameProps {
   taskId: string;
@@ -15,11 +15,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const EMOJIS = ['🍩', '🍪', '🍫', '🍭', '🍬', '🍮', '🍦', '🍨', '🧁', '🍰', '🎂', '🍯'];
 
+interface Emoji {
+  id: number;
+  emoji: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
 const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
-  const [emojis, setEmojis] = useState<Array<{ id: number; emoji: string; x: number; y: number; size: number }>>([]);
+  const [emojis, setEmojis] = useState<Emoji[]>([]);
+  const [isProcessingClick, setIsProcessingClick] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const lastClickTimeRef = useRef<number>(0);
   const { user, refreshUser, updateCoins } = useAuth();
 
   const generateRandomEmoji = useCallback(() => {
@@ -53,15 +64,40 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     }
   }, [taskId, score, updateCoins, user]);
 
+  // Use requestAnimationFrame for stable timer independent of click events
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     if (gameState === 'PLAYING' && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0 && gameState === 'PLAYING') {
-      finishGame();
+      let startTime = Date.now();
+      let remainingTime = timeLeft;
+
+      const tick = () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= 1000) {
+          startTime = Date.now();
+          remainingTime -= 1;
+          setTimeLeft(remainingTime);
+          
+          if (remainingTime <= 0) {
+            setGameState('FINISHED');
+            return;
+          }
+        }
+        timerRef.current = requestAnimationFrame(tick);
+      };
+
+      timerRef.current = requestAnimationFrame(tick);
+    } else {
+      if (timerRef.current) {
+        cancelAnimationFrame(timerRef.current);
+        timerRef.current = null;
+      }
     }
-    return () => clearInterval(timer);
-  }, [gameState, timeLeft, finishGame]);
+    return () => {
+      if (timerRef.current) {
+        cancelAnimationFrame(timerRef.current);
+      }
+    };
+  }, [gameState]);
 
   useEffect(() => {
     let emojiTimer: NodeJS.Timeout;
@@ -80,6 +116,13 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   }, [gameState, generateRandomEmoji]);
 
   const handleEmojiClick = useCallback((emojiId: number) => {
+    // Throttle clicks to prevent event flooding (max 10 clicks per second)
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 100) {
+      return; // Skip if clicked too fast
+    }
+    lastClickTimeRef.current = now;
+
     // Prevent stuck counter by using functional updates
     setScore(prev => {
       const newScore = prev + 1;
