@@ -17,28 +17,53 @@ router.get('/', async (req, res) => {
 
 // Complete a task (game, ad, etc.)
 router.post('/complete', async (req, res) => {
+  const traceId = req.body.traceId || "no-trace";
+
   try {
+    console.log("========== CLAIM START ==========");
+    console.log("TRACE:", traceId);
     console.log("BODY:", req.body);
     console.log("USER:", req.user);
 
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ error: "User not authenticated" });
+      console.log("NO USER");
+      return res.status(401).json({ error: "No user" });
     }
 
     const { reward } = req.body;
-
-    if (!reward || isNaN(reward)) {
-      return res.status(400).json({ error: "Invalid reward" });
+    if (!reward) {
+      console.log("NO REWARD");
+      return res.status(400).json({ error: "No reward" });
     }
 
-    await updateUserCoins(userId, reward);
+    console.log("FETCHING USER BEFORE UPDATE");
 
-    return res.json({ success: true });
+    const before = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    console.log("COINS BEFORE:", before?.coins);
+
+    console.log("CALLING updateUserCoins");
+
+    const updated = await updateUserCoins(userId, reward);
+
+    console.log("UPDATED RESULT:", updated);
+
+    const after = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    console.log("COINS AFTER DB CHECK:", after?.coins);
+
+    console.log("========== CLAIM END ==========");
+
+    res.json({ success: true });
 
   } catch (error) {
-    console.error("TASK COMPLETE ERROR:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("ERROR TRACE:", traceId, error);
+    res.status(500).json({ error: error.message });
   }
 });
 

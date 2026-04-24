@@ -46,10 +46,17 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
     const calculatedReward = score * 10; // Hits * 10 coins
+    const traceId = Date.now();
+
+    console.log("CLAIM START", { traceId, reward: calculatedReward, game: "EmojiHitGame" });
+
     try {
       const res = await axios.post(`${API_URL}/api/tasks/complete`, {
-        reward: calculatedReward
+        reward: calculatedReward,
+        traceId
       }, { withCredentials: true });
+
+      console.log("CLAIM RESPONSE", { traceId, data: res.data });
 
       // On success, reload page to get fresh data from backend
       if (res.data.success === true) {

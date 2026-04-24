@@ -51,18 +51,19 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
 
     setIsClaiming(true);
     setClaimError(null);
+    const traceId = Date.now();
+
+    console.log("CLAIM START", { traceId, reward, game: "AdPlayer", taskId });
 
     try {
-      console.log('[AdPlayer] Claiming reward for ad:', taskId, 'reward:', reward);
-
       // Use correct API endpoint for ad rewards
       const response = await axios.post(
         `${API_URL}/api/ads/${taskId}/claim`,
-        {},
+        { traceId },
         { withCredentials: true }
       );
 
-      console.log('[AdPlayer] Claim response:', response.data);
+      console.log("CLAIM RESPONSE", { traceId, data: response.data });
 
       // On success, reload page to get fresh data from backend
       if (response.data.coins !== undefined) {

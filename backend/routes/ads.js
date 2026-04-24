@@ -142,100 +142,51 @@ router.delete('/:id', async (req, res) => {
 
 // Claim ad reward
 router.post('/:id/claim', async (req, res) => {
-  console.log('[Ads] Claim request received:', { userId: req.user?.id, adId: req.params.id, authenticated: !!req.user });
+  const traceId = req.body.traceId || "no-trace";
+
+  console.log("========== AD CLAIM START ==========");
+  console.log("TRACE:", traceId);
+  console.log("BODY:", req.body);
+  console.log("USER:", req.user);
 
   if (!req.user) {
-    console.log('[Ads] Claim failed: Unauthorized');
+    console.log("NO USER");
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   try {
-    console.log('[Ads] Fetching ad:', req.params.id);
+    console.log("FETCHING AD:", req.params.id);
     const ad = await prisma.ad.findUnique({
       where: { id: req.params.id }
     });
 
     if (!ad) {
-      console.log('[Ads] Claim failed: Ad not found');
+      console.log("AD NOT FOUND");
       return res.status(404).json({ message: 'Ad not found' });
     }
 
-    if (ad.status !== 'ACTIVE') {
-      console.log('[Ads] Claim failed: Ad not active', { status: ad.status });
-      return res.status(400).json({ message: 'This ad is not active' });
-    }
+    console.log("AD REWARD:", ad.reward);
 
-    if (ad.reward <= 0) {
-      console.log('[Ads] Claim failed: No reward', { reward: ad.reward });
-      return res.status(400).json({ message: 'This ad does not offer a reward' });
-    }
-
-    console.log('[Ads] Ad validated:', { title: ad.title, reward: ad.reward });
-
-    // Check daily limit
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { coinsEarnedToday: true }
+    console.log("FETCHING USER BEFORE UPDATE");
+    const before = await prisma.user.findUnique({
+      where: { id: req.user.id }
     });
+    console.log("COINS BEFORE:", before?.coins);
 
-    const dailyTotal = user?.coinsEarnedToday || 0;
-    console.log('[Ads] Daily earnings check:', { current: dailyTotal, reward: ad.reward, total: dailyTotal + ad.reward, limit: 5000 });
-
-    if (dailyTotal + ad.reward > 5000) {
-      console.log('[Ads] Claim failed: Daily limit reached');
-      return res.status(429).json({
-        message: 'Daily earning limit reached',
-        current: dailyTotal,
-        limit: 5000
-      });
-    }
-
-    // Check for cooldown (prevent duplicate claims)
-    const lastClaim = await prisma.transaction.findFirst({
-      where: {
-        userId: req.user.id,
-        description: `Watched ad: ${ad.title}`
-      },
-      orderBy: { timestamp: 'desc' }
-    });
-
-    if (lastClaim) {
-      const diff = (new Date() - lastClaim.timestamp) / 1000 / 60; // in minutes
-      console.log('[Ads] Cooldown check:', { minutesSinceLastClaim: diff, cooldown: 1 });
-      if (diff < 1) { // 1 minute cooldown
-        console.log('[Ads] Claim failed: Cooldown active');
-        return res.status(429).json({ message: 'Please wait before claiming again' });
-      }
-    }
-
-    console.log('[Ads] Processing coin update via centralized function...');
-    // Process reward using centralized coin helper
+    console.log("CALLING updateUserCoins");
     const coinResult = await updateUserCoins(req.user.id, ad.reward, `Watched ad: ${ad.title}`);
+    console.log("UPDATED RESULT:", coinResult);
 
-    if (!coinResult.success) {
-      console.error('[Ads] Claim failed: Coin update error:', coinResult.error);
-      return res.status(500).json({ message: 'Failed to process reward' });
-    }
-
-    console.log('[Ads] Database updated:', { newBalance: coinResult.newBalance });
-
-    // Notify user of coins earned
-    await createNotification(req.user.id, 'COINS_EARNED', `+${ad.reward} coins earned from watching: ${ad.title}`, { amount: ad.reward });
-
-    console.log('[Ads] Claim successful:', {
-      userId: req.user.id,
-      adId: ad.id,
-      reward: ad.reward,
-      oldBalance: dailyTotal,
-      newBalance: coinResult.newBalance,
-      dailyEarned: dailyTotal + ad.reward
+    const after = await prisma.user.findUnique({
+      where: { id: req.user.id }
     });
+    console.log("COINS AFTER DB CHECK:", after?.coins);
 
-    // Return updated balance for real-time sync
+    console.log("========== AD CLAIM END ==========");
+
     res.json({
       message: `Successfully claimed ${ad.reward} coins!`,
-      coins: coinResult.newBalance,
-      dailyEarned: dailyTotal + ad.reward
+      coins: coinResult.newBalance
     });
   } catch (err) {
     console.error('[Ads] Claim error:', err);
