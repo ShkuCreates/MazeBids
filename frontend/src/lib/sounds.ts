@@ -1,21 +1,20 @@
-// Coin sound effect - only works in browser
-let coinSound: HTMLAudioElement | null = null;
+// Reward sound effect - only works in browser after user interaction.
+let rewardSound: HTMLAudioElement | null = null;
 
-export const playCoinSound = () => {
-  // Only run in browser environment
+export const playRewardSound = () => {
   if (typeof window === 'undefined') return;
 
   try {
-    if (!coinSound) {
-      coinSound = new Audio('/sounds/coin.mp3');
-      coinSound.volume = 0.3;
+    if (!rewardSound) {
+      rewardSound = new Audio('/sounds/reward.mp3');
+      rewardSound.volume = 0.3;
     }
-    
-    coinSound.currentTime = 0;
-    coinSound.play().catch(err => {
-      console.log('Audio play failed (user may need to interact first):', err);
-    });
-  } catch (err) {
-    console.log('Coin sound error:', err);
+
+    rewardSound.currentTime = 0;
+    rewardSound.play().catch(() => {});
+  } catch {
+    // Ignore blocked or unavailable audio silently.
   }
 };
+
+export const playCoinSound = playRewardSound;

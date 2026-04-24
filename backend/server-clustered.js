@@ -42,7 +42,7 @@ if (cluster.isMaster) {
   app.use(morgan('combined'));
   app.use(compression());
   app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "https://mazebids.online",
     credentials: true
   }));
   app.use(require('./middleware/compression'));
@@ -75,7 +75,7 @@ if (cluster.isMaster) {
   const server = http.createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: process.env.FRONTEND_URL || "https://mazebids.online",
       methods: ["GET", "POST"],
       credentials: true
     }
