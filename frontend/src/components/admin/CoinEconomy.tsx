@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Coins, TrendingUp, TrendingDown, Plus, Minus, Settings, AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
 import AnimatedCounter from "../AnimatedCounter";
 import axios from "axios";
+import { io } from "socket.io-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -26,6 +27,7 @@ export default function CoinEconomy() {
   const [resetConfirm, setResetConfirm] = useState("");
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [socket, setSocket] = useState<any>(null);
 
   const [rewardSettings, setRewardSettings] = useState({
     dailyLimit: 5000,
@@ -54,6 +56,22 @@ export default function CoinEconomy() {
 
   useEffect(() => {
     fetchEconomyData();
+    
+    // Setup socket.io connection for real-time reset events
+    const newSocket = io(API_URL, { withCredentials: true });
+    setSocket(newSocket);
+    
+    // Listen for economy-reset event from server
+    newSocket.on('economy-reset', (data) => {
+      console.log('[CoinEconomy] Economy reset detected:', data);
+      // Force immediate refresh when reset is detected
+      fetchEconomyData();
+      alert(`⚠️ Economy Reset Alert: ${data.message}\nUsers affected: ${data.usersAffected}`);
+    });
+    
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   const handleRewardChange = (key: string, value: string) => {
@@ -108,10 +126,29 @@ export default function CoinEconomy() {
         withCredentials: true
       });
 
-      alert(`✅ ${res.data.message}\nUsers affected: ${res.data.usersAffected}`);
+      // IMMEDIATELY update UI with fresh stats from response (zero delay)
+      if (res.data.freshStats) {
+        setEconomyData({
+          totalGenerated: res.data.freshStats.totalEarned,
+          totalSpent: res.data.freshStats.totalSpent,
+          inCirculation: res.data.freshStats.inCirculation,
+          totalTransactions: 0,
+          inflationRate: 0,
+          todayEarned: 0,
+          todaySpent: 0,
+          userCount: res.data.freshStats.userCount,
+          avgCoinsPerUser: 0
+        });
+      }
+
+      alert(`✅ ${res.data.message}\nUsers affected: ${res.data.usersAffected}\nTotal coins in circulation: ${res.data.freshStats?.inCirculation || 0}`);
       setShowResetModal(false);
       setResetConfirm("");
-      await fetchEconomyData();
+      
+      // Force refresh after a short delay to ensure consistency
+      setTimeout(() => {
+        fetchEconomyData();
+      }, 1000);
     } catch (err: any) {
       console.error("[Admin] Economy reset failed:", err);
       alert(err.response?.data?.message || "Failed to reset economy");

@@ -164,7 +164,7 @@ export default function LiveActivityFeed() {
                     
                     {activity.amount && (
                       <div className="mt-1 flex items-center gap-1">
-                        <span className="text-yellow-400 font-black text-xs">₹{activity.amount.toLocaleString()}</span>
+                        <span className="text-yellow-400 font-black text-xs">{activity.amount.toLocaleString()} coins</span>
                       </div>
                     )}
                     

@@ -464,31 +464,68 @@ router.post('/economy/reset', async (req, res) => {
     const userCount = await prisma.user.count();
 
     // Reset all users' coins in a transaction
-    const result = await prisma.$transaction([
-      // Reset all users
-      prisma.user.updateMany({
+    await prisma.$transaction(async (tx) => {
+      // Reset all users - coins and daily tracking
+      await tx.user.updateMany({
         data: {
           coins: 0,
-          coinsEarnedToday: 0
+          totalEarned: 0,
+          totalSpent: 0,
+          coinsEarnedToday: 0,
+          dailyCheckInClaimed: false
         }
-      }),
-      // Log the reset action
-      prisma.transaction.createMany({
-        data: [] // Could add a system transaction here if needed
-      })
-    ]);
+      });
+      
+      // Clear all transactions for clean slate
+      await tx.transaction.deleteMany({});
+    });
 
     console.log(`[ADMIN] ✅ Reset complete: ${userCount} users affected`);
 
+    // Get FRESH economy stats immediately after reset
+    const [
+      totalCoins,
+      totalEarned,
+      totalSpent,
+      activeAuctions,
+      userCountAfter
+    ] = await Promise.all([
+      prisma.user.aggregate({ _sum: { coins: true } }),
+      prisma.user.aggregate({ _sum: { totalEarned: true } }),
+      prisma.user.aggregate({ _sum: { totalSpent: true } }),
+      prisma.auction.count({ where: { status: 'ACTIVE' } }),
+      prisma.user.count()
+    ]);
+
+    // Broadcast reset event to all connected clients via socket.io
+    const { getIo } = require('../lib/notificationHelper');
+    const io = getIo();
+    if (io) {
+      io.emit('economy-reset', { 
+        message: 'Economy has been reset',
+        resetAt: new Date().toISOString(),
+        usersAffected: userCount
+      });
+      console.log('[ADMIN] Broadcasted economy-reset event to all clients');
+    }
+
     res.json({
+      success: true,
       message: 'Economy reset complete',
       usersAffected: userCount,
       resetAt: new Date().toISOString(),
-      warning: 'All user coins have been reset to 0'
+      freshStats: {
+        totalCoins: totalCoins._sum.coins || 0,
+        totalEarned: totalEarned._sum.totalEarned || 0,
+        totalSpent: totalSpent._sum.totalSpent || 0,
+        inCirculation: totalCoins._sum.coins || 0,
+        activeAuctions,
+        userCount: userCountAfter
+      }
     });
   } catch (err) {
     console.error('[Admin] Economy reset error:', err);
-    res.status(500).json({ message: 'Failed to reset economy' });
+    res.status(500).json({ message: 'Failed to reset economy', error: err.message });
   }
 });
 
