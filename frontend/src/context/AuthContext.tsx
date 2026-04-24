@@ -62,13 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Clear any stale cached data on mount to prevent showing wrong balance after DB reset
+  // Fetch fresh data on mount (don't clear localStorage to preserve balance)
   useEffect(() => {
-    // Force clear any old cached data
-    localStorage.removeItem('user');
-    localStorage.removeItem('coins');
-    localStorage.removeItem('balance');
-    sessionStorage.removeItem('user');
     setMounted(true);
   }, []);
 

@@ -47,12 +47,11 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
         updateCoins(user.coins + calculatedReward, calculatedReward);
       }
       
-      // Also refresh to ensure data consistency
-      await refreshUser();
+      // Don't call refreshUser here to prevent progress reset
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  }, [taskId, score, refreshUser, updateCoins, user]);
+  }, [taskId, score, updateCoins, user]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -81,7 +80,11 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   }, [gameState, generateRandomEmoji]);
 
   const handleEmojiClick = useCallback((emojiId: number) => {
-    setScore(prev => prev + 1);
+    // Prevent stuck counter by using functional updates
+    setScore(prev => {
+      const newScore = prev + 1;
+      return newScore;
+    });
     setEmojis(prev => prev.filter(emoji => emoji.id !== emojiId));
   }, []);
 

@@ -38,12 +38,11 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
         updateCoins(user.coins + calculatedReward, calculatedReward);
       }
       
-      // Also refresh to ensure data consistency
-      await refreshUser();
+      // Don't call refreshUser here to prevent progress reset
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  }, [taskId, score, refreshUser, updateCoins, user]);
+  }, [taskId, score, updateCoins, user]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
