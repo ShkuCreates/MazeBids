@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
 import { Target, Timer, Trophy } from 'lucide-react';
 
 interface EmojiHitGameProps {
@@ -10,8 +8,6 @@ interface EmojiHitGameProps {
   onComplete: (actualReward: number) => void;
   onCancel: () => void;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const EMOJIS = ['🍩', '🍪', '🍫', '🍭', '🍬', '🍮', '🍦', '🍨', '🧁', '🍰', '🎂', '🍯'];
 
@@ -31,7 +27,6 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   const [isProcessingClick, setIsProcessingClick] = useState(false);
   const timerRef = useRef<number | null>(null);
   const lastClickTimeRef = useRef<number>(0);
-  const { user, refreshUser, updateCoins } = useAuth();
 
   const generateRandomEmoji = useCallback(() => {
     return {
@@ -43,18 +38,20 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     };
   }, []);
 
-  const finishGame = useCallback(async () => {
+  const finishGame = useCallback(() => {
     setGameState('FINISHED');
-    const calculatedReward = score * 10; // Hits * 10 coins
-    const rewardAmount = calculatedReward;
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
+  }, [score]);
 
-    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: rewardAmount });
-    console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
-    console.log("GAME REWARD TRIGGERED", rewardAmount);
+  const handleCollectReward = useCallback(async () => {
+    const coins = score * 10;
+    const rewardAmount = coins;
+
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins });
+    console.log("✅ FINAL REWARD", rewardAmount);
 
     try {
-      console.log("COIN API REQUEST START", rewardAmount);
-      const res = await fetch(`${API_URL}/api/coins/update`, {
+      const res = await fetch("/api/coins/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -67,27 +64,17 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
       });
 
       const data = await res.json();
-      console.log("COIN API RESPONSE", data);
-      console.log("COIN API REQUEST END", rewardAmount);
+      console.log("✅ COINS UPDATED", data);
+
+      if (data?.coins) {
+        window.location.reload();
+      }
     } catch (err) {
-      console.error("COIN API ERROR", err);
+      console.error("❌ COIN UPDATE FAILED", err);
     }
 
-    try {
-      const res = await axios.post(`${API_URL}/api/tasks/complete`, {
-        taskId,
-        score,
-        reward: calculatedReward
-      }, { withCredentials: true });
-      
-      // Use backend response for real-time update (single source of truth)
-      if (res.data.coins !== undefined && updateCoins) {
-        updateCoins(res.data.coins);
-      }
-    } catch (error) {
-      console.error('Failed to save score', error);
-    }
-  }, [taskId, score, updateCoins, user]);
+    onComplete(rewardAmount);
+  }, [onComplete, score]);
 
   // Use requestAnimationFrame for stable timer independent of click events
   useEffect(() => {
@@ -103,8 +90,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
           setTimeLeft(remainingTime);
           
           if (remainingTime <= 0) {
-            console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
-            setGameState('FINISHED');
+            finishGame();
             return;
           }
         }
@@ -123,7 +109,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
         cancelAnimationFrame(timerRef.current);
       }
     };
-  }, [gameState]);
+  }, [finishGame, gameState]);
 
   useEffect(() => {
     let emojiTimer: NodeJS.Timeout;
@@ -150,13 +136,12 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     lastClickTimeRef.current = now;
 
     // Prevent stuck counter by using functional updates
-    console.log("🔥 POSSIBLE REWARD POINT", { score: score + 1, coins: (score + 1) * 10 });
     setScore(prev => {
       const newScore = prev + 1;
       return newScore;
     });
     setEmojis(prev => prev.filter(emoji => emoji.id !== emojiId));
-  }, [score]);
+  }, []);
 
   const startGame = useCallback(() => {
     setScore(0);
@@ -233,7 +218,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
               <p className="text-yellow-300 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={() => onComplete(score * 10)}
+              onClick={handleCollectReward}
               className="w-full py-4 bg-white text-purple-600 hover:bg-gray-100 rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD

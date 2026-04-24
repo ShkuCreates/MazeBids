@@ -1,8 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MousePointer2, Timer, Trophy } from 'lucide-react';
-import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
 
 interface ClickGameProps {
   taskId: string;
@@ -11,26 +9,25 @@ interface ClickGameProps {
   onCancel: () => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
 const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
-  const { user, refreshUser, updateCoins } = useAuth();
 
-  const finishGame = useCallback(async () => {
+  const finishGame = useCallback(() => {
     setGameState('FINISHED');
-    const calculatedReward = score * 10; // Clicks * 10 coins
-    const rewardAmount = calculatedReward;
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
+  }, [score]);
 
-    console.log("🔥 POSSIBLE REWARD POINT", { score, coins: rewardAmount });
-    console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
-    console.log("GAME REWARD TRIGGERED", rewardAmount);
+  const handleCollectReward = useCallback(async () => {
+    const coins = score * 10;
+    const rewardAmount = coins;
+
+    console.log("🔥 POSSIBLE REWARD POINT", { score, coins });
+    console.log("✅ FINAL REWARD", rewardAmount);
 
     try {
-      console.log("COIN API REQUEST START", rewardAmount);
-      const res = await fetch(`${API_URL}/api/coins/update`, {
+      const res = await fetch("/api/coins/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -43,27 +40,17 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
       });
 
       const data = await res.json();
-      console.log("COIN API RESPONSE", data);
-      console.log("COIN API REQUEST END", rewardAmount);
+      console.log("✅ COINS UPDATED", data);
+
+      if (data?.coins) {
+        window.location.reload();
+      }
     } catch (err) {
-      console.error("COIN API ERROR", err);
+      console.error("❌ COIN UPDATE FAILED", err);
     }
 
-    try {
-      const res = await axios.post(`${API_URL}/api/tasks/complete`, {
-        taskId,
-        score,
-        reward: calculatedReward
-      }, { withCredentials: true });
-      
-      // Use backend response for real-time update (single source of truth)
-      if (res.data.coins !== undefined && updateCoins) {
-        updateCoins(res.data.coins);
-      }
-    } catch (error) {
-      console.error('Failed to save score', error);
-    }
-  }, [taskId, score, updateCoins, user]);
+    onComplete(rewardAmount);
+  }, [onComplete, score]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -72,20 +59,18 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
         setTimeLeft((prev) => {
           const newTime = prev - 1;
           if (newTime === 0) {
-            console.log("🔥 POSSIBLE REWARD POINT", { score, coins: score * 10 });
-            setGameState('FINISHED');
+            finishGame();
           }
           return newTime;
         });
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [gameState]);
+  }, [finishGame, gameState]);
 
   const handleClick = useCallback(() => {
-    console.log("🔥 POSSIBLE REWARD POINT", { score: score + 1, coins: (score + 1) * 10 });
     setScore(prev => prev + 1);
-  }, [score]);
+  }, []);
 
   const startGame = useCallback(() => {
     setScore(0);
@@ -150,7 +135,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
               <p className="text-green-400 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={() => onComplete(score * 10)}
+              onClick={handleCollectReward}
               className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD
