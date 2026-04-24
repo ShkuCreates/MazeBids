@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
-import axios from "axios";
-import { useAuth } from "./AuthContext";
+import React, { useState, useCallback, useEffect, createContext, useContext } from 'react';
+import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
