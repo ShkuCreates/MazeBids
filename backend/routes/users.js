@@ -34,7 +34,6 @@ router.get('/profile', async (req, res) => {
       select: {
         id: true,
         username: true,
-        email: true,
         avatar: true,
         totalEarned: true,
         totalSpent: true,
