@@ -110,19 +110,19 @@ router.get('/dashboard-stats', async (req, res) => {
 
       // Recent users (last 7 days by day)
       prisma.$queryRaw`
-        SELECT DATE(created_at) as date, COUNT(*) as count
+        SELECT DATE("createdAt") as date, COUNT(*) as count
         FROM "User"
-        WHERE created_at >= ${startOfWeek}
-        GROUP BY DATE(created_at)
+        WHERE "createdAt" >= ${startOfWeek}
+        GROUP BY DATE("createdAt")
         ORDER BY date ASC
       `,
 
       // Recent bids (last 7 days by day)
       prisma.$queryRaw`
-        SELECT DATE(timestamp) as date, COUNT(*) as count
+        SELECT DATE("timestamp") as date, COUNT(*) as count
         FROM "Bid"
-        WHERE timestamp >= ${startOfWeek}
-        GROUP BY DATE(timestamp)
+        WHERE "timestamp" >= ${startOfWeek}
+        GROUP BY DATE("timestamp")
         ORDER BY date ASC
       `
     ]);
