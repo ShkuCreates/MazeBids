@@ -89,14 +89,20 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
     animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Optimistic update balance with animation
+  // Optimistic update balance with animation - also syncs with AuthContext
   const updateBalance = useCallback((amount: number) => {
     setTotalBalance((prev) => {
       const newBalance = prev + amount;
       animateNumber(animatedBalance, newBalance, setAnimatedBalance, 600);
+      
+      // Sync with AuthContext for real-time header updates
+      if (user && updateCoins) {
+        updateCoins(newBalance, amount);
+      }
+      
       return newBalance;
     });
-  }, [animatedBalance]);
+  }, [animatedBalance, user, updateCoins]);
 
   // Add to today's progress with animation
   const addToTodayProgress = useCallback((amount: number) => {
