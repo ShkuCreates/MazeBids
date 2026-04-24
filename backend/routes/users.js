@@ -38,6 +38,8 @@ router.get('/profile', async (req, res) => {
         createdAt: true,
         discordId: true,
         coins: true,
+        referralCode: true,
+        referredById: true,
         // Daily tracking fields (auto-reset if new day)
         coinsEarnedToday: true,
         dailyCheckInClaimed: true,

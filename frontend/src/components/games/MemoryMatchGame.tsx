@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Brain, Timer, Trophy } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
-import ClickGame from './ClickGame';
 
 interface MemoryMatchGameProps {
   taskId: string;
@@ -17,7 +16,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const CARDS = ['🍎', '🍌', '🍇', '🍓', '🍒', '🍑', '🥝', '🍍'];
 
 const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
-  const [showClickerFirst, setShowClickerFirst] = useState(true);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
@@ -112,22 +110,6 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
       }
     }
   }, [cards, flippedCards]);
-
-  const handleClickerComplete = useCallback(() => {
-    setShowClickerFirst(false);
-  }, []);
-
-  // Show Clicker game first
-  if (showClickerFirst) {
-    return (
-      <ClickGame
-        taskId={taskId}
-        reward={reward}
-        onComplete={handleClickerComplete}
-        onCancel={onCancel}
-      />
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">

@@ -367,6 +367,26 @@ function EarnPage() {
                 </div>
                 <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
               </div>
+              
+              {/* Display User's Referral Code */}
+              {user?.referralCode && (
+                <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
+                  <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
+                  <div className="flex items-center justify-between">
+                    <code className="text-sm font-mono font-bold text-purple-300 tracking-wider">{user.referralCode}</code>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(user.referralCode!);
+                        showToast('Referral code copied!', 'success');
+                      }}
+                      className="text-[10px] text-purple-400 hover:text-purple-300 underline cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
