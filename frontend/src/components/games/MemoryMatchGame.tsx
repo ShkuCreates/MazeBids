@@ -33,14 +33,16 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
         source: 'Memory Match'
       }, { withCredentials: true });
 
-      // Use backend response for real-time update (single source of truth)
-      if (res.data.coins !== undefined && updateCoins) {
-        updateCoins(res.data.coins);
+      // On success, reload page to get fresh data from backend
+      if (res.data.success === true || res.data.coins !== undefined) {
+        alert(`+${calculatedReward} coins added!`);
+        window.location.reload();
       }
     } catch (error) {
       console.error('Failed to save score', error);
+      alert('Failed to save score. Please try again.');
     }
-  }, [score, updateCoins, user]);
+  }, [score]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

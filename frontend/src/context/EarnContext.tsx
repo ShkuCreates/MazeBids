@@ -90,12 +90,10 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
     animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Optimistic update balance with animation - also syncs with AuthContext
+  // Removed optimistic updates - backend is single source of truth
   const updateBalance = useCallback((amount: number) => {
-    setTotalBalance(prev => prev + amount);
-    setAnimatedBalance(prev => prev + amount);
-    // Play coin sound effect
-    playCoinSound();
+    // No-op - all coin updates must come from backend
+    console.log('[EarnContext] updateBalance called but is disabled - use backend API');
   }, []);
 
   // Add to today's progress with animation
@@ -109,9 +107,9 @@ const addToTodayProgress = useCallback((amount: number) => {
   // Claim daily reward
   const claimDaily = useCallback(async () => {
     if (!canClaimDaily || isLoading) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // API call - backend is single source of truth
       const res = await axios.post(
@@ -119,37 +117,19 @@ const addToTodayProgress = useCallback((amount: number) => {
         {},
         { withCredentials: true }
       );
-      
-      // Sync with actual server response and global state
-      if (res.data.coins !== undefined && updateCoins && user) {
-        // Sync with global AuthContext state
-        updateCoins(res.data.coins);
-        // Also update local state
-        setTotalBalance(res.data.coins);
-        animateNumber(animatedBalance, res.data.coins, setAnimatedBalance, 400);
+
+      // On success, reload page to get fresh data from backend
+      if (res.data.coins !== undefined) {
+        alert(`Daily reward claimed!`);
+        window.location.reload();
       }
-      
-      // Sync streak and claimed status from server
-      if (res.data.streak !== undefined) {
-        setStreak(Math.min(res.data.streak, 7));
-      }
-      if (res.data.dailyCheckInClaimed !== undefined) {
-        setCanClaimDaily(!res.data.dailyCheckInClaimed);
-      }
-      if (res.data.coinsEarnedToday !== undefined) {
-        setTodayEarned(res.data.coinsEarnedToday);
-        setAnimatedToday(res.data.coinsEarnedToday);
-      }
-      
-      // Refresh user in auth context
-      await refreshUser();
     } catch (error) {
       console.error("Daily claim failed:", error);
-      // No rollback needed - backend is single source of truth
+      alert('Failed to claim daily reward. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [canClaimDaily, isLoading, refreshUser, updateCoins, user]);
+  }, [canClaimDaily, isLoading]);
 
   // Refresh state from server
   const refreshState = useCallback(async () => {

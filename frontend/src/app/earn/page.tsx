@@ -360,8 +360,6 @@ function EarnPage() {
     return rewards[Math.min(day - 1, 6)] || 50;
   };
 
-  const progress = Math.min((animatedToday / state.dailyGoal) * 100, 100);
-
   const tasks = [
     { id: "1", title: "Speed Clicker", reward: 50, type: "GAME", icon: Target, desc: "Click as fast as you can in 10 seconds!", color: "from-purple-500 to-indigo-600", thumbnail: "🎯" },
     { id: "2", title: "Memory Match", reward: 75, type: "GAME", icon: Brain, desc: "Find all matching pairs quickly.", color: "from-blue-500 to-cyan-600", thumbnail: "🧠" },
@@ -377,91 +375,57 @@ function EarnPage() {
       <FloatingCoins coins={floatingCoins} />
 
       <div className="max-w-5xl mx-auto py-6 px-4 space-y-5">
-        
-        {/* SECTION 1: Top Compact Row - Today Progress + Referral System */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Today's Progress */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-[#0f0f18] border border-white/10 rounded-xl p-4 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                    <TrendingUp className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-white text-xs tracking-wider uppercase">Today's Progress</h3>
-                    <p className="text-gray-400 text-[10px]">{animatedToday.toLocaleString()} / {state.dailyGoal.toLocaleString()} coins</p>
-                  </div>
-                </div>
-                <span className="text-purple-300 text-xs font-black">{Math.round(progress)}%</span>
-              </div>
-              <div className="relative h-2.5 bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                />
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Referral System */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="bg-[#0f0f18] border border-purple-500/20 rounded-xl p-4 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-white text-xs tracking-wider uppercase">Referral System</h3>
-                    <p className="text-purple-300 text-[10px]">{state.referralsInvited}/{state.referralsGoal} invites</p>
-                  </div>
+        {/* SECTION 1: Referral System */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-[#0f0f18] border border-purple-500/20 rounded-xl p-4 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
-              </div>
-              
-              {/* Display User's Referral Code */}
-              {user?.referralCode && (
-                <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
-                  <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
-                  <div className="flex items-center justify-between">
-                    <code className="text-sm font-mono font-bold text-purple-300 tracking-wider">{user.referralCode}</code>
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(user.referralCode!);
-                        showToast('Referral code copied!', 'success');
-                      }}
-                      className="text-[10px] text-purple-400 hover:text-purple-300 underline cursor-pointer"
-                    >
-                      Copy
-                    </button>
-                  </div>
+                <div>
+                  <h3 className="font-black text-white text-xs tracking-wider uppercase">Referral System</h3>
+                  <p className="text-purple-300 text-[10px]">{state.referralsInvited}/{state.referralsGoal} invites</p>
                 </div>
-              )}
-              
-              <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(state.referralsInvited / state.referralsGoal) * 100}%` }}
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                />
               </div>
+              <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
             </div>
-          </motion.div>
-        </div>
+
+            {/* Display User's Referral Code */}
+            {user?.referralCode && (
+              <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
+                <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
+                <div className="flex items-center justify-between">
+                  <code className="text-sm font-mono font-bold text-purple-300 tracking-wider">{user.referralCode}</code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.referralCode!);
+                      showToast('Referral code copied!', 'success');
+                    }}
+                    className="text-[10px] text-purple-400 hover:text-purple-300 underline cursor-pointer"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(state.referralsInvited / state.referralsGoal) * 100}%` }}
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+              />
+            </div>
+          </div>
+        </motion.div>
 
         {/* SECTION 2: Priority Large - Games (60%) + Watch Ads (40%) */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
