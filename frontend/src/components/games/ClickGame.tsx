@@ -24,6 +24,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
     const calculatedReward = score * 10; // Clicks * 10 coins
     const rewardAmount = calculatedReward;
 
+    console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
     console.log("GAME REWARD TRIGGERED", rewardAmount);
 
     try {

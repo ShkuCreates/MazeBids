@@ -48,6 +48,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     const calculatedReward = score * 10; // Hits * 10 coins
     const rewardAmount = calculatedReward;
 
+    console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
     console.log("GAME REWARD TRIGGERED", rewardAmount);
 
     try {

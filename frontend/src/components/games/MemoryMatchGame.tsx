@@ -28,6 +28,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
     const calculatedReward = score * 10; // Matches * 10 coins
     const rewardAmount = calculatedReward;
 
+    console.log("🚨 REWARD FUNCTION HIT", rewardAmount);
     console.log("GAME REWARD TRIGGERED", rewardAmount);
 
     try {
