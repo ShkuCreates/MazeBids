@@ -46,38 +46,13 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
     const calculatedReward = score * 10; // Hits * 10 coins
-    const rewardAmount = calculatedReward;
-
-    console.log("GAME REWARD TRIGGERED", rewardAmount);
-
-    try {
-      console.log("COIN API REQUEST START", rewardAmount);
-      const res = await fetch(`${API_URL}/api/coins/update`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          amount: rewardAmount,
-          source: "game"
-        })
-      });
-
-      const data = await res.json();
-      console.log("COIN API RESPONSE", data);
-      console.log("COIN API REQUEST END", rewardAmount);
-    } catch (err) {
-      console.error("COIN API ERROR", err);
-    }
-
     try {
       const res = await axios.post(`${API_URL}/api/tasks/complete`, {
-        taskId,
         score,
-        reward: calculatedReward
+        reward: calculatedReward,
+        source: 'Emoji Hit'
       }, { withCredentials: true });
-      
+
       // Use backend response for real-time update (single source of truth)
       if (res.data.coins !== undefined && updateCoins) {
         updateCoins(res.data.coins);
@@ -85,7 +60,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     } catch (error) {
       console.error('Failed to save score', error);
     }
-  }, [taskId, score, updateCoins, user]);
+  }, [score, updateCoins, user]);
 
   // Use requestAnimationFrame for stable timer independent of click events
   useEffect(() => {
