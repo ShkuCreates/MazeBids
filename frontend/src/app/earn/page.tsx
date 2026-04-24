@@ -102,7 +102,7 @@ export default function EarnPageWrapper() {
 }
 
 function EarnPage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, updateCoins } = useAuth();
   const { 
     state, 
     claimDaily, 
