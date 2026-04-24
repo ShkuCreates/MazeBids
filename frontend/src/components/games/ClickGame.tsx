@@ -33,6 +33,22 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
       if (res.data.coins !== undefined && updateCoins) {
         updateCoins(res.data.coins);
       }
+
+      try {
+        console.log('Game reward API called');
+        const coinRes = await axios.post(`${API_URL}/api/coins/update`, {
+          amount: calculatedReward,
+          source: 'game'
+        }, { withCredentials: true });
+
+        if (coinRes.data.coins !== undefined && updateCoins) {
+          updateCoins(coinRes.data.coins);
+        }
+
+        console.log('Game reward API success');
+      } catch (apiError) {
+        console.log('Game reward API failed', apiError);
+      }
     } catch (error) {
       console.error('Failed to save score', error);
     }
