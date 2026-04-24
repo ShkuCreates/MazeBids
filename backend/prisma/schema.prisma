@@ -38,9 +38,6 @@ model User {
   coinsEarnedToday    Int            @default(0)
   dailyCheckInClaimed Boolean        @default(false)
   lastDailyReset      DateTime       @default(now())
-  
-  // Daily check-in streak (resets if missed a day)
-  streak              Int            @default(1)
 
   @@index([notifications])
   @@index([role])

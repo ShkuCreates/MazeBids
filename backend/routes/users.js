@@ -360,17 +360,12 @@ router.get('/daily-progress', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get user streak
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { streak: true }
-    });
-
+    // Return fixed streak of 1 (no streak field in DB yet)
     res.json({
       earned: dailyStats.coinsEarnedToday,
       claimed: dailyStats.dailyCheckInClaimed,
       canClaimCheckIn: dailyStats.canClaimCheckIn,
-      streak: user?.streak || 1,
+      streak: 1, // Fixed value since no streak field in DB
       dailyLimit: dailyStats.dailyEarnLimit,
       remainingAllowance: dailyStats.remainingDailyAllowance
     });
@@ -402,30 +397,30 @@ router.post('/daily-claim', async (req, res) => {
       });
     }
 
-    // Calculate reward based on streak (matches frontend logic)
+    // Calculate reward - always day 1 reward since streak field doesn't exist in DB
     const getDailyReward = (day) => {
       const rewards = [50, 75, 100, 125, 150, 175, 500];
       return rewards[day - 1] || 50;
     };
 
-    // Get user's current streak
+    // Get user's current coins
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { 
-        streak: true,
-        coins: true
+        coins: true,
+        dailyCheckInClaimed: true
       }
     });
 
-    const currentStreak = user?.streak || 1;
+    // Use fixed streak of 1 (no streak field in DB yet)
+    const currentStreak = 1;
     const reward = getDailyReward(currentStreak);
 
-    // Mark daily check-in as claimed and add coins
+    // Mark daily check-in as claimed and add coins (no streak field in DB)
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         dailyCheckInClaimed: true,
-        streak: { increment: 1 },
         coins: { increment: reward },
         totalEarned: { increment: reward },
         coinsEarnedToday: { increment: reward }
@@ -433,7 +428,6 @@ router.post('/daily-claim', async (req, res) => {
       select: {
         id: true,
         coins: true,
-        streak: true,
         dailyCheckInClaimed: true,
         coinsEarnedToday: true
       }
@@ -460,7 +454,7 @@ router.post('/daily-claim', async (req, res) => {
       message: `Daily reward claimed! +${reward} coins!`,
       reward: reward,
       coins: updatedUser.coins,
-      streak: updatedUser.streak,
+      streak: 1, // Fixed value since no streak field in DB
       dailyCheckInClaimed: updatedUser.dailyCheckInClaimed,
       coinsEarnedToday: updatedUser.coinsEarnedToday
     });
