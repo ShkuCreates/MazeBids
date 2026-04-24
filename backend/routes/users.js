@@ -449,7 +449,7 @@ router.post('/daily-claim', async (req, res) => {
     const currentStreak = 1;
     const reward = getDailyReward(currentStreak);
 
-    // Mark daily check-in as claimed and add coins (no streak field in DB)
+    // Mark daily check-in as claimed and add coins (with coinsEarnedToday update)
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {

@@ -130,8 +130,11 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
         { withCredentials: true }
       );
       
-      // Sync with actual server response
-      if (res.data.coins !== undefined) {
+      // Sync with actual server response and global state
+      if (res.data.coins !== undefined && updateCoins && user) {
+        // Sync with global AuthContext state
+        updateCoins(res.data.coins, res.data.coins - user.coins);
+        // Also update local state
         setTotalBalance(res.data.coins);
         animateNumber(animatedBalance, res.data.coins, setAnimatedBalance, 400);
       }

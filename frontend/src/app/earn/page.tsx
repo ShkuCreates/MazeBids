@@ -217,11 +217,43 @@ function EarnPage() {
     return () => clearTimeout(timer);
   }, [refreshState]);
 
-  // Live earnings feed generator (simulated)
+  // Live earnings feed generator (simulated with realistic data)
   useEffect(() => {
     if (!mounted) return;
-    const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
-    const activities = ["earned 250 coins from Speed Clicker", "watched video +40 coins", "redeemed code +100 coins", "completed daily bonus +50 coins"];
+    const usernames = [
+      "Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP",
+      "PlayMaster99", "CoinHunter", "SpeedDemon", "LuckyStrike", "ProGamer",
+      "NightOwl", "EarlyBird", "WinnerWinner", "JackpotKing", "CryptoQueen",
+      "BitMaster", "TokenLord", "DogeLover", "MoonShot", "DiamondHands",
+      "WhaleAlert", "TraderJoe", "StockMaster", "CryptoNinja", "BlockchainPro",
+      "DeFiKing", "NFTCollector", "MetaverseGod", "Web3Wizard", "SmartContract",
+      "SolanaSurfer", "EtherealBeing", "BinanceBoss", "CoinGeek", "TokenWhale",
+      "CryptoAngel", "BitBoy", "ChainReaction", "HashRateHero", "MiningMaster",
+      "StakingKing", "YieldFarmer", "LiquidityLord", "DexTrader", "CexGuru",
+      "AirdropHunter", "BountySeeker", "TestnetTester", "MainnetMaster", "DevGuru",
+      "SmartContractAuditor", "SecurityExpert", "WhitepaperWriter", "TokenomicsPro", "CommunityManager",
+      "DiscordMod", "TelegramAdmin", "TwitterInfluencer", "YouTubeCreator", "TikTokStar",
+      "InstagramModel", "FacebookGroupAdmin", "RedditModerator", "SteemWitness", "HiveCurator",
+      "TribalChief", "SplinterlandsPro", "AxieMaster", "GodsUnchained", "IlluviumHunter",
+      "SandboxBuilder", "DecentralandOwner", "VirtualLandlord", "MetaverseRealtor", "NFTArtist"
+    ];
+    const activities = [
+      "earned 250 coins from Speed Clicker",
+      "watched video +40 coins",
+      "redeemed code +100 coins",
+      "completed daily bonus +50 coins",
+      "won 500 coins from Memory Match",
+      "hit 300 coins in Emoji Hit",
+      "claimed referral reward +150 coins",
+      "completed streak bonus +75 coins",
+      "watched sponsored ad +25 coins",
+      "earned 400 coins from Speed Clicker",
+      "redeemed promo code +200 coins",
+      "completed achievement +300 coins",
+      "won jackpot +1000 coins",
+      "earned 175 coins from game",
+      "completed challenge +125 coins"
+    ];
 
     const generateEarning = (): EarningActivity => {
       const activity = activities[Math.floor(Math.random() * activities.length)];
@@ -236,15 +268,15 @@ function EarnPage() {
       };
     };
 
-    setEarnings(Array.from({ length: 5 }, () => generateEarning()));
+    setEarnings(Array.from({ length: 6 }, () => generateEarning()));
 
     const interval = setInterval(() => {
       setEarnings((prev) => {
         const newEarning = generateEarning();
         setHourlyTotal(prev => prev + newEarning.coins);
-        return [newEarning, ...prev.slice(0, 8)];
+        return [newEarning, ...prev.slice(0, 9)]; // Keep 9 entries max
       });
-    }, 4000 + Math.random() * 2000);
+    }, 2000 + Math.random() * 3000); // Random interval between 2-5 seconds
 
     return () => clearInterval(interval);
   }, [mounted]);
