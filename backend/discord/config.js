@@ -6,7 +6,7 @@ module.exports = {
   LEADERBOARD_CHANNEL_ID: process.env.LEADERBOARD_CHANNEL_ID || '1496048643969650759',
   WINNER_ANNOUNCEMENT_CHANNEL_ID: process.env.WINNER_ANNOUNCEMENT_CHANNEL_ID || '1496049007204503644',
   AUCTION_CHANNEL_ID: process.env.AUCTION_CHANNEL_ID || '1496049007204503644',
-  ADMIN_IDS: process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : [],
+  ADMIN_IDS: process.env.ADMIN_DISCORD_ID ? process.env.ADMIN_DISCORD_ID.split(',').map(id => id.trim()) : [],
   
   DAILY_BASE_REWARD: 100,
   DAILY_STREAK_BONUS: 10,

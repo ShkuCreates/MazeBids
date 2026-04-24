@@ -47,18 +47,16 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     setGameState('FINISHED');
     const calculatedReward = score * 10; // Hits * 10 coins
     try {
-      await axios.post(`${API_URL}/api/tasks/complete`, {
+      const res = await axios.post(`${API_URL}/api/tasks/complete`, {
         taskId,
         score,
         reward: calculatedReward
       }, { withCredentials: true });
       
-      // Update coins in real-time
-      if (updateCoins && user) {
-        updateCoins(user.coins + calculatedReward, calculatedReward);
+      // Use backend response for real-time update (single source of truth)
+      if (res.data.coins !== undefined && updateCoins) {
+        updateCoins(res.data.coins, res.data.coins - (user?.coins || 0));
       }
-      
-      // Don't call refreshUser here to prevent progress reset
     } catch (error) {
       console.error('Failed to save score', error);
     }

@@ -70,7 +70,7 @@ router.post('/complete', async (req, res) => {
     }
 
     // 4. Update daily earnings and complete task
-    await prisma.$transaction([
+    const updatedUser = await prisma.$transaction([
       prisma.userTask.create({
         data: { userId: req.user.id, taskId }
       }),
@@ -80,6 +80,10 @@ router.post('/complete', async (req, res) => {
           coins: { increment: actualReward },
           totalEarned: { increment: actualReward },
           coinsEarnedToday: { increment: actualReward } // Track daily earnings
+        },
+        select: {
+          coins: true,
+          coinsEarnedToday: true
         }
       }),
       prisma.transaction.create({
@@ -98,6 +102,7 @@ router.post('/complete', async (req, res) => {
     res.json({
       message: 'Task completed',
       reward: actualReward,
+      coins: updatedUser[1].coins,
       dailyEarned: dailyTotal + actualReward,
       dailyLimit: 5000
     });

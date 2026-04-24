@@ -99,13 +99,12 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Add to today's progress with animation
-  const addToTodayProgress = useCallback((amount: number) => {
-    setTodayEarned((prev) => {
-      const newEarned = Math.min(prev + amount, dailyGoal);
-      animateNumber(animatedToday, newEarned, setAnimatedToday, 500);
-      return newEarned;
-    });
-  }, [animatedToday, dailyGoal]);
+  // Remove local progress accumulation - always use backend truth
+// Progress is now fetched from backend via coinsEarnedToday
+const addToTodayProgress = useCallback((amount: number) => {
+  // This is now a no-op - progress is managed by backend
+  // Kept for backwards compatibility but does nothing
+}, []);
 
   // Claim daily reward
   const claimDaily = useCallback(async () => {
@@ -113,17 +112,8 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     
-    // Optimistic update
-    const previousBalance = totalBalance;
-    const previousToday = todayEarned;
-    
-    updateBalance(dailyReward);
-    addToTodayProgress(dailyReward);
-    setCanClaimDaily(false);
-    setStreak((prev) => Math.min(prev + 1, 7));
-    
     try {
-      // API call
+      // API call - backend is single source of truth
       const res = await axios.post(
         `${API_URL}/api/users/daily-claim`,
         {},

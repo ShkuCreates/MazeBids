@@ -23,7 +23,12 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
     
+    console.log('[GenBonus] User ID:', interaction.user.id);
+    console.log('[GenBonus] ADMIN_IDS:', config.ADMIN_IDS);
+    console.log('[GenBonus] Is admin:', config.ADMIN_IDS.includes(interaction.user.id));
+    
     if (!config.ADMIN_IDS.includes(interaction.user.id)) {
+      console.log('[GenBonus] Access denied - user not in ADMIN_IDS');
       return await interaction.editReply({ 
         embeds: [errorEmbed('❌ Access Denied', 'This command is for administrators only.')] 
       });
