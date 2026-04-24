@@ -314,12 +314,14 @@ function EarnPage() {
       const res = await axios.post(`${API_URL}/api/users/redeem-code`, { code: redeemCode }, { withCredentials: true });
       setRedeemMessage({ text: res.data.message, type: 'success' });
       setRedeemCode("");
-      if (res.data.reward) {
-        updateBalance(res.data.reward);
-        addToTodayProgress(res.data.reward);
-        triggerConfetti();
-        showToast(`+${res.data.reward} coins from code!`, 'success');
+      
+      // Use centralized coin update (same as games/ads/daily)
+      if (res.data.coins !== undefined && updateCoins && user) {
+        updateCoins(res.data.coins, res.data.coins - user.coins);
       }
+      
+      triggerConfetti();
+      showToast(`+${res.data.reward || 0} coins from code!`, 'success');
       refreshUser();
     } catch (err: any) {
       setRedeemMessage({ text: err.response?.data?.message || "Failed to redeem code", type: 'error' });

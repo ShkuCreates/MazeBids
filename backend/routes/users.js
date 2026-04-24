@@ -156,6 +156,8 @@ router.post('/redeem-code', async (req, res) => {
   try {
     const { code } = req.body;
     
+    console.log('[Redeem] Redeem request:', { userId: req.user.id, code: code.toUpperCase() });
+    
     if (!code) {
       return res.status(400).json({ message: 'Code is required' });
     }
@@ -233,6 +235,8 @@ router.post('/redeem-code', async (req, res) => {
       profileCache.delete(cacheKey);
 
       console.log('Redemption successful!');
+
+      console.log('[Redeem] Code redeemed successfully:', { userId: req.user.id, reward: bonusCode.reward, newBalance: updatedUser[2].coins });
 
       // Notify user of reward
       await createNotification(req.user.id, 'REWARD', `+${bonusCode.reward} coins from bonus code: ${code.toUpperCase()}`, { amount: bonusCode.reward });
@@ -413,6 +417,8 @@ router.get('/daily-progress', async (req, res) => {
 router.post('/daily-claim', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
+  console.log('[Daily] Claim request:', { userId: req.user.id });
+
   try {
     // First, ensure daily reset is up to date and check if already claimed
     const dailyStats = await getUserDailyStats(req.user.id);
@@ -480,7 +486,7 @@ router.post('/daily-claim', async (req, res) => {
     const cacheKey = `profile-${req.user.id}`;
     profileCache.delete(cacheKey);
 
-    console.log(`[DailyClaim] User ${req.user.id} claimed ${reward} coins (Day ${currentStreak})`);
+    console.log(`[DailyClaim] User ${req.user.id} claimed ${reward} coins (Day ${currentStreak}), new balance: ${updatedUser.coins}`);
 
     res.json({
       success: true,

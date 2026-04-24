@@ -143,6 +143,8 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/claim', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
   
+  console.log('[Ads] Claim request:', { userId: req.user.id, adId: req.params.id });
+  
   try {
     const ad = await prisma.ad.findUnique({
       where: { id: req.params.id }
@@ -205,6 +207,8 @@ router.post('/:id/claim', async (req, res) => {
 
     // Notify user of coins earned
     await createNotification(req.user.id, 'COINS_EARNED', `+${ad.reward} coins earned from watching: ${ad.title}`, { amount: ad.reward });
+
+    console.log('[Ads] Claim successful:', { userId: req.user.id, reward: ad.reward, newBalance: updatedUser[0].coins });
 
     // Return updated balance for real-time sync
     res.json({ 

@@ -19,6 +19,8 @@ router.post('/complete', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
   const { taskId, score, reward, verificationToken } = req.body;
 
+  console.log('[Tasks] Complete request:', { userId: req.user.id, taskId, score, reward });
+
   try {
     const task = await prisma.task.findUnique({ where: { id: taskId } });
     if (!task) return res.status(404).json({ message: 'Task not found' });
@@ -98,6 +100,8 @@ router.post('/complete', async (req, res) => {
 
     // Notify user of coins earned
     await createNotification(req.user.id, 'COINS_EARNED', `+${actualReward} coins earned from: ${task.title}`, { amount: actualReward });
+
+    console.log('[Tasks] Task completed successfully:', { userId: req.user.id, reward: actualReward, newBalance: updatedUser[1].coins });
 
     res.json({
       message: 'Task completed',
