@@ -98,6 +98,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auctions', require('./routes/auctions'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/tasks', require('./routes/tasks'));
+app.use('/api/coins', require('./routes/coinRoutes'));
 app.use('/api/ads', require('./routes/ads'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/webhook', require('./discord').webhookService);
