@@ -93,6 +93,9 @@ if (cluster.isMaster) {
   app.use('/api/ads', require('./routes/ads'));
   app.use('/api/notifications', require('./routes/notifications'));
   app.use('/api/webhook', require('./discord').webhookService);
+  app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'API route not found' });
+  });
 
   console.log(`[STARTUP] Worker ${process.pid} preparing to listen on port ${PORT}...`);
   

@@ -103,6 +103,9 @@ app.use('/api/ads', require('./routes/ads'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/webhook', require('./discord').webhookService);
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API route not found' });
+});
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
