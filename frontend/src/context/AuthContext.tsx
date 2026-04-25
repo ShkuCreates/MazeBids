@@ -73,6 +73,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, [mounted]);
 
+  // Simple polling for real-time balance updates (every 30 seconds)
+  useEffect(() => {
+    if (!mounted || !user) return;
+
+    const interval = setInterval(async () => {
+      await refreshUser();
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [mounted, user]);
+
   const login = () => {
     if (loading || user) return;
     window.location.href = `${API_URL}/api/auth/discord`;

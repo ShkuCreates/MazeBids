@@ -18,10 +18,12 @@ router.get('/', async (req, res) => {
 // Complete a task (game, ad, etc.)
 router.post('/complete', async (req, res) => {
   const traceId = req.body.traceId || "no-trace";
+  const claimId = req.body.claimId || `${traceId}-${Date.now()}`;
 
   try {
     console.log("========== CLAIM START ==========");
     console.log("TRACE:", traceId);
+    console.log("CLAIM ID:", claimId);
     console.log("BODY:", req.body);
     console.log("USER:", req.user);
 
@@ -37,6 +39,23 @@ router.post('/complete', async (req, res) => {
       return res.status(400).json({ error: "No reward" });
     }
 
+    // IDEMPOTENCY CHECK: Verify claim not already processed
+    const existingClaim = await prisma.transaction.findFirst({
+      where: {
+        userId,
+        description: { contains: claimId }
+      }
+    });
+
+    if (existingClaim) {
+      console.log("DUPLICATE CLAIM - SKIPPING", { claimId, existingClaimId: existingClaim.id });
+      return res.json({
+        success: true,
+        alreadyClaimed: true,
+        coins: existingClaim.amount
+      });
+    }
+
     console.log("FETCHING USER BEFORE UPDATE");
 
     const before = await prisma.user.findUnique({
@@ -47,7 +66,7 @@ router.post('/complete', async (req, res) => {
 
     console.log("CALLING updateUserCoins");
 
-    const updated = await updateUserCoins(userId, reward);
+    const updated = await updateUserCoins(userId, reward, `Claim: ${claimId}`);
 
     console.log("UPDATED RESULT:", updated);
 
@@ -59,7 +78,7 @@ router.post('/complete', async (req, res) => {
 
     console.log("========== CLAIM END ==========");
 
-    res.json({ success: true });
+    res.json({ success: true, claimId });
 
   } catch (error) {
     console.error("ERROR TRACE:", traceId, error);

@@ -27,20 +27,26 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
     setGameState('FINISHED');
     const calculatedReward = score * 10; // Matches * 10 coins
     const traceId = Date.now();
+    const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`; // Unique claim ID for idempotency
 
-    console.log("CLAIM START", { traceId, reward: calculatedReward, game: "MemoryMatchGame" });
+    console.log("CLAIM START", { traceId, claimId, reward: calculatedReward, game: "MemoryMatchGame" });
 
     try {
       const res = await axios.post(`${API_URL}/api/tasks/complete`, {
         reward: calculatedReward,
-        traceId
+        traceId,
+        claimId
       }, { withCredentials: true });
 
-      console.log("CLAIM RESPONSE", { traceId, data: res.data });
+      console.log("CLAIM RESPONSE", { traceId, claimId, data: res.data });
 
       // On success, reload page to get fresh data from backend
       if (res.data.success === true) {
-        alert(`+${calculatedReward} coins added!`);
+        if (res.data.alreadyClaimed) {
+          alert('Already claimed this reward!');
+        } else {
+          alert(`+${calculatedReward} coins added!`);
+        }
         window.location.reload();
       }
     } catch (error) {
