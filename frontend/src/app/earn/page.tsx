@@ -131,8 +131,8 @@ function EarnPage() {
   const [adForm, setAdForm] = useState({
     title: '',
     thumbnailUrl: '',
+    videoUrl: '',
     coinsPerUser: '',
-    totalBudget: '',
     campaignDuration: ''
   });
   const [submittingAd, setSubmittingAd] = useState(false);
@@ -399,7 +399,7 @@ function EarnPage() {
 
   const handleAdFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adForm.title || !adForm.coinsPerUser || !adForm.totalBudget || !adForm.campaignDuration) {
+    if (!adForm.title || !adForm.coinsPerUser || !adForm.campaignDuration) {
       showToast('Please fill all required fields', 'error');
       return;
     }
@@ -408,13 +408,13 @@ function EarnPage() {
       await axios.post(`${API_URL}/api/ads`, {
         title: adForm.title,
         thumbnailUrl: adForm.thumbnailUrl,
+        videoUrl: adForm.videoUrl,
         coinsPerUser: parseInt(adForm.coinsPerUser),
-        totalBudget: parseInt(adForm.totalBudget),
         campaignDuration: parseInt(adForm.campaignDuration)
       }, { withCredentials: true });
       showToast('Ad campaign created successfully!', 'success');
       setShowAdForm(false);
-      setAdForm({ title: '', thumbnailUrl: '', coinsPerUser: '', totalBudget: '', campaignDuration: '' });
+      setAdForm({ title: '', thumbnailUrl: '', videoUrl: '', coinsPerUser: '', campaignDuration: '' });
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to create ad campaign', 'error');
     } finally {
@@ -876,24 +876,24 @@ function EarnPage() {
                   onChange={(e) => setAdForm({ ...adForm, thumbnailUrl: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
                 />
-                <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="Video URL"
+                  value={adForm.videoUrl}
+                  onChange={(e) => setAdForm({ ...adForm, videoUrl: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
+                />
+                <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
-                    placeholder="Coins/user *"
+                    placeholder="Coins per user (CPA) *"
                     value={adForm.coinsPerUser}
                     onChange={(e) => setAdForm({ ...adForm, coinsPerUser: e.target.value })}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
                   />
                   <input
                     type="number"
-                    placeholder="Budget *"
-                    value={adForm.totalBudget}
-                    onChange={(e) => setAdForm({ ...adForm, totalBudget: e.target.value })}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Days *"
+                    placeholder="Duration (days) *"
                     value={adForm.campaignDuration}
                     onChange={(e) => setAdForm({ ...adForm, campaignDuration: e.target.value })}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
