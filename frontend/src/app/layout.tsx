@@ -37,7 +37,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="MazeBids" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className={`${inter.variable} bg-purple-gradient min-h-screen flex flex-col`}>
         <AuthProvider>
