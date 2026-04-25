@@ -10,3 +10,9 @@ build
 *.db-journal
 sessions.db
 dev.db
+
+# PWA
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/fallback-*.js
