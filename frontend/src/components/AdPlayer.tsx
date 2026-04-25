@@ -9,13 +9,14 @@ import { useAuth } from '@/context/AuthContext';
 interface AdPlayerProps {
   taskId: string;
   reward: number;
+  videoUrl?: string;
   onComplete: () => void;
   onCancel: () => void;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCancel }) => {
+const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, videoUrl, onComplete, onCancel }) => {
   const { updateCoins } = useAuth();
   const [timeLeft, setTimeLeft] = useState(15);
   const [isFinished, setIsFinished] = useState(false);
@@ -143,15 +144,27 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="flex flex-col items-center space-y-6"
+              className="flex flex-col items-center space-y-6 w-full h-full"
             >
-              <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(139,92,246,0.5)]">
-                <Play className="w-10 h-10 text-white fill-white" />
-              </div>
-              <div className="text-center space-y-2 relative z-10">
-                <h3 className="text-2xl font-bold text-white">Watching Rewarded Ad</h3>
-                <p className="text-gray-400">Do not close this window to receive your coins.</p>
-              </div>
+              {videoUrl ? (
+                <video
+                  src={videoUrl}
+                  autoPlay
+                  muted
+                  className="w-full h-full object-cover rounded-2xl"
+                  onEnded={() => setIsFinished(true)}
+                />
+              ) : (
+                <>
+                  <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+                    <Play className="w-10 h-10 text-white fill-white" />
+                  </div>
+                  <div className="text-center space-y-2 relative z-10">
+                    <h3 className="text-2xl font-bold text-white">Watching Rewarded Ad</h3>
+                    <p className="text-gray-400">Do not close this window to receive your coins.</p>
+                  </div>
+                </>
+              )}
             </motion.div>
           ) : claimSuccess ? (
             <motion.div

@@ -19,8 +19,8 @@ async function execute(client) {
       Routes.applicationGuildCommands(client.user.id, config.MAIN_GUILD_ID),
       { body: [] }
     );
-    
-    console.log('Registering new slash commands...');
+
+    console.log(`[DISCORD] Registering ${commands.length} slash commands...`);
     await rest.put(
       Routes.applicationGuildCommands(client.user.id, config.MAIN_GUILD_ID),
       { body: commandData }

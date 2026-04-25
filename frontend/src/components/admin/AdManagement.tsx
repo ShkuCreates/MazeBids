@@ -1,86 +1,126 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ImageIcon, TrendingUp, Eye, MousePointerClick, Coins, Plus, Trash2, Edit } from "lucide-react";
-import Modal from "./Modal";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ImageIcon, Eye, Coins, Plus, Trash2, Play, X, Loader2 } from "lucide-react";
+import axios from "axios";
 
-interface Campaign {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+interface Ad {
   id: string;
-  name: string;
-  budget: number;
-  spent: number;
-  impressions: number;
-  clicks: number;
-  rewardsGiven: number;
-  status: "active" | "paused" | "ended";
+  title: string;
+  type: string;
+  contentUrl: string;
+  targetUrl: string | null;
+  placement: string;
+  duration: number | null;
+  reward: number;
+  status: string;
+  expiresAt: string | null;
   createdAt: string;
+  maxViews?: number;
+  viewCount?: number;
 }
 
-const mockCampaigns: Campaign[] = [
-  { id: "1", name: "Summer Sale Promo", budget: 50000, spent: 32500, impressions: 125000, clicks: 8500, rewardsGiven: 42500, status: "active", createdAt: "2024-04-01" },
-  { id: "2", name: "New User Bonus", budget: 25000, spent: 15000, impressions: 45000, clicks: 3200, rewardsGiven: 16000, status: "active", createdAt: "2024-04-10" },
-  { id: "3", name: "Weekend Special", budget: 10000, spent: 10000, impressions: 30000, clicks: 1800, rewardsGiven: 9000, status: "ended", createdAt: "2024-03-20" },
-  { id: "4", name: "Flash Sale", budget: 15000, spent: 5000, impressions: 15000, clicks: 800, rewardsGiven: 4000, status: "paused", createdAt: "2024-04-15" },
-];
+interface FormData {
+  title: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  duration: string;
+  reward: string;
+  totalUsers: string;
+}
 
 export default function AdManagement() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<"create" | "edit" | null>(null);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    budget: "",
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    title: "",
+    thumbnailUrl: "",
+    videoUrl: "",
+    duration: "30",
+    reward: "25",
+    totalUsers: "100",
   });
 
-  const handleCreateCampaign = () => {
-    const newCampaign: Campaign = {
-      id: Date.now().toString(),
-      name: formData.name,
-      budget: parseInt(formData.budget),
-      spent: 0,
-      impressions: 0,
-      clicks: 0,
-      rewardsGiven: 0,
-      status: "active",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setCampaigns([newCampaign, ...campaigns]);
-    setModalOpen(false);
-    setFormData({ name: "", budget: "" });
-  };
-
-  const handleToggleStatus = (campaignId: string) => {
-    setCampaigns(campaigns.map(c => 
-      c.id === campaignId 
-        ? { ...c, status: c.status === "active" ? "paused" : "active" as "active" | "paused" | "ended" }
-        : c
-    ));
-  };
-
-  const handleDeleteCampaign = (campaignId: string) => {
-    setCampaigns(campaigns.filter(c => c.id !== campaignId));
-  };
-
-  const openModal = (type: "create" | "edit", campaign?: Campaign) => {
-    setModalType(type);
-    if (campaign) {
-      setSelectedCampaign(campaign);
-      setFormData({ name: campaign.name, budget: campaign.budget.toString() });
-    } else {
-      setSelectedCampaign(null);
-      setFormData({ name: "", budget: "" });
+  const fetchAds = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/ads/all`, { withCredentials: true });
+      setAds(res.data);
+    } catch (err) {
+      console.error("Failed to fetch ads:", err);
+    } finally {
+      setLoading(false);
     }
-    setModalOpen(true);
+  };
+
+  useEffect(() => {
+    fetchAds();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.videoUrl || !formData.duration || !formData.reward || !formData.totalUsers) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      await axios.post(`${API_URL}/api/ads`, {
+        title: formData.title,
+        type: "VIDEO",
+        contentUrl: formData.videoUrl,
+        targetUrl: formData.thumbnailUrl || formData.videoUrl,
+        placement: "EARN_PAGE",
+        duration: parseInt(formData.duration),
+        reward: parseInt(formData.reward),
+        maxViews: parseInt(formData.totalUsers),
+      }, { withCredentials: true });
+
+      setSuccess("Ad campaign created successfully!");
+      setModalOpen(false);
+      setFormData({ title: "", thumbnailUrl: "", videoUrl: "", duration: "30", reward: "25", totalUsers: "100" });
+      fetchAds();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to create ad campaign.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this ad campaign?")) return;
+    try {
+      await axios.delete(`${API_URL}/api/ads/${id}`, { withCredentials: true });
+      setAds(ads.filter(a => a.id !== id));
+    } catch (err) {
+      console.error("Failed to delete ad:", err);
+    }
+  };
+
+  const handleToggleStatus = async (ad: Ad) => {
+    const newStatus = ad.status === "ACTIVE" ? "PAUSED" : "ACTIVE";
+    try {
+      await axios.put(`${API_URL}/api/ads/${ad.id}`, { status: newStatus }, { withCredentials: true });
+      setAds(ads.map(a => a.id === ad.id ? { ...a, status: newStatus } : a));
+    } catch (err) {
+      console.error("Failed to update ad status:", err);
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-500/20 text-green-400 border-green-500/30";
-      case "paused": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-      case "ended": return "bg-red-500/20 text-red-400 border-red-500/30";
-      default: return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+      case "ACTIVE": return "bg-green-500/20 text-green-400 border-green-500/30";
+      case "PAUSED": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+      default: return "bg-red-500/20 text-red-400 border-red-500/30";
     }
   };
 
@@ -89,10 +129,10 @@ export default function AdManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-white">Ad Management</h1>
-          <p className="text-gray-500 mt-1">Manage advertising campaigns and rewards</p>
+          <p className="text-gray-500 mt-1">Manage video ad campaigns and rewards</p>
         </div>
         <button
-          onClick={() => openModal("create")}
+          onClick={() => setModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -100,174 +140,224 @@ export default function AdManagement() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          whileHover={{ scale: 1.05, y: -5 }}
-          className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all"
-        >
+      {success && (
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-xl font-bold">
+          {success}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6">
           <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4">
             <ImageIcon className="w-6 h-6 text-purple-400" />
           </div>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Active Campaigns</p>
-          <p className="text-2xl font-black text-white">{campaigns.filter(c => c.status === "active").length}</p>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.05, y: -5 }}
-          className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all"
-        >
+          <p className="text-2xl font-black text-white">{ads.filter(a => a.status === "ACTIVE").length}</p>
+        </div>
+        <div className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6">
           <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4">
             <Eye className="w-6 h-6 text-blue-400" />
           </div>
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Impressions</p>
-          <p className="text-2xl font-black text-white">{campaigns.reduce((acc, c) => acc + c.impressions, 0).toLocaleString()}</p>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.05, y: -5 }}
-          className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all"
-        >
-          <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
-            <MousePointerClick className="w-6 h-6 text-green-400" />
-          </div>
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Clicks</p>
-          <p className="text-2xl font-black text-white">{campaigns.reduce((acc, c) => acc + c.clicks, 0).toLocaleString()}</p>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.05, y: -5 }}
-          className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6 hover:border-yellow-500/30 hover:shadow-lg hover:shadow-yellow-500/10 transition-all"
-        >
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Campaigns</p>
+          <p className="text-2xl font-black text-white">{ads.length}</p>
+        </div>
+        <div className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6">
           <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center mb-4">
             <Coins className="w-6 h-6 text-yellow-400" />
           </div>
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Rewards Given</p>
-          <p className="text-2xl font-black text-white">{campaigns.reduce((acc, c) => acc + c.rewardsGiven, 0).toLocaleString()}</p>
-        </motion.div>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Rewards</p>
+          <p className="text-2xl font-black text-white">{ads.reduce((acc, a) => acc + (a.reward || 0), 0).toLocaleString()}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {campaigns.map((campaign, index) => (
-          <motion.div
-            key={campaign.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ scale: 1.02, y: -5 }}
-            className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-white">{campaign.name}</h3>
-                <p className="text-xs text-gray-500">Created {new Date(campaign.createdAt).toLocaleDateString()}</p>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+        </div>
+      ) : ads.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">
+          <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <p className="font-bold">No ad campaigns yet</p>
+          <p className="text-sm">Click Create Campaign to add your first video ad</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {ads.map((ad, index) => (
+            <motion.div
+              key={ad.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-[#0f0f18] border border-white/5 rounded-3xl p-6 hover:border-purple-500/30 transition-all"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-white truncate">{ad.title}</h3>
+                  <p className="text-xs text-gray-500">Created {new Date(ad.createdAt).toLocaleDateString()}</p>
+                </div>
+                <span className={`ml-2 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getStatusColor(ad.status)}`}>
+                  {ad.status}
+                </span>
               </div>
-              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getStatusColor(campaign.status)}`}>
-                {campaign.status}
-              </span>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-white/5 rounded-xl">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Budget</p>
-                <p className="font-bold text-white">{campaign.budget.toLocaleString()}</p>
-              </div>
-              <div className="p-3 bg-white/5 rounded-xl">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Spent</p>
-                <p className="font-bold text-white">{campaign.spent.toLocaleString()}</p>
-              </div>
-              <div className="p-3 bg-white/5 rounded-xl">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Impressions</p>
-                <p className="font-bold text-white">{campaign.impressions.toLocaleString()}</p>
-              </div>
-              <div className="p-3 bg-white/5 rounded-xl">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Clicks</p>
-                <p className="font-bold text-white">{campaign.clicks.toLocaleString()}</p>
-              </div>
-            </div>
+              {ad.targetUrl && (
+                <div className="w-full h-28 rounded-xl overflow-hidden mb-4 bg-white/5 flex items-center justify-center">
+                  <img src={ad.targetUrl} alt={ad.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                </div>
+              )}
 
-            <div className="mb-4">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-gray-500">Budget Used</span>
-                <span className="text-white font-bold">{Math.round((campaign.spent / campaign.budget) * 100)}%</span>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="p-3 bg-white/5 rounded-xl text-center">
+                  <p className="text-[10px] font-black text-gray-500 uppercase mb-1">Duration</p>
+                  <p className="font-bold text-white text-sm">{ad.duration || 0}s</p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-xl text-center">
+                  <p className="text-[10px] font-black text-gray-500 uppercase mb-1">Reward</p>
+                  <p className="font-bold text-yellow-400 text-sm">+{ad.reward}</p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-xl text-center">
+                  <p className="text-[10px] font-black text-gray-500 uppercase mb-1">Placement</p>
+                  <p className="font-bold text-purple-400 text-sm truncate">{ad.placement}</p>
+                </div>
               </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(campaign.spent / campaign.budget) * 100}%` }}
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                />
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              {campaign.status !== "ended" && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleToggleStatus(campaign.id)}
+                  onClick={() => handleToggleStatus(ad)}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                    campaign.status === "active"
+                    ad.status === "ACTIVE"
                       ? "bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20"
                       : "bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20"
                   }`}
                 >
-                  {campaign.status === "active" ? "Pause" : "Resume"}
+                  {ad.status === "ACTIVE" ? "Pause" : "Resume"}
                 </button>
-              )}
-              <button
-                onClick={() => openModal("edit", campaign)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-500 hover:text-white"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleDeleteCampaign(campaign.id)}
-                className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-gray-500 hover:text-red-500"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalType === "create" ? "Create Campaign" : "Edit Campaign"}
-        size="md"
-      >
-        <div className="space-y-6">
-          <div>
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">
-              Campaign Name
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter campaign name..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 focus:bg-white/10 outline-none transition-all text-white"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">
-              Budget (coins)
-            </label>
-            <input
-              type="number"
-              value={formData.budget}
-              onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-              placeholder="Enter budget..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 focus:bg-white/10 outline-none transition-all text-white"
-            />
-          </div>
-          <button
-            onClick={handleCreateCampaign}
-            className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all"
-          >
-            {modalType === "create" ? "Create Campaign" : "Save Changes"}
-          </button>
+                <button
+                  onClick={() => handleDelete(ad.id)}
+                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-gray-500 hover:text-red-500"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </Modal>
+      )}
+
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-3xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-black text-white">Create Video Campaign</h2>
+                <button onClick={() => setModalOpen(false)} className="text-gray-500 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Title *</label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Ad title shown to users..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Thumbnail URL</label>
+                  <input
+                    type="url"
+                    value={formData.thumbnailUrl}
+                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+                    placeholder="https://... (image shown as task thumbnail)"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Video URL *</label>
+                  <input
+                    type="url"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    placeholder="https://... (video played when user watches)"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Duration (sec) *</label>
+                    <input
+                      type="number"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      placeholder="30"
+                      min="5"
+                      max="300"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Coins/User *</label>
+                    <input
+                      type="number"
+                      value={formData.reward}
+                      onChange={(e) => setFormData({ ...formData, reward: e.target.value })}
+                      placeholder="25"
+                      min="1"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Total Users *</label>
+                    <input
+                      type="number"
+                      value={formData.totalUsers}
+                      onChange={(e) => setFormData({ ...formData, totalUsers: e.target.value })}
+                      placeholder="100"
+                      min="1"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm font-bold">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-lg transition-all flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Creating...</>
+                  ) : (
+                    <><Play className="w-5 h-5" /> START CAMPAIGN</>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
