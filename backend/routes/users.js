@@ -482,13 +482,19 @@ router.get('/daily-progress', async (req, res) => {
     }
 
     // Return stats
+    // Count referrals this user has made
+    const referralCount = await prisma.user.count({
+      where: { referredById: req.user.id }
+    });
+
     res.json({
       earned: user.coinsEarnedToday || 0,
       claimed: user.dailyCheckInClaimed || false,
       canClaimCheckIn: !user.dailyCheckInClaimed,
       streak: 1, // Fixed value since no streak field in DB
       dailyLimit: 5000,
-      remainingAllowance: Math.max(0, 5000 - (user.coinsEarnedToday || 0))
+      remainingAllowance: Math.max(0, 5000 - (user.coinsEarnedToday || 0)),
+      referralCount
     });
   } catch (err) {
     console.error('Daily progress fetch error:', err);

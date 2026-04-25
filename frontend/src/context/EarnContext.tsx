@@ -145,6 +145,7 @@ const addToTodayProgress = useCallback((amount: number) => {
       setAnimatedToday(response.data.earned || 0);
       setCanClaimDaily(response.data.canClaimCheckIn || false);
       setStreak(response.data.streak || 1);
+      setReferralsInvited(response.data.referralCount || 0);
       
       // Sync balance with auth user (which is fetched separately)
       if (user) {

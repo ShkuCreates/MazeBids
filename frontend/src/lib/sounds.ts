@@ -29,9 +29,9 @@ export const playRewardSound = () => {
     };
 
     const now = ctx.currentTime;
-    playTone(600, now, 0.12, 0.3);
-    playTone(900, now + 0.08, 0.12, 0.25);
-    playTone(1200, now + 0.16, 0.15, 0.2);
+    playTone(600, now, 0.15, 0.6);
+    playTone(900, now + 0.08, 0.15, 0.5);
+    playTone(1200, now + 0.16, 0.18, 0.4);
 
   } catch {
     // Ignore audio errors silently
