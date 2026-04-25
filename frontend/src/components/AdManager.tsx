@@ -72,8 +72,13 @@ export default function AdManager() {
     console.log('Submitting ad data:', formData);
     
     const submissionData = {
-      ...formData,
-      contentUrl: formData.type === 'VIDEO' ? formData.videoUrl : formData.thumbnailUrl
+      title: formData.title,
+      type: formData.type || 'IMAGE',
+      contentUrl: formData.type === 'VIDEO' ? formData.videoUrl : formData.thumbnailUrl,
+      targetUrl: formData.targetUrl || formData.thumbnailUrl || 'https://mazebids.com',
+      placement: 'EARN',
+      reward: parseInt(formData.reward) || 0,
+      duration: parseInt(formData.duration) || 24,
     };
     
     try {
@@ -160,15 +165,16 @@ export default function AdManager() {
       </div>
 
       {showForm && (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-[2.5rem] p-8 space-y-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
-          
-          <div className="flex items-center justify-between relative">
-            <h3 className="text-xl font-bold">{editingAd ? "EDIT AD" : "NEW AD CAMPAIGN"}</h3>
-            <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-white"><X className="w-6 h-6" /></button>
-          </div>
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f0f18] border border-purple-500/30 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
+            
+            <div className="flex items-center justify-between relative">
+              <h3 className="text-xl font-bold">{editingAd ? "EDIT AD" : "NEW AD CAMPAIGN"}</h3>
+              <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-white"><X className="w-6 h-6" /></button>
+            </div>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 relative mt-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ad Title</label>
               <input 
@@ -303,7 +309,7 @@ export default function AdManager() {
               />
             </div>
 
-            <div className="md:col-span-2 pt-4">
+            <div className="pt-4">
               <button 
                 type="submit"
                 className="w-full py-5 bg-white text-black hover:bg-purple-400 hover:text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2"
@@ -313,6 +319,7 @@ export default function AdManager() {
             </div>
           </form>
         </div>
+      </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
