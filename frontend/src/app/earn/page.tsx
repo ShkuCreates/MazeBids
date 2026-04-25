@@ -179,21 +179,23 @@ function EarnPage() {
   };
 
   // Handle game completion - receives actual reward from game (score * 10)
-  const handleGameComplete = (reward: number) => {
+  const handleGameComplete = async (reward: number) => {
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
     showToast(`+${reward} coins earned!`, 'success');
     setActiveGame(null);
+    await refreshUser();
   };
 
   // Handle ad completion
-  const handleAdComplete = (reward: number) => {
+  const handleAdComplete = async (reward: number) => {
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
     showToast(`+${reward} coins earned!`, 'success');
     setActiveGame(null);
+    await refreshUser();
   };
 
   useEffect(() => {

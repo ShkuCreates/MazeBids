@@ -11,7 +11,7 @@
  * - Returns updated balance
  */
 
-const { prisma } = require('./prisma');
+const prisma = require('./prisma');
 const { checkAndResetUserDaily } = require('./dailyReset');
 
 /**

@@ -7,7 +7,7 @@
  * - Get user achievements with progress
  */
 
-const { prisma } = require('./prisma');
+const prisma = require('./prisma');
 
 // Default achievements configuration
 const DEFAULT_ACHIEVEMENTS = [

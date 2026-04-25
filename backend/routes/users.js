@@ -11,8 +11,8 @@ const { updateUserCoins } = require('../lib/coinHelper');
 const ADMIN_IDS = process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : [];
 
 // Simple in-memory cache for frequently accessed data
-const profileCache = new Map();
-const CACHE_TTL = 30000; // 30 seconds
+const profileCache = require('../lib/profileCache');
+const CACHE_TTL = 5000; // 5 seconds
 
 // Get user profile (optimized with caching + lazy daily reset check)
 router.get('/profile', async (req, res) => {

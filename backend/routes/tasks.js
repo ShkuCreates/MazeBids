@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const { createNotification } = require('../lib/notificationHelper');
 const { checkAndResetUserDaily, addDailyEarnings } = require('../lib/dailyReset');
 const { updateUserCoins } = require('../lib/coinHelper');
+const profileCache = require('../lib/profileCache');
 
 // Get available tasks
 router.get('/', async (req, res) => {
@@ -75,15 +76,23 @@ router.post('/complete', async (req, res) => {
 
     console.log("UPDATED RESULT:", updated);
 
+    if (!updated.success) {
+      console.log("COIN UPDATE FAILED:", updated.error);
+      return res.status(500).json({ error: updated.error || 'Failed to credit coins' });
+    }
+
     const after = await prisma.user.findUnique({
       where: { id: userId }
     });
 
     console.log("COINS AFTER DB CHECK:", after?.coins);
 
+    // Clear profile cache so next /profile fetch hits DB fresh
+    profileCache.delete(`profile-${userId}`);
+
     console.log("========== CLAIM END ==========");
 
-    res.json({ success: true, claimId });
+    res.json({ success: true, claimId, coins: updated.newBalance });
 
   } catch (error) {
     console.error("ERROR TRACE:", traceId, error);

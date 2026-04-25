@@ -1,5 +1,5 @@
 const express = require('express');
-const { updateUserCoins } = require('../services/coinService');
+const { updateUserCoins } = require('../lib/coinHelper');
 
 const router = express.Router();
 
