@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { EarnProvider, useEarn } from "@/context/EarnContext";
+import AdPlayer from "@/components/AdPlayer";
+import VideoAdPlayer from "@/components/VideoAdPlayer";
 import axios from "axios";
 import { 
   Coins, Play, Clock, Target, Brain, Flame, Eye, Calendar, 
@@ -12,7 +14,6 @@ import {
 import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
 import EmojiHitGame from "@/components/games/EmojiHitGame";
-import AdPlayer from "@/components/AdPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { playCoinSound } from "@/lib/sounds";
@@ -31,7 +32,7 @@ interface EarningActivity {
 interface Toast {
   id: string;
   message: string;
-  type: 'success' | 'error';
+  type: "success" | "error";
 }
 
 interface FloatingCoin {
@@ -41,12 +42,10 @@ interface FloatingCoin {
   y: number;
 }
 
-// Skeleton Loader Component
 function SkeletonLoader({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-white/10 rounded-lg ${className}`} />;
 }
 
-// Toast Container Component
 function ToastContainer({ toasts }: { toasts: Toast[] }) {
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
@@ -58,9 +57,7 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             className={`px-4 py-3 rounded-lg shadow-lg font-bold text-sm ${
-              toast.type === 'success' 
-                ? 'bg-green-600 text-white' 
-                : 'bg-red-600 text-white'
+              toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
             }`}
           >
             {toast.message}
@@ -71,7 +68,6 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
   );
 }
 
-// Floating Coin Animation Component
 function FloatingCoins({ coins }: { coins: FloatingCoin[] }) {
   return (
     <>
@@ -94,7 +90,6 @@ function FloatingCoins({ coins }: { coins: FloatingCoin[] }) {
   );
 }
 
-// Wrapper to provide EarnContext
 export default function EarnPageWrapper() {
   return (
     <EarnProvider>
@@ -105,117 +100,102 @@ export default function EarnPageWrapper() {
 
 function EarnPage() {
   const { user, refreshUser, updateCoins } = useAuth();
-  const { 
-    state, 
-    claimDaily, 
-    updateBalance, 
-    addToTodayProgress, 
+  const {
+    state,
+    claimDaily,
+    updateBalance,
+    addToTodayProgress,
     refreshState,
     animatedBalance,
-    animatedToday 
+    animatedToday,
   } = useEarn();
-  
-  const [activeGame, setActiveGame] = useState<{ id: string, reward: number, type: string } | null>(null);
+
+  const [activeGame, setActiveGame] = useState<{ id: string; reward: number; type: string } | null>(null);
+  const [activeVideoAd, setActiveVideoAd] = useState<any | null>(null);
   const [redeemCode, setRedeemCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
-  const [redeemMessage, setRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [redeemMessage, setRedeemMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [referralRedeemCode, setReferralRedeemCode] = useState("");
   const [redeemingReferral, setRedeemingReferral] = useState(false);
-  const [referralRedeemMessage, setReferralRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [referralRedeemMessage, setReferralRedeemMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Admin ad form state
   const [showAdForm, setShowAdForm] = useState(false);
   const [adForm, setAdForm] = useState({
-    title: '',
-    thumbnailUrl: '',
-    videoUrl: '',
-    coinsPerUser: '',
-    campaignDuration: ''
+    title: "",
+    thumbnailUrl: "",
+    videoUrl: "",
+    coinsPerUser: "",
+    campaignDuration: "",
   });
   const [submittingAd, setSubmittingAd] = useState(false);
-
-  // Live Earnings Feed State
+  const [watchAds, setWatchAds] = useState<any[]>([]);
   const [earnings, setEarnings] = useState<EarningActivity[]>([]);
   const [hourlyTotal, setHourlyTotal] = useState(5000);
-  
-  // Floating coins animation
   const [floatingCoins, setFloatingCoins] = useState<FloatingCoin[]>([]);
-  
-  // Toast notifications
   const [toasts, setToasts] = useState<Toast[]>([]);
-
-  // Limited Offer Timer
   const [offerTimer, setOfferTimer] = useState("02:30:00");
   const [dailyCountdown, setDailyCountdown] = useState<string>("");
 
-  // Show toast notification
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
     const id = `toast-${Date.now()}`;
-    setToasts(prev => [...prev, { id, message, type }]);
+    setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3000);
   }, []);
 
-  // Trigger confetti explosion
   const triggerConfetti = useCallback(() => {
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
+      colors: ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981"],
     });
   }, []);
 
-  // Add floating coin animation
   const addFloatingCoin = useCallback((amount: number, x: number, y: number) => {
     const id = `coin-${Date.now()}-${Math.random()}`;
-    setFloatingCoins(prev => [...prev, { id, amount, x, y }]);
+    setFloatingCoins((prev) => [...prev, { id, amount, x, y }]);
     setTimeout(() => {
-      setFloatingCoins(prev => prev.filter(c => c.id !== id));
+      setFloatingCoins((prev) => prev.filter((c) => c.id !== id));
     }, 1500);
   }, []);
 
-  // Handle daily claim with effects
   const handleClaimDaily = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top;
-    
     try {
       await claimDaily();
       triggerConfetti();
       playCoinSound();
       addFloatingCoin(state.getDailyReward(state.streak), x, y);
-      showToast(`+${state.getDailyReward(state.streak)} coins claimed!`, 'success');
+      showToast(`+${state.getDailyReward(state.streak)} coins claimed!`, "success");
     } catch (error) {
-      showToast('Failed to claim. Already claimed today!', 'error');
+      showToast("Failed to claim. Already claimed today!", "error");
     }
   };
 
-  // Handle game completion
   const handleGameComplete = async (reward: number) => {
     updateCoins((user?.coins || 0) + reward);
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
     playCoinSound();
-    showToast(`+${reward} coins earned!`, 'success');
+    showToast(`+${reward} coins earned!`, "success");
     setActiveGame(null);
     refreshUser();
   };
 
-  // Handle ad completion
   const handleAdComplete = async (reward: number) => {
     updateCoins((user?.coins || 0) + reward);
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
     playCoinSound();
-    showToast(`+${reward} coins earned!`, 'success');
+    showToast(`+${reward} coins earned!`, "success");
     setActiveGame(null);
     refreshUser();
   };
@@ -223,26 +203,34 @@ function EarnPage() {
   useEffect(() => {
     setMounted(true);
     refreshState();
-    
     const checkAdmin = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/auth/me`, { withCredentials: true });
-        setIsAdmin(res.data?.role === 'ADMIN' || false);
+        setIsAdmin(res.data?.role === "ADMIN" || false);
       } catch (err) {
         setIsAdmin(false);
       }
     };
     checkAdmin();
-    
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, [refreshState]);
 
-  // Live earnings feed generator
+  useEffect(() => {
+    const fetchWatchAds = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/ads/placement/WATCH_ADS`);
+        setWatchAds(res.data);
+      } catch (err) {
+        console.error("Failed to fetch watch ads:", err);
+      }
+    };
+    fetchWatchAds();
+  }, []);
+
   useEffect(() => {
     if (!mounted) return;
-
-    const avatarStyles = ['adventurer', 'avataaars', 'bottts', 'croodles', 'fun-emoji', 'icons', 'lorelei', 'micah', 'miniavs', 'open-peeps', 'personas', 'pixel-art'];
+    const avatarStyles = ["adventurer", "avataaars", "bottts", "croodles", "fun-emoji", "icons", "lorelei", "micah", "miniavs", "open-peeps", "personas", "pixel-art"];
     const usernames = [
       "Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP",
       "PlayMaster99", "CoinHunter", "SpeedDemon", "LuckyStrike", "ProGamer",
@@ -257,14 +245,14 @@ function EarnPage() {
       "Arjun_S", "PriyaM", "VikramX", "AnishaK", "RohanD",
       "TanviP", "KaranB", "MeghaR", "AditiBT", "SiddharthN",
       "ZephyrQ", "BlazeFX", "NovaStar", "OmegaX", "PhoenixRise",
-      "DeltaForce", "GammaByte", "AlphaWolf", "BetaRush", "ThetaKing"
+      "DeltaForce", "GammaByte", "AlphaWolf", "BetaRush", "ThetaKing",
     ];
     const activities = [
       "completed Speed Clicker", "won Memory Match", "hit streak in Emoji Hit",
       "claimed daily bonus", "watched sponsored ad", "redeemed bonus code",
       "won auction bid", "claimed referral reward", "completed daily check-in",
       "hit top score in Speed Clicker", "matched all pairs in Memory Match",
-      "earned streak bonus", "redeemed promo code", "completed challenge", "won jackpot reward"
+      "earned streak bonus", "redeemed promo code", "completed challenge", "won jackpot reward",
     ];
     const coinAmounts = [25, 40, 50, 60, 75, 87, 100, 111, 125, 147, 150, 166, 174, 176, 200, 202, 250, 300, 400, 500];
 
@@ -278,7 +266,7 @@ function EarnPage() {
         avatarUrl: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
         action: activities[Math.floor(Math.random() * activities.length)],
         coins: coinAmounts[Math.floor(Math.random() * coinAmounts.length)],
-        timeAgo: 'just now',
+        timeAgo: "just now",
       };
     };
 
@@ -287,9 +275,9 @@ function EarnPage() {
     const scheduleNext = () => {
       const delay = 1000 + Math.random() * 1000;
       return setTimeout(() => {
-        setEarnings(prev => {
+        setEarnings((prev) => {
           const newEarning = generateEarning();
-          setHourlyTotal(t => t + newEarning.coins);
+          setHourlyTotal((t) => t + newEarning.coins);
           return [newEarning, ...prev.slice(0, 8)];
         });
         intervalRef.current = scheduleNext();
@@ -300,7 +288,6 @@ function EarnPage() {
     return () => clearTimeout(intervalRef.current);
   }, [mounted]);
 
-  // Limited offer timer
   useEffect(() => {
     if (!mounted) return;
     const endTime = new Date(Date.now() + 2.5 * 60 * 60 * 1000);
@@ -314,21 +301,19 @@ function EarnPage() {
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setOfferTimer(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        setOfferTimer(
+          `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+        );
       }
     }, 1000);
     return () => clearInterval(timer);
   }, [mounted]);
 
-  // Daily check-in countdown timer
   useEffect(() => {
     if (!mounted || state.canClaimDaily) return;
-
     const updateCountdown = () => {
       const now = new Date();
-      const nextMidnightUTC = new Date(Date.UTC(
-        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
-      ));
+      const nextMidnightUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
       const diff = nextMidnightUTC.getTime() - now.getTime();
       if (diff <= 0) {
         setDailyCountdown("00:00:00");
@@ -339,10 +324,9 @@ function EarnPage() {
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setDailyCountdown(
-        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
       );
     };
-
     updateCountdown();
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
@@ -359,17 +343,15 @@ function EarnPage() {
     setRedeemMessage(null);
     try {
       const res = await axios.post(`${API_URL}/api/users/redeem-code`, { code: redeemCode }, { withCredentials: true });
-      setRedeemMessage({ text: res.data.message, type: 'success' });
+      setRedeemMessage({ text: res.data.message, type: "success" });
       setRedeemCode("");
-      if (res.data.coins !== undefined && updateCoins) {
-        updateCoins(res.data.coins);
-      }
+      if (res.data.coins !== undefined && updateCoins) updateCoins(res.data.coins);
       triggerConfetti();
-      showToast(`+${res.data.reward || 0} coins from code!`, 'success');
+      showToast(`+${res.data.reward || 0} coins from code!`, "success");
       refreshUser();
     } catch (err: any) {
-      setRedeemMessage({ text: err.response?.data?.message || "Failed to redeem code", type: 'error' });
-      showToast('Code redemption failed!', 'error');
+      setRedeemMessage({ text: err.response?.data?.message || "Failed to redeem code", type: "error" });
+      showToast("Code redemption failed!", "error");
     } finally {
       setRedeeming(false);
     }
@@ -381,17 +363,15 @@ function EarnPage() {
     setReferralRedeemMessage(null);
     try {
       const res = await axios.post(`${API_URL}/api/users/redeem-referral`, { code: referralRedeemCode }, { withCredentials: true });
-      setReferralRedeemMessage({ text: res.data.message, type: 'success' });
+      setReferralRedeemMessage({ text: res.data.message, type: "success" });
       setReferralRedeemCode("");
-      if (res.data.coins !== undefined && updateCoins) {
-        updateCoins(res.data.coins);
-      }
+      if (res.data.coins !== undefined && updateCoins) updateCoins(res.data.coins);
       triggerConfetti();
-      showToast(`Referral redeemed! +${res.data.reward || 0} coins!`, 'success');
+      showToast(`Referral redeemed! +${res.data.reward || 0} coins!`, "success");
       refreshUser();
     } catch (err: any) {
-      setReferralRedeemMessage({ text: err.response?.data?.message || "Failed to redeem referral code", type: 'error' });
-      showToast('Referral redemption failed!', 'error');
+      setReferralRedeemMessage({ text: err.response?.data?.message || "Failed to redeem referral code", type: "error" });
+      showToast("Referral redemption failed!", "error");
     } finally {
       setRedeemingReferral(false);
     }
@@ -400,43 +380,50 @@ function EarnPage() {
   const handleAdFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adForm.title || !adForm.coinsPerUser || !adForm.campaignDuration) {
-      showToast('Please fill all required fields', 'error');
+      showToast("Please fill all required fields", "error");
       return;
     }
     setSubmittingAd(true);
     try {
-await axios.post(`${API_URL}/api/ads`, {
-  title: adForm.title,
-  type: adForm.videoUrl ? 'VIDEO' : 'IMAGE',
-  contentUrl: adForm.videoUrl || adForm.thumbnailUrl,
-  targetUrl: adForm.thumbnailUrl || 'https://mazebids.com',
-  placement: 'WATCH_ADS',
-  position: 'TOP',
-  size: 'MEDIUM',
-  reward: parseInt(adForm.coinsPerUser),
-  duration: parseInt(adForm.campaignDuration),
-}, { withCredentials: true });
-      showToast('Ad campaign created successfully!', 'success');
+      await axios.post(
+        `${API_URL}/api/ads`,
+        {
+          title: adForm.title,
+          type: adForm.videoUrl ? "VIDEO" : "IMAGE",
+          contentUrl: adForm.videoUrl || adForm.thumbnailUrl,
+          targetUrl: adForm.thumbnailUrl || "https://mazebids.com",
+          placement: "WATCH_ADS",
+          position: "TOP",
+          size: "MEDIUM",
+          reward: parseInt(adForm.coinsPerUser),
+          duration: parseInt(adForm.campaignDuration),
+        },
+        { withCredentials: true }
+      );
+      showToast("Ad campaign created successfully!", "success");
       setShowAdForm(false);
-      setAdForm({ title: '', thumbnailUrl: '', videoUrl: '', coinsPerUser: '', campaignDuration: '' });
+      setAdForm({ title: "", thumbnailUrl: "", videoUrl: "", coinsPerUser: "", campaignDuration: "" });
+      // Refresh watch ads list
+      const res = await axios.get(`${API_URL}/api/ads/placement/WATCH_ADS`);
+      setWatchAds(res.data);
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to create ad campaign', 'error');
+      showToast(err.response?.data?.message || "Failed to create ad campaign", "error");
     } finally {
       setSubmittingAd(false);
     }
   };
 
   const handleResetCoins = async () => {
-    if (!confirm('WARNING: This will reset ALL your coins to 0. Are you sure?')) return;
+    if (!confirm("WARNING: This will reset ALL your coins to 0. Are you sure?")) return;
     try {
       const res = await axios.post(`${API_URL}/api/users/admin/reset-my-coins`, {}, { withCredentials: true });
       if (res.data.success) {
         await refreshUser();
         refreshState();
-        showToast('Coins reset to 0!', 'success');
+        showToast("Coins reset to 0!", "success");
       }
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to reset coins', 'error');
+      showToast(err.response?.data?.message || "Failed to reset coins", "error");
     }
   };
 
@@ -461,10 +448,7 @@ await axios.post(`${API_URL}/api/ads`, {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative">
-      {/* Toast Notifications */}
       <ToastContainer toasts={toasts} />
-      
-      {/* Floating Coin Animations */}
       <FloatingCoins coins={floatingCoins} />
 
       <div className="max-w-5xl mx-auto py-6 px-4 space-y-5">
@@ -490,17 +474,13 @@ await axios.post(`${API_URL}/api/ads`, {
               </div>
               <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
             </div>
-
             {user?.referralCode && (
               <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
                 <div className="flex items-center justify-between">
                   <code className="text-sm font-mono font-bold text-purple-300 tracking-wider">{user.referralCode}</code>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(user.referralCode!);
-                      showToast('Referral code copied!', 'success');
-                    }}
+                    onClick={() => { navigator.clipboard.writeText(user.referralCode!); showToast("Referral code copied!", "success"); }}
                     className="text-[10px] text-purple-400 hover:text-purple-300 underline cursor-pointer"
                   >
                     Copy
@@ -523,13 +503,12 @@ await axios.post(`${API_URL}/api/ads`, {
                   </button>
                 </div>
                 {referralRedeemMessage && (
-                  <p className={`text-[10px] font-bold mt-1 ${referralRedeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className={`text-[10px] font-bold mt-1 ${referralRedeemMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
                     {referralRedeemMessage.text}
                   </p>
                 )}
               </div>
             )}
-
             <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
@@ -540,7 +519,7 @@ await axios.post(`${API_URL}/api/ads`, {
           </div>
         </motion.div>
 
-        {/* SECTION 2: Games (60%) + Watch Ads (40%) */}
+        {/* SECTION 2: Games + Watch Ads */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Games Section */}
           <motion.div
@@ -563,7 +542,6 @@ await axios.post(`${API_URL}/api/ads`, {
                 </div>
                 <Sparkles className="w-5 h-5 text-yellow-400" />
               </div>
-
               {isLoading ? (
                 <div className="space-y-3 flex-1">
                   <SkeletonLoader className="h-16 w-full" />
@@ -631,25 +609,65 @@ await axios.post(`${API_URL}/api/ads`, {
                 </div>
               </div>
 
+              {/* Limited Offer Banner */}
+              <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <Flame className="w-6 h-6 text-orange-400" />
+                  <div>
+                    <p className="text-white font-bold text-sm">Limited Offer</p>
+                    <p className="text-orange-300 text-[10px]">Watch 3 videos → +100 bonus</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ad Campaign List */}
               {isLoading ? (
+                <div className="space-y-3">
+                  <SkeletonLoader className="h-16 w-full" />
+                  <SkeletonLoader className="h-16 w-full" />
+                </div>
+              ) : watchAds.length > 0 ? (
                 <div className="space-y-3 flex-1">
-                  <SkeletonLoader className="h-20 w-full" />
-                  <SkeletonLoader className="h-12 w-full" />
+                  {watchAds.map((ad) => (
+                    <div
+                      key={ad.id}
+                      className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/[0.08] border border-white/10 hover:border-green-500/30 rounded-xl transition-all"
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-black/40 border border-white/10 flex items-center justify-center">
+                        {ad.targetUrl ? (
+                          <img
+                            src={ad.targetUrl}
+                            alt={ad.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                        ) : (
+                          <Play className="w-5 h-5 text-green-400" />
+                        )}
+                      </div>
+                      {/* Title */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm truncate">{ad.title}</p>
+                        <p className="text-gray-400 text-[10px]">{ad.duration || 15}s video</p>
+                      </div>
+                      {/* Coins */}
+                      <div className="flex items-center gap-1 text-yellow-400 font-black text-sm shrink-0">
+                        <Coins className="w-4 h-4" />+{ad.reward}
+                      </div>
+                      {/* Watch Button */}
+                      <button
+                        onClick={() => setActiveVideoAd(ad)}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-black text-xs rounded-xl transition-all flex items-center gap-1 shrink-0"
+                      >
+                        <Play className="w-3 h-3" /> WATCH
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <>
-                  <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <Flame className="w-6 h-6 text-orange-400" />
-                      <div>
-                        <p className="text-white font-bold text-sm">Limited Offer</p>
-                        <p className="text-orange-300 text-[10px]">Watch 3 videos → +100 bonus</p>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex-1" />
-
                   <motion.button
                     onClick={() => setActiveGame({ id: "4", reward: 25, type: "AD" })}
                     whileHover={{ scale: 1.02 }}
@@ -684,7 +702,6 @@ await axios.post(`${API_URL}/api/ads`, {
               </div>
               <h3 className="font-black text-white text-sm tracking-wider uppercase">Redeem Code</h3>
             </div>
-            
             <form onSubmit={handleRedeem} className="flex gap-2">
               <input
                 type="text"
@@ -700,9 +717,8 @@ await axios.post(`${API_URL}/api/ads`, {
                 {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM"}
               </button>
             </form>
-            
             {redeemMessage && (
-              <p className={`text-center text-xs font-bold mt-3 ${redeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+              <p className={`text-center text-xs font-bold mt-3 ${redeemMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
                 {redeemMessage.text}
               </p>
             )}
@@ -736,7 +752,6 @@ await axios.post(`${API_URL}/api/ads`, {
               </div>
             </div>
           </div>
-          
           <div className="p-3">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <AnimatePresence mode="popLayout">
@@ -793,7 +808,6 @@ await axios.post(`${API_URL}/api/ads`, {
                   </p>
                 </div>
               </div>
-              
               <button
                 onClick={handleClaimDaily}
                 disabled={!state.canClaimDaily || state.isLoading}
@@ -806,7 +820,6 @@ await axios.post(`${API_URL}/api/ads`, {
                 {state.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : state.canClaimDaily ? `CLAIM +${getDailyReward(state.streak)}` : dailyCountdown ? dailyCountdown : "CLAIMED"}
               </button>
             </div>
-
             <div className="flex gap-1 mt-4">
               {[1, 2, 3, 4, 5, 6, 7].map((day) => {
                 const isCompleted = day < state.streak || (day === state.streak && !state.canClaimDaily);
@@ -828,19 +841,26 @@ await axios.post(`${API_URL}/api/ads`, {
 
       {/* Game Modals */}
       {activeGame && activeGame.id === "1" && (
-        <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
+        <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.id === "2" && (
-        <MemoryMatchGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
+        <MemoryMatchGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.id === "3" && (
-        <EmojiHitGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
+        <EmojiHitGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.type === "AD" && (
         <AdPlayer taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleAdComplete(25)} onCancel={() => setActiveGame(null)} />
       )}
+      {activeVideoAd && (
+        <VideoAdPlayer
+          ad={activeVideoAd}
+          onComplete={(reward) => { handleAdComplete(reward); setActiveVideoAd(null); }}
+          onCancel={() => setActiveVideoAd(null)}
+        />
+      )}
 
-      {/* Ad Campaign Popup - Full Screen Overlay (Admin Only) */}
+      {/* Ad Campaign Form (Admin Only) */}
       <AnimatePresence>
         {showAdForm && isAdmin && (
           <motion.div
@@ -858,10 +878,7 @@ await axios.post(`${API_URL}/api/ads`, {
             >
               <div className="flex items-center justify-between">
                 <h4 className="font-black text-white text-base">Create Ad Campaign</h4>
-                <button
-                  onClick={() => setShowAdForm(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
+                <button onClick={() => setShowAdForm(false)} className="text-gray-400 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -882,7 +899,7 @@ await axios.post(`${API_URL}/api/ads`, {
                 />
                 <input
                   type="text"
-                  placeholder="Video URL"
+                  placeholder="Video URL (YouTube link)"
                   value={adForm.videoUrl}
                   onChange={(e) => setAdForm({ ...adForm, videoUrl: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
@@ -890,14 +907,14 @@ await axios.post(`${API_URL}/api/ads`, {
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
-                    placeholder="Coins per user (CPA) *"
+                    placeholder="Coins per user *"
                     value={adForm.coinsPerUser}
                     onChange={(e) => setAdForm({ ...adForm, coinsPerUser: e.target.value })}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
                   />
                   <input
                     type="number"
-                    placeholder="Duration (days) *"
+                    placeholder="Duration (seconds) *"
                     value={adForm.campaignDuration}
                     onChange={(e) => setAdForm({ ...adForm, campaignDuration: e.target.value })}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
@@ -916,7 +933,7 @@ await axios.post(`${API_URL}/api/ads`, {
                     disabled={submittingAd}
                     className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl text-white font-black text-sm transition-all flex items-center justify-center gap-2"
                   >
-                    {submittingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Campaign'}
+                    {submittingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Campaign"}
                   </button>
                 </div>
               </form>
