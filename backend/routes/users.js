@@ -300,6 +300,21 @@ router.post('/redeem-referral', async (req, res) => {
     // Give coins to the referrer
     await updateUserCoins(referrer.id, REFERRAL_REWARD, `Referral bonus: ${req.user.username} used your code`);
 
+    // Check if referrer has reached 5 referrals and give bonus
+    const referrerUpdated = await prisma.user.findUnique({
+      where: { id: referrer.id },
+      select: { id: true, referralCount: true }
+    });
+    const newCount = (referrerUpdated.referralCount || 0) + 1;
+    await prisma.user.update({
+      where: { id: referrer.id },
+      data: { referralCount: newCount }
+    });
+    if (newCount >= 5 && newCount % 5 === 0) {
+      await updateUserCoins(referrer.id, 500, 'Referral milestone bonus: 5 referrals');
+      await createNotification(referrer.id, 'REFERRAL_BONUS', 'You reached 5 referrals! +500 coins bonus!', { amount: 500 });
+    }
+
     // Clear profile cache
     const cacheKey = `profile-${req.user.id}`;
     profileCache.delete(cacheKey);

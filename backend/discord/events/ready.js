@@ -1,6 +1,7 @@
 const { REST, Routes } = require('discord.js');
 const config = require('../config');
-const commands = require('../commands');
+const commands = require('../commands/index');
+console.log('[DISCORD] Commands loaded:', commands.length);
 
 async function execute(client) {
   console.log(`Discord bot ready as ${client.user.tag}`);
@@ -8,6 +9,7 @@ async function execute(client) {
   global.discordClient = client;
   
   const commandData = commands.map(cmd => cmd.data.toJSON());
+  console.log('[DISCORD] Registering commands:', commandData.map(c => c.name));
   
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -25,6 +27,7 @@ async function execute(client) {
     );
     
     console.log('Successfully registered slash commands!');
+    client.user.setActivity('MazeBids.com | /daily', { type: 3 });
   } catch (error) {
     console.error('Error registering slash commands:', error);
   }

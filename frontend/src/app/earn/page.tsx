@@ -13,6 +13,7 @@ import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
 import EmojiHitGame from "@/components/games/EmojiHitGame";
 import AdPlayer from "@/components/AdPlayer";
+import AdManager from "@/components/AdManager";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 
@@ -127,6 +128,7 @@ function EarnPage() {
 
   // Admin ad form state
   const [showAdForm, setShowAdForm] = useState(false);
+  const [showAdManager, setShowAdManager] = useState(false);
   const [adForm, setAdForm] = useState({
     title: '',
     thumbnailUrl: '',
@@ -587,9 +589,9 @@ function EarnPage() {
                   <h3 className="font-black text-white text-sm tracking-wider uppercase">Watch Ads</h3>
                   {isAdmin && (
                     <button
-                      onClick={() => setShowAdForm(true)}
+                      onClick={() => setShowAdManager(true)}
                       className="w-5 h-5 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center transition-all"
-                      title="Add Sponsored Video (Admin)"
+                      title="Create Ad Campaign (Admin)"
                     >
                       <span className="text-white font-black text-xs leading-none">+</span>
                     </button>
@@ -875,6 +877,15 @@ function EarnPage() {
       )}
       {activeGame && activeGame.type === "AD" && (
         <AdPlayer taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleAdComplete(25)} onCancel={() => setActiveGame(null)} />
+      )}
+
+      {/* AdManager Modal - Only for Admins */}
+      {showAdManager && user?.role === 'ADMIN' && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl">
+            <AdManager />
+          </div>
+        </div>
       )}
     </div>
   );
