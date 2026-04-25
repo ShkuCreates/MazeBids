@@ -20,6 +20,11 @@ router.post('/complete', async (req, res) => {
   const traceId = req.body.traceId || "no-trace";
   const claimId = req.body.claimId || `${traceId}-${Date.now()}`;
 
+  // Prevent caching of reward responses
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   try {
     console.log("========== CLAIM START ==========");
     console.log("TRACE:", traceId);

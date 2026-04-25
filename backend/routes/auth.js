@@ -119,6 +119,11 @@ router.get('/me', async (req, res) => {
   console.log('[AUTH /me] Session user:', req.session.user?.id);
   console.log('[AUTH /me] Authenticated:', req.isAuthenticated());
 
+  // Prevent caching of user-specific data
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   // Passport already deserializes the current user from the session.
   if (req.user) {
     console.log('[AUTH /me] Returning deserialized passport user');

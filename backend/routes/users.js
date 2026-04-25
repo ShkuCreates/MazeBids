@@ -18,6 +18,11 @@ const CACHE_TTL = 30000; // 30 seconds
 router.get('/profile', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
+  // Prevent caching of user-specific data
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   const cacheKey = `profile-${req.user.id}`;
   const cached = profileCache.get(cacheKey);
 

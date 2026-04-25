@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   display: 'swap',
   variable: '--font-inter',
@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     icon: "https://media.discordapp.net/attachments/1495155538886135889/1496103125944111104/MazeBids.png?ex=69e8aa1d&is=69e7589d&hm=b7a98d13f49a2d46c9167bcc58f850507494c85ac82e93cec62993473526ba3c&=&format=webp&quality=lossless&width=561&height=561",
   },
 };
+
+// Force dynamic rendering to prevent caching of user-specific data
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({
   children,
