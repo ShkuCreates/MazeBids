@@ -179,6 +179,34 @@ export default function AdManager() {
             </div>
 
             <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ad Type</label>
+              <select 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium appearance-none"
+                value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}
+              >
+                {AD_TYPES.map(t => <option key={t.value} value={t.value} className="bg-[#0f0f18]">{t.label}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Thumbnail URL</label>
+              <input 
+                type="text" placeholder="https://..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
+                value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Video URL (for VIDEO type ads)</label>
+              <input 
+                type="text" placeholder="https://..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
+                value={formData.videoUrl} onChange={e => setFormData({...formData, videoUrl: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Placement Area</label>
               <select 
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium appearance-none"
@@ -223,23 +251,6 @@ export default function AdManager() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ad Type</label>
-              <div className="grid grid-cols-3 gap-2">
-                {AD_TYPES.map(type => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setFormData({...formData, type: type.value})}
-                    className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${formData.type === type.value ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'}`}
-                  >
-                    <type.icon className="w-5 h-5" />
-                    <span className="text-[8px] font-black uppercase tracking-tighter">{type.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                 Campaign Duration: {parseInt(formData.duration)} hours
               </label>
@@ -261,24 +272,6 @@ export default function AdManager() {
                 <span>36hr</span>
                 <span>48hr</span>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Thumbnail URL</label>
-              <input 
-                type="text" placeholder="https://..."
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
-                value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Video URL (optional)</label>
-              <input 
-                type="text" placeholder="https://..."
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
-                value={formData.videoUrl} onChange={e => setFormData({...formData, videoUrl: e.target.value})}
-              />
             </div>
 
             <div className="space-y-2">
