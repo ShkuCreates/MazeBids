@@ -25,6 +25,7 @@ interface Emoji {
 
 const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const [emojis, setEmojis] = useState<Emoji[]>([]);
@@ -45,7 +46,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
 
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
-    const calculatedReward = score * 10; // Hits * 10 coins
+    const calculatedReward = scoreRef.current * 10; // Hits * 10 coins
     const traceId = Date.now();
     const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`; // Unique claim ID for idempotency
 
@@ -60,20 +61,13 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
 
       console.log("CLAIM RESPONSE", { traceId, claimId, data: res.data });
 
-      // On success, reload page to get fresh data from backend
-      if (res.data.success === true) {
-        if (res.data.alreadyClaimed) {
-          alert('Already claimed this reward!');
-        } else {
-          alert(`+${calculatedReward} coins added!`);
-        }
-        window.location.reload();
+      if (res.data.success === true && !res.data.alreadyClaimed) {
+        await refreshUser();
       }
     } catch (error) {
       console.error('Failed to save score', error);
-      alert('Failed to save score. Please try again.');
     }
-  }, [score]);
+  }, []);
 
   // Use requestAnimationFrame for stable timer independent of click events
   useEffect(() => {
@@ -135,14 +129,13 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
     lastClickTimeRef.current = now;
 
     // Prevent stuck counter by using functional updates
-    setScore(prev => {
-      const newScore = prev + 1;
-      return newScore;
-    });
+    scoreRef.current += 1;
+    setScore(scoreRef.current);
     setEmojis(prev => prev.filter(emoji => emoji.id !== emojiId));
   }, []);
 
   const startGame = useCallback(() => {
+    scoreRef.current = 0;
     setScore(0);
     setTimeLeft(10);
     setEmojis([]);

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { MousePointer2, Timer, Trophy } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -15,13 +15,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const { user, refreshUser, updateCoins } = useAuth();
 
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
-    const calculatedReward = score * 10; // Clicks * 10 coins
+    const calculatedReward = scoreRef.current * 10; // Clicks * 10 coins
     const traceId = Date.now();
     const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`; // Unique claim ID for idempotency
 
@@ -36,20 +37,13 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
 
       console.log("CLAIM RESPONSE", { traceId, claimId, data: res.data });
 
-      // On success, reload page to get fresh data from backend
-      if (res.data.success === true) {
-        if (res.data.alreadyClaimed) {
-          alert('Already claimed this reward!');
-        } else {
-          alert(`+${calculatedReward} coins added!`);
-        }
-        window.location.reload();
+      if (res.data.success === true && !res.data.alreadyClaimed) {
+        await refreshUser();
       }
     } catch (error) {
       console.error('Failed to save score', error);
-      alert('Failed to save score. Please try again.');
     }
-  }, [score]);
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -68,10 +62,12 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   }, [gameState]);
 
   const handleClick = useCallback(() => {
-    setScore(prev => prev + 1);
+    scoreRef.current += 1;
+    setScore(scoreRef.current);
   }, []);
 
   const startGame = useCallback(() => {
+    scoreRef.current = 0;
     setScore(0);
     setTimeLeft(10);
     setGameState('PLAYING');

@@ -41,13 +41,8 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ taskId, reward, onCom
       console.log("CLAIM RESPONSE", { traceId, claimId, data: res.data });
 
       // On success, reload page to get fresh data from backend
-      if (res.data.success === true) {
-        if (res.data.alreadyClaimed) {
-          alert('Already claimed this reward!');
-        } else {
-          alert(`+${calculatedReward} coins added!`);
-        }
-        window.location.reload();
+      if (res.data.success === true && !res.data.alreadyClaimed) {
+        await refreshUser();
       }
     } catch (error) {
       console.error('Failed to save score', error);
