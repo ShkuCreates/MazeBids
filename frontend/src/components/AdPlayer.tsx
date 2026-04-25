@@ -69,6 +69,9 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
       if (response.data.coins !== undefined) {
         setClaimSuccess(true);
         triggerConfetti();
+        const audio = new Audio('/sounds/applyepay');
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
         updateCoins(response.data.coins);
         setTimeout(() => {
           onComplete();

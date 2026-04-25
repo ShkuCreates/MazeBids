@@ -41,12 +41,13 @@ export default function AdManager() {
   const [formData, setFormData] = useState({
     title: "",
     type: "IMAGE",
-    contentUrl: "",
+    thumbnailUrl: "",
+    videoUrl: "",
     targetUrl: "",
     placement: "DASHBOARD",
-    position: "TOP", // New field for ad position
-    size: "MEDIUM", // New field for ad size
-    duration: "24", // Default to 24 hours
+    position: "TOP",
+    size: "MEDIUM",
+    duration: "24",
     expiresAt: "",
     reward: "0",
   });
@@ -70,14 +71,19 @@ export default function AdManager() {
     e.preventDefault();
     console.log('Submitting ad data:', formData);
     
+    const submissionData = {
+      ...formData,
+      contentUrl: formData.type === 'VIDEO' ? formData.videoUrl : formData.thumbnailUrl
+    };
+    
     try {
       let response;
       if (editingAd) {
         console.log('Updating ad:', editingAd.id);
-        response = await axios.put(`${API_URL}/api/ads/${editingAd.id}`, formData, { withCredentials: true });
+        response = await axios.put(`${API_URL}/api/ads/${editingAd.id}`, submissionData, { withCredentials: true });
       } else {
         console.log('Creating new ad');
-        response = await axios.post(`${API_URL}/api/ads`, formData, { withCredentials: true });
+        response = await axios.post(`${API_URL}/api/ads`, submissionData, { withCredentials: true });
       }
       
       console.log('Ad saved successfully:', response.data);
@@ -86,7 +92,8 @@ export default function AdManager() {
       setFormData({
         title: "",
         type: "IMAGE",
-        contentUrl: "",
+        thumbnailUrl: "",
+        videoUrl: "",
         targetUrl: "",
         placement: "DASHBOARD",
         position: "TOP",
@@ -118,7 +125,8 @@ export default function AdManager() {
     setFormData({
       title: ad.title,
       type: ad.type,
-      contentUrl: ad.contentUrl,
+      thumbnailUrl: ad.contentUrl || "",
+      videoUrl: ad.videoUrl || "",
       targetUrl: ad.targetUrl || "",
       placement: ad.placement,
       position: ad.position || "TOP",
@@ -256,11 +264,20 @@ export default function AdManager() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Content URL (Image/Video/Discord Link)</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Thumbnail URL</label>
               <input 
-                type="text" required placeholder="https://..."
+                type="text" placeholder="https://..."
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
-                value={formData.contentUrl} onChange={e => setFormData({...formData, contentUrl: e.target.value})}
+                value={formData.thumbnailUrl} onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Video URL (optional)</label>
+              <input 
+                type="text" placeholder="https://..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500 transition-all text-white font-medium"
+                value={formData.videoUrl} onChange={e => setFormData({...formData, videoUrl: e.target.value})}
               />
             </div>
 

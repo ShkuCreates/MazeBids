@@ -21,7 +21,18 @@ const LiveActivityFeed = memo(() => {
 
   useEffect(() => {
     if (!mounted) return;
-    const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
+    const usernames = [
+      "Rahul_23", "AryanBids", "NehaOP", "CryptoShark", "SnehaWins",
+      "RajveerX", "NightOwl99", "BlockchainBro", "PriyaGames", "EliteHunter",
+      "ZeroToHero", "DiamondHands", "MoonShot42", "FastFingers", "AuctionAce",
+      "DesiGamer", "TechWizard", "CoinMaster99", "LuckyStrike", "ProBidder",
+      "CryptoKing", "SnehaX", "TechNinja", "BidMaster", "AuctionKing",
+      "GamerPro99", "MobileMaster", "AryanLive", "PlayMaster99", "CoinHunter",
+      "SpeedDemon", "BitMaster", "TokenLord", "DogeLover", "WhaleAlert",
+      "TraderJoe", "StockMaster", "CryptoNinja", "DeFiKing", "NFTCollector",
+      "MetaverseGod", "Web3Wizard", "SolanaSurfer", "EtherealBeing", "BinanceBoss",
+      "CoinGeek", "TokenWhale", "CryptoAngel", "BitBoy", "ChainReaction"
+    ];
     const items = ["iPhone 13", "AirPods Pro", "MacBook Air", "PS5", "Nintendo Switch"];
     const actions = ["placed a bid on", "won", "joined auction for"];
 
@@ -43,7 +54,7 @@ const LiveActivityFeed = memo(() => {
         const newActivity = generateActivity();
         return [newActivity, ...prev.slice(0, 6)];
       });
-    }, 4000 + Math.random() * 2000);
+    }, 1500 + Math.random() * 1500);
 
     return () => clearInterval(interval);
   }, [mounted]);
@@ -89,8 +100,12 @@ const LiveActivityFeed = memo(() => {
               className="p-4 border-b border-white/5 hover:bg-white/[0.02] transition-all"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                  <span className="text-sm font-black text-purple-300">{activity.username.charAt(0)}</span>
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-purple-500/20">
+                  <img 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${activity.username}`} 
+                    alt={activity.username}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-300">

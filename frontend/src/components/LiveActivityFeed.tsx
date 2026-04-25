@@ -8,7 +8,7 @@ import Link from "next/link";
 interface Activity {
   id: string;
   username: string;
-  action: "bid" | "won" | "listed" | "joined";
+  action: string;
   itemName: string;
   itemId?: string;
   amount?: number;
@@ -65,35 +65,46 @@ export default function LiveActivityFeed() {
     setMounted(true);
   }, []);
 
-  const usernames = ["Rahul_23", "CryptoKing", "SnehaX", "TechNinja", "BidMaster", "AuctionKing", "GamerPro99", "MobileMaster"];
+  const usernames = [
+    "Rahul_23", "AryanBids", "NehaOP", "CryptoShark", "SnehaWins",
+    "RajveerX", "NightOwl99", "BlockchainBro", "PriyaGames", "EliteHunter",
+    "ZeroToHero", "DiamondHands", "MoonShot42", "FastFingers", "AuctionAce",
+    "DesiGamer", "TechWizard", "CoinMaster99", "LuckyStrike", "ProBidder",
+    "CryptoKing", "SnehaX", "TechNinja", "BidMaster", "AuctionKing",
+    "GamerPro99", "MobileMaster", "AryanLive", "PlayMaster99", "CoinHunter",
+    "SpeedDemon", "BitMaster", "TokenLord", "DogeLover", "WhaleAlert",
+    "TraderJoe", "StockMaster", "CryptoNinja", "DeFiKing", "NFTCollector",
+    "MetaverseGod", "Web3Wizard", "SolanaSurfer", "EtherealBeing", "BinanceBoss",
+    "CoinGeek", "TokenWhale", "CryptoAngel", "BitBoy", "ChainReaction"
+  ];
   const items = ["iPhone 13", "AirPods Pro", "MacBook Air M2", "PS5", "Nintendo Switch OLED", "Samsung Galaxy S24", "iPad Pro", "Apple Watch Ultra"];
-  const actions: Activity["action"][] = ["bid", "bid", "won", "bid", "bid"];
+  const actions = ["claimed referral bonus", "completed Speed Clicker", "watched an ad", "redeemed bonus code", "hit 300 in Emoji Hit", "won a daily streak bonus", "completed Memory Match", "referred a friend"];
 
   const generateActivity = (): Activity => {
     const action = actions[Math.floor(Math.random() * actions.length)];
     return {
       id: `activity-${Date.now()}-${Math.random()}`,
       username: usernames[Math.floor(Math.random() * usernames.length)],
-      action,
-      itemName: items[Math.floor(Math.random() * items.length)],
-      amount: action === "bid" ? Math.floor(Math.random() * 40000) + 5000 : undefined,
+      action: "bid",
+      itemName: action,
+      amount: Math.floor(Math.random() * 200) + 25,
       timestamp: new Date(Date.now() - Math.floor(Math.random() * 300000)),
     };
   };
 
   useEffect(() => {
     if (!mounted) return;
-    // Initialize with 5 realistic activities
-    setActivities(Array.from({ length: 5 }, () => generateActivity()));
+    // Initialize with 12 realistic activities
+    setActivities(Array.from({ length: 12 }, () => generateActivity()));
 
-    // Add new activity every 3-5 seconds (mock data only - no backend calls)
+    // Add new activity every 1.5-3.5 seconds (mock data only - no backend calls)
     const interval = setInterval(() => {
       setActivities((prev) => {
         const newActivity = generateActivity();
-        // Keep only last 10 items to prevent memory issues
-        return [newActivity, ...prev.slice(0, 9)];
+        // Keep only last 12 items to prevent memory issues
+        return [newActivity, ...prev.slice(0, 11)];
       });
-    }, 3000 + Math.random() * 2000);
+    }, 1500 + Math.random() * 2000);
 
     return () => clearInterval(interval);
   }, [mounted]);
@@ -150,8 +161,12 @@ export default function LiveActivityFeed() {
               >
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
-                  <div className={`w-10 h-10 rounded-xl ${getAvatarColor(activity.username)} flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-black/20`}>
-                    {activity.username.charAt(0)}
+                  <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-lg shadow-black/20">
+                    <img 
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${activity.username}`} 
+                      alt={activity.username}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   
                   {/* Content */}
