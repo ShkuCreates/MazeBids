@@ -16,13 +16,13 @@ async function execute(client) {
     
     console.log('Clearing existing slash commands...');
     await rest.put(
-      Routes.applicationGuildCommands(client.user.id, config.MAIN_GUILD_ID),
+      Routes.applicationCommands(client.user.id),
       { body: [] }
     );
 
-    console.log(`[DISCORD] Registering ${commands.length} slash commands...`);
+    console.log(`[DISCORD] Registering ${commands.length} slash commands globally...`);
     await rest.put(
-      Routes.applicationGuildCommands(client.user.id, config.MAIN_GUILD_ID),
+      Routes.applicationCommands(client.user.id),
       { body: commandData }
     );
     
