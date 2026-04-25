@@ -17,10 +17,7 @@ interface Ad {
   duration: number | null;
   reward: number;
   status: string;
-  expiresAt: string | null;
   createdAt: string;
-  maxViews?: number;
-  viewCount?: number;
 }
 
 interface FormData {
@@ -59,19 +56,15 @@ export default function AdManagement() {
     }
   };
 
-  useEffect(() => {
-    fetchAds();
-  }, []);
+  useEffect(() => { fetchAds(); }, []);
 
   const handleSubmit = async () => {
     if (!formData.title || !formData.videoUrl || !formData.duration || !formData.reward || !formData.totalUsers) {
       setError("Please fill in all required fields.");
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       await axios.post(`${API_URL}/api/ads`, {
         title: formData.title,
@@ -83,7 +76,6 @@ export default function AdManagement() {
         reward: parseInt(formData.reward),
         maxViews: parseInt(formData.totalUsers),
       }, { withCredentials: true });
-
       setSuccess("Ad campaign created successfully!");
       setModalOpen(false);
       setFormData({ title: "", thumbnailUrl: "", videoUrl: "", duration: "30", reward: "25", totalUsers: "100" });
@@ -101,9 +93,7 @@ export default function AdManagement() {
     try {
       await axios.delete(`${API_URL}/api/ads/${id}`, { withCredentials: true });
       setAds(ads.filter(a => a.id !== id));
-    } catch (err) {
-      console.error("Failed to delete ad:", err);
-    }
+    } catch (err) { console.error("Failed to delete ad:", err); }
   };
 
   const handleToggleStatus = async (ad: Ad) => {
@@ -111,9 +101,7 @@ export default function AdManagement() {
     try {
       await axios.put(`${API_URL}/api/ads/${ad.id}`, { status: newStatus }, { withCredentials: true });
       setAds(ads.map(a => a.id === ad.id ? { ...a, status: newStatus } : a));
-    } catch (err) {
-      console.error("Failed to update ad status:", err);
-    }
+    } catch (err) { console.error("Failed to update ad status:", err); }
   };
 
   const getStatusColor = (status: string) => {
@@ -132,7 +120,7 @@ export default function AdManagement() {
           <p className="text-gray-500 mt-1">Manage video ad campaigns and rewards</p>
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => { setError(null); setModalOpen(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -201,7 +189,7 @@ export default function AdManagement() {
               </div>
 
               {ad.targetUrl && (
-                <div className="w-full h-28 rounded-xl overflow-hidden mb-4 bg-white/5 flex items-center justify-center">
+                <div className="w-full h-28 rounded-xl overflow-hidden mb-4 bg-white/5">
                   <img src={ad.targetUrl} alt={ad.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}
@@ -216,8 +204,8 @@ export default function AdManagement() {
                   <p className="font-bold text-yellow-400 text-sm">+{ad.reward}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded-xl text-center">
-                  <p className="text-[10px] font-black text-gray-500 uppercase mb-1">Placement</p>
-                  <p className="font-bold text-purple-400 text-sm truncate">{ad.placement}</p>
+                  <p className="text-[10px] font-black text-gray-500 uppercase mb-1">Type</p>
+                  <p className="font-bold text-purple-400 text-sm">{ad.type}</p>
                 </div>
               </div>
 
@@ -251,6 +239,7 @@ export default function AdManagement() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -268,71 +257,28 @@ export default function AdManagement() {
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Title *</label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Ad title shown to users..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600"
-                  />
+                  <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ad title shown to users..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600" />
                 </div>
-
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Thumbnail URL</label>
-                  <input
-                    type="url"
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                    placeholder="https://... (image shown as task thumbnail)"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600"
-                  />
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Thumbnail URL <span className="text-gray-600 normal-case font-normal">(shown as task image)</span></label>
+                  <input type="url" value={formData.thumbnailUrl} onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })} placeholder="https://... image URL" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600" />
                 </div>
-
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Video URL *</label>
-                  <input
-                    type="url"
-                    value={formData.videoUrl}
-                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                    placeholder="https://... (video played when user watches)"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600"
-                  />
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Video URL * <span className="text-gray-600 normal-case font-normal">(played when user watches)</span></label>
+                  <input type="url" value={formData.videoUrl} onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })} placeholder="https://... video URL" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white placeholder:text-gray-600" />
                 </div>
-
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Duration (sec) *</label>
-                    <input
-                      type="number"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                      placeholder="30"
-                      min="5"
-                      max="300"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white"
-                    />
+                    <input type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="30" min="5" max="300" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white" />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Coins/User *</label>
-                    <input
-                      type="number"
-                      value={formData.reward}
-                      onChange={(e) => setFormData({ ...formData, reward: e.target.value })}
-                      placeholder="25"
-                      min="1"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white"
-                    />
+                    <input type="number" value={formData.reward} onChange={(e) => setFormData({ ...formData, reward: e.target.value })} placeholder="25" min="1" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white" />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Total Users *</label>
-                    <input
-                      type="number"
-                      value={formData.totalUsers}
-                      onChange={(e) => setFormData({ ...formData, totalUsers: e.target.value })}
-                      placeholder="100"
-                      min="1"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white"
-                    />
+                    <input type="number" value={formData.totalUsers} onChange={(e) => setFormData({ ...formData, totalUsers: e.target.value })} placeholder="100" min="1" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500/50 outline-none transition-all text-white" />
                   </div>
                 </div>
 

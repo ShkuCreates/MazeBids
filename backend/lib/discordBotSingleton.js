@@ -9,38 +9,6 @@ const { client } = require('../discord');
 
 client.on('error', (error) => console.error('Discord bot error:', error.message));
 
-client.on('ready', () => {
-  console.log(`[DISCORD] Ready as ${client.user.tag}`);
-
-  const statuses = [
-    { type: 'WATCHING', text: '🎯 Live Auctions' },
-    { type: 'PLAYING', text: '💰 MazeBids.online' },
-    { type: 'WATCHING', text: '🏆 Top Bidders' },
-    { type: 'PLAYING', text: '🎮 Earn Free Coins' },
-    { type: 'WATCHING', text: '⚡ Real-time Bidding' },
-    { type: 'PLAYING', text: '🎁 Win Amazing Prizes' },
-    { type: 'WATCHING', text: '🔥 Hot Auctions Live' },
-    { type: 'PLAYING', text: '✨ mazebids.online' },
-  ];
-
-  let statusIndex = 0;
-
-  const updateStatus = () => {
-    const current = statuses[statusIndex % statuses.length];
-    client.user.setPresence({
-      activities: [{
-        name: current.text,
-        type: current.type === 'WATCHING' ? 3 : 0
-      }],
-      status: 'online'
-    });
-    statusIndex++;
-  };
-
-  updateStatus();
-  setInterval(updateStatus, 3000);
-});
-
 client.on('guildCreate', async (guild) => {
   if (guild.id !== config.MAIN_GUILD_ID) {
     try {
