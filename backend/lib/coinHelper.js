@@ -72,35 +72,30 @@ async function updateUserCoins(userId, amount, source, options = {}) {
       userData.coinsEarnedToday = { increment: absoluteAmount };
     }
 
-    // Execute transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Update user coins
-      const updatedUser = await tx.user.update({
-        where: { id: userId },
-        data: userData,
-        select: {
-          id: true,
-          coins: true,
-          totalEarned: true,
-          totalSpent: true,
-          coinsEarnedToday: true
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: userData,
+      select: {
+        id: true,
+        coins: true,
+        totalEarned: true,
+        totalSpent: true,
+        coinsEarnedToday: true
+      }
+    });
+
+    if (!skipTransaction) {
+      await prisma.transaction.create({
+        data: {
+          userId,
+          amount: absoluteAmount,
+          type: transactionType,
+          description: source
         }
       });
+    }
 
-      // Create transaction record (unless skipped)
-      if (!skipTransaction) {
-        await tx.transaction.create({
-          data: {
-            userId,
-            amount: absoluteAmount,
-            type: transactionType,
-            description: source
-          }
-        });
-      }
-
-      return updatedUser;
-    });
+    const result = updatedUser;
 
     console.log(`[CoinHelper] ✅ Updated ${userId}: ${amount > 0 ? '+' : ''}${amount} coins (${source}), new balance: ${result.coins}`);
 
