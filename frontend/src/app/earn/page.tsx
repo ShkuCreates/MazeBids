@@ -16,6 +16,7 @@ import AdPlayer from "@/components/AdPlayer";
 import AdManager from "@/components/AdManager";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import { playCoinSound } from "@/lib/sounds";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -150,6 +151,7 @@ function EarnPage() {
 
   // Limited Offer Timer
   const [offerTimer, setOfferTimer] = useState("02:30:00");
+  const [dailyCountdown, setDailyCountdown] = useState<string>("");
 
   // Show toast notification
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -188,6 +190,7 @@ function EarnPage() {
     try {
       await claimDaily();
       triggerConfetti();
+      playCoinSound();
       addFloatingCoin(state.getDailyReward(state.streak), x, y);
       showToast(`+${state.getDailyReward(state.streak)} coins claimed!`, 'success');
     } catch (error) {
@@ -201,6 +204,7 @@ function EarnPage() {
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
+    playCoinSound();
     showToast(`+${reward} coins earned!`, 'success');
     setActiveGame(null);
     refreshUser();
@@ -212,6 +216,7 @@ function EarnPage() {
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
+    playCoinSound();
     showToast(`+${reward} coins earned!`, 'success');
     setActiveGame(null);
     refreshUser();
@@ -241,6 +246,9 @@ function EarnPage() {
   // Live earnings feed generator (simulated with realistic data)
   useEffect(() => {
     if (!mounted) return;
+
+    const avatarStyles = ['adventurer', 'avataaars', 'bottts', 'croodles', 'fun-emoji', 'icons', 'lorelei', 'micah', 'miniavs', 'open-peeps', 'personas', 'pixel-art'];
+
     const usernames = [
       "Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP",
       "PlayMaster99", "CoinHunter", "SpeedDemon", "LuckyStrike", "ProGamer",
@@ -252,53 +260,64 @@ function EarnPage() {
       "CryptoAngel", "BitBoy", "ChainReaction", "HashRateHero", "MiningMaster",
       "StakingKing", "YieldFarmer", "LiquidityLord", "DexTrader", "CexGuru",
       "AirdropHunter", "BountySeeker", "TestnetTester", "MainnetMaster", "DevGuru",
-      "SmartContractAuditor", "SecurityExpert", "WhitepaperWriter", "TokenomicsPro", "CommunityManager",
-      "DiscordMod", "TelegramAdmin", "TwitterInfluencer", "YouTubeCreator", "TikTokStar",
-      "InstagramModel", "FacebookGroupAdmin", "RedditModerator", "SteemWitness", "HiveCurator",
-      "TribalChief", "SplinterlandsPro", "AxieMaster", "GodsUnchained", "IlluviumHunter",
-      "SandboxBuilder", "DecentralandOwner", "VirtualLandlord", "MetaverseRealtor", "NFTArtist"
-    ];
-    const activities = [
-      "claimed referral",
-      "completed Speed Clicker",
-      "watched ad",
-      "redeemed bonus code",
-      "hit 300 in Emoji Hit"
+      "Arjun_S", "PriyaM", "VikramX", "AnishaK", "RohanD",
+      "TanviP", "KaranB", "MeghaR", "AditiBT", "SiddharthN",
+      "ZephyrQ", "BlazeFX", "NovaStar", "OmegaX", "PhoenixRise",
+      "DeltaForce", "GammaByte", "AlphaWolf", "BetaRush", "ThetaKing"
     ];
 
+    const activities = [
+      "completed Speed Clicker",
+      "won Memory Match",
+      "hit streak in Emoji Hit",
+      "claimed daily bonus",
+      "watched sponsored ad",
+      "redeemed bonus code",
+      "won auction bid",
+      "claimed referral reward",
+      "completed daily check-in",
+      "hit top score in Speed Clicker",
+      "matched all pairs in Memory Match",
+      "earned streak bonus",
+      "redeemed promo code",
+      "completed challenge",
+      "won jackpot reward"
+    ];
+
+    const coinAmounts = [25, 40, 50, 60, 75, 87, 100, 111, 125, 147, 150, 166, 174, 176, 200, 202, 250, 300, 400, 500];
+
     const generateEarning = (): EarningActivity => {
-      const activity = activities[Math.floor(Math.random() * activities.length)];
       const username = usernames[Math.floor(Math.random() * usernames.length)];
-      const coins = Math.floor(Math.random() * 200) + 25;
-      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-      
+      const style = avatarStyles[Math.floor(Math.random() * avatarStyles.length)];
+      const seed = Math.random().toString(36).substr(2, 8);
       return {
         id: `earning-${Date.now()}-${Math.random()}`,
         username,
-        avatarUrl,
-        action: activity,
-        coins,
-        timeAgo: 'just now'
+        avatarUrl: `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`,
+        action: activities[Math.floor(Math.random() * activities.length)],
+        coins: coinAmounts[Math.floor(Math.random() * coinAmounts.length)],
+        timeAgo: 'just now',
       };
     };
 
-    setEarnings(Array.from({ length: 40 }, () => generateEarning()));
+    setEarnings(Array.from({ length: 6 }, () => generateEarning()));
 
-    const interval = setInterval(() => {
-      setEarnings((prev) => {
-        const newEarning = generateEarning();
-        setHourlyTotal(prev => prev + newEarning.coins);
-        
-        // Avoid showing the same entry twice in a row
-        if (prev[0] && prev[0].username === newEarning.username && prev[0].action === newEarning.action) {
-          return prev;
-        }
-        
-        return [newEarning, ...prev.slice(0, 39)]; // Keep 40 entries max
-      });
-    }, 4000 + Math.random() * 4000); // Random interval between 4-8 seconds
+    // Fast updates: every 1-2 seconds
+    const scheduleNext = () => {
+      const delay = 1000 + Math.random() * 1000;
+      return setTimeout(() => {
+        setEarnings(prev => {
+          const newEarning = generateEarning();
+          setHourlyTotal(t => t + newEarning.coins);
+          return [newEarning, ...prev.slice(0, 8)];
+        });
+        intervalRef.current = scheduleNext();
+      }, delay);
+    };
 
-    return () => clearInterval(interval);
+    const intervalRef = { current: scheduleNext() };
+
+    return () => clearTimeout(intervalRef.current);
   }, [mounted]);
 
   // Limited offer timer
@@ -320,6 +339,37 @@ function EarnPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [mounted]);
+
+  // Daily check-in countdown timer
+  useEffect(() => {
+    if (!mounted || state.canClaimDaily) return;
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const nextMidnightUTC = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1,
+        0, 0, 0
+      ));
+      const diff = nextMidnightUTC.getTime() - now.getTime();
+      if (diff <= 0) {
+        setDailyCountdown("00:00:00");
+        refreshState();
+        return;
+      }
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setDailyCountdown(
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      );
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [mounted, state.canClaimDaily, refreshState]);
 
   const handleGameClick = (task: any) => {
     setActiveGame({ id: task.id, reward: task.reward, type: task.type });
@@ -829,7 +879,12 @@ function EarnPage() {
                 </div>
                 <div>
                   <h3 className="font-black text-white text-base">Daily Check-In</h3>
-                  <p className="text-orange-300 text-xs">Day {state.streak}/7 • Next: +{getDailyReward(state.streak)} coins</p>
+                  <p className="text-orange-300 text-xs">
+  Day {state.streak}/7 • Next: +{getDailyReward(state.streak)} coins
+  {!state.canClaimDaily && dailyCountdown && (
+    <span className="ml-2 text-gray-400 font-mono">• Resets in {dailyCountdown}</span>
+  )}
+</p>
                 </div>
               </div>
               
@@ -842,7 +897,7 @@ function EarnPage() {
                     : "bg-white/5 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                {state.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : state.canClaimDaily ? `CLAIM +${getDailyReward(state.streak)}` : "CLAIMED"}
+                {state.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : state.canClaimDaily ? `CLAIM +${getDailyReward(state.streak)}` : dailyCountdown ? dailyCountdown : "CLAIMED"}
               </button>
             </div>
 

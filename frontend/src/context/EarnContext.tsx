@@ -120,8 +120,10 @@ const addToTodayProgress = useCallback((amount: number) => {
 
       // On success, reload page to get fresh data from backend
       if (res.data.coins !== undefined) {
-        alert(`Daily reward claimed!`);
-        window.location.reload();
+        updateCoins(res.data.coins);
+        setCanClaimDaily(false);
+        await refreshUser();
+        refreshState();
       }
     } catch (error) {
       console.error("Daily claim failed:", error);
