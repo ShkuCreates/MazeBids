@@ -52,7 +52,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
         setTimeLeft((prev) => {
           const newTime = prev - 1;
           if (newTime === 0) {
-            setGameState('FINISHED');
+            finishGame();
           }
           return newTime;
         });

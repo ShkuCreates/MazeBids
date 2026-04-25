@@ -83,7 +83,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
           setTimeLeft(remainingTime);
           
           if (remainingTime <= 0) {
-            setGameState('FINISHED');
+            finishGame();
             return;
           }
         }
