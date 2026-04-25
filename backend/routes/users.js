@@ -356,6 +356,11 @@ router.get('/daily-stats', async (req, res) => {
 
 // GET /daily-progress - Get daily progress for Earn page (NO AUTO-RESET)
 router.get('/daily-progress', async (req, res) => {
+  // Prevent caching of user-specific data
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
   try {

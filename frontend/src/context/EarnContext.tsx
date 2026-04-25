@@ -90,11 +90,11 @@ export function EarnProvider({ children }: { children: React.ReactNode }) {
     animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Removed optimistic updates - backend is single source of truth
+  // Update balance by refreshing from backend (single source of truth)
   const updateBalance = useCallback((amount: number) => {
-    // No-op - all coin updates must come from backend
-    console.log('[EarnContext] updateBalance called but is disabled - use backend API');
-  }, []);
+    // Trigger refresh from backend to get accurate balance
+    refreshUser();
+  }, [refreshUser]);
 
   // Add to today's progress with animation
   // Remove local progress accumulation - always use backend truth
