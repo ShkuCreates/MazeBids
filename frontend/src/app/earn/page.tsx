@@ -7,7 +7,7 @@ import axios from "axios";
 import { 
   Coins, Play, Clock, Target, Brain, Flame, Eye, Calendar, 
   TrendingUp, Gamepad2, Users, Ticket, Loader2, Bell, 
-  ChevronRight, Sparkles, Activity 
+  ChevronRight, Sparkles, Activity, X
 } from "lucide-react";
 import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
@@ -21,9 +21,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 interface EarningActivity {
   id: string;
   username: string;
+  avatarUrl: string;
   action: string;
   coins: number;
-  timestamp: Date;
+  timeAgo: string;
 }
 
 interface Toast {
@@ -123,6 +124,17 @@ function EarnPage() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Admin ad form state
+  const [showAdForm, setShowAdForm] = useState(false);
+  const [adForm, setAdForm] = useState({
+    title: '',
+    thumbnailUrl: '',
+    coinsPerUser: '',
+    totalBudget: '',
+    campaignDuration: ''
+  });
+  const [submittingAd, setSubmittingAd] = useState(false);
 
   // Live Earnings Feed State
   const [earnings, setEarnings] = useState<EarningActivity[]>([]);
@@ -245,45 +257,44 @@ function EarnPage() {
       "SandboxBuilder", "DecentralandOwner", "VirtualLandlord", "MetaverseRealtor", "NFTArtist"
     ];
     const activities = [
-      "earned 250 coins from Speed Clicker",
-      "watched video +40 coins",
-      "redeemed code +100 coins",
-      "completed daily bonus +50 coins",
-      "won 500 coins from Memory Match",
-      "hit 300 coins in Emoji Hit",
-      "claimed referral reward +150 coins",
-      "completed streak bonus +75 coins",
-      "watched sponsored ad +25 coins",
-      "earned 400 coins from Speed Clicker",
-      "redeemed promo code +200 coins",
-      "completed achievement +300 coins",
-      "won jackpot +1000 coins",
-      "earned 175 coins from game",
-      "completed challenge +125 coins"
+      "claimed referral",
+      "completed Speed Clicker",
+      "watched ad",
+      "redeemed bonus code",
+      "hit 300 in Emoji Hit"
     ];
 
     const generateEarning = (): EarningActivity => {
       const activity = activities[Math.floor(Math.random() * activities.length)];
-      const coinsMatch = activity.match(/\d+/);
-      const coins = coinsMatch ? parseInt(coinsMatch[0]) : 50;
+      const username = usernames[Math.floor(Math.random() * usernames.length)];
+      const coins = Math.floor(Math.random() * 200) + 25;
+      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+      
       return {
         id: `earning-${Date.now()}-${Math.random()}`,
-        username: usernames[Math.floor(Math.random() * usernames.length)],
+        username,
+        avatarUrl,
         action: activity,
         coins,
-        timestamp: new Date(),
+        timeAgo: 'just now'
       };
     };
 
-    setEarnings(Array.from({ length: 6 }, () => generateEarning()));
+    setEarnings(Array.from({ length: 40 }, () => generateEarning()));
 
     const interval = setInterval(() => {
       setEarnings((prev) => {
         const newEarning = generateEarning();
         setHourlyTotal(prev => prev + newEarning.coins);
-        return [newEarning, ...prev.slice(0, 9)]; // Keep 9 entries max
+        
+        // Avoid showing the same entry twice in a row
+        if (prev[0] && prev[0].username === newEarning.username && prev[0].action === newEarning.action) {
+          return prev;
+        }
+        
+        return [newEarning, ...prev.slice(0, 39)]; // Keep 40 entries max
       });
-    }, 2000 + Math.random() * 3000); // Random interval between 2-5 seconds
+    }, 4000 + Math.random() * 4000); // Random interval between 4-8 seconds
 
     return () => clearInterval(interval);
   }, [mounted]);
@@ -357,6 +368,31 @@ function EarnPage() {
       showToast('Referral redemption failed!', 'error');
     } finally {
       setRedeemingReferral(false);
+    }
+  };
+
+  const handleAdFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adForm.title || !adForm.coinsPerUser || !adForm.totalBudget || !adForm.campaignDuration) {
+      showToast('Please fill all required fields', 'error');
+      return;
+    }
+    setSubmittingAd(true);
+    try {
+      await axios.post(`${API_URL}/api/ads`, {
+        title: adForm.title,
+        thumbnailUrl: adForm.thumbnailUrl,
+        coinsPerUser: parseInt(adForm.coinsPerUser),
+        totalBudget: parseInt(adForm.totalBudget),
+        campaignDuration: parseInt(adForm.campaignDuration)
+      }, { withCredentials: true });
+      showToast('Ad campaign created successfully!', 'success');
+      setShowAdForm(false);
+      setAdForm({ title: '', thumbnailUrl: '', coinsPerUser: '', totalBudget: '', campaignDuration: '' });
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to create ad campaign', 'error');
+    } finally {
+      setSubmittingAd(false);
     }
   };
 
@@ -551,7 +587,7 @@ function EarnPage() {
                   <h3 className="font-black text-white text-sm tracking-wider uppercase">Watch Ads</h3>
                   {isAdmin && (
                     <button
-                      onClick={() => window.location.href = '/admin/ads'}
+                      onClick={() => setShowAdForm(true)}
                       className="w-5 h-5 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center transition-all"
                       title="Add Sponsored Video (Admin)"
                     >
@@ -567,6 +603,75 @@ function EarnPage() {
                   <span className="text-[9px] text-red-400 font-mono">{offerTimer}</span>
                 </div>
               </div>
+
+              {/* Admin Ad Form Overlay */}
+              {showAdForm && (
+                <div className="absolute inset-0 bg-[#0f0f18]/95 z-20 flex items-center justify-center p-4">
+                  <div className="w-full max-w-md bg-[#1a1a24] border border-purple-500/30 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-black text-white text-sm">Create Ad Campaign</h4>
+                      <button onClick={() => setShowAdForm(false)} className="text-gray-400 hover:text-white">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <form onSubmit={handleAdFormSubmit} className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Title *"
+                        value={adForm.title}
+                        onChange={(e) => setAdForm({ ...adForm, title: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Thumbnail URL"
+                        value={adForm.thumbnailUrl}
+                        onChange={(e) => setAdForm({ ...adForm, thumbnailUrl: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
+                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="number"
+                          placeholder="Coins per user *"
+                          value={adForm.coinsPerUser}
+                          onChange={(e) => setAdForm({ ...adForm, coinsPerUser: e.target.value })}
+                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Total budget *"
+                          value={adForm.totalBudget}
+                          onChange={(e) => setAdForm({ ...adForm, totalBudget: e.target.value })}
+                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Duration (days) *"
+                          value={adForm.campaignDuration}
+                          onChange={(e) => setAdForm({ ...adForm, campaignDuration: e.target.value })}
+                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowAdForm(false)}
+                          className="flex-1 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-black text-xs transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={submittingAd}
+                          className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg text-white font-black text-xs transition-all flex items-center justify-center gap-1"
+                        >
+                          {submittingAd ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Create'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
 
               {isLoading ? (
                 <div className="space-y-3 flex-1">
@@ -686,8 +791,8 @@ function EarnPage() {
                     transition={{ duration: 0.2 }}
                     className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/[0.08] border border-white/5 hover:border-purple-500/20 rounded-xl transition-all"
                   >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                      <span className="text-sm font-black text-purple-300">{earning.username.charAt(0)}</span>
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20 overflow-hidden">
+                      <img src={earning.avatarUrl} alt={earning.username} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-300 truncate">
