@@ -67,8 +67,12 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, onComplete, onCance
 
       // On success, reload page to get fresh data from backend
       if (response.data.coins !== undefined) {
-        alert(`+${reward} coins added!`);
-        window.location.reload();
+        setClaimSuccess(true);
+        triggerConfetti();
+        updateCoins(response.data.coins);
+        setTimeout(() => {
+          onComplete();
+        }, 2000);
       }
     } catch (error: any) {
       console.error('[AdPlayer] Failed to claim ad reward:', error);

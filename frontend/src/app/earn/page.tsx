@@ -117,6 +117,9 @@ function EarnPage() {
   const [redeemCode, setRedeemCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [redeemMessage, setRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [referralRedeemCode, setReferralRedeemCode] = useState("");
+  const [redeemingReferral, setRedeemingReferral] = useState(false);
+  const [referralRedeemMessage, setReferralRedeemMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -335,6 +338,28 @@ function EarnPage() {
     }
   };
 
+  const handleReferralRedeem = async () => {
+    if (!referralRedeemCode || redeemingReferral) return;
+    setRedeemingReferral(true);
+    setReferralRedeemMessage(null);
+    try {
+      const res = await axios.post(`${API_URL}/api/users/redeem-referral`, { code: referralRedeemCode }, { withCredentials: true });
+      setReferralRedeemMessage({ text: res.data.message, type: 'success' });
+      setReferralRedeemCode("");
+      if (res.data.coins !== undefined && updateCoins) {
+        updateCoins(res.data.coins);
+      }
+      triggerConfetti();
+      showToast(`Referral redeemed! +${res.data.reward || 0} coins!`, 'success');
+      refreshUser();
+    } catch (err: any) {
+      setReferralRedeemMessage({ text: err.response?.data?.message || "Failed to redeem referral code", type: 'error' });
+      showToast('Referral redemption failed!', 'error');
+    } finally {
+      setRedeemingReferral(false);
+    }
+  };
+
   // Secret admin: Reset coins to 0
   const handleResetCoins = async () => {
     if (!confirm('WARNING: This will reset ALL your coins to 0. Are you sure?')) return;
@@ -418,6 +443,27 @@ function EarnPage() {
                     Copy
                   </button>
                 </div>
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="text"
+                    placeholder="Enter friend's referral code..."
+                    value={referralRedeemCode}
+                    onChange={(e) => setReferralRedeemCode(e.target.value.toUpperCase())}
+                    className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-lg px-3 py-2 text-xs font-mono tracking-widest outline-none transition-all placeholder:text-gray-600"
+                  />
+                  <button
+                    onClick={handleReferralRedeem}
+                    disabled={redeemingReferral || !referralRedeemCode}
+                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-black text-xs transition-all flex items-center gap-1"
+                  >
+                    {redeemingReferral ? <Loader2 className="w-3 h-3 animate-spin" /> : "USE"}
+                  </button>
+                </div>
+                {referralRedeemMessage && (
+                  <p className={`text-[10px] font-bold mt-1 ${referralRedeemMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    {referralRedeemMessage.text}
+                  </p>
+                )}
               </div>
             )}
 
@@ -501,7 +547,18 @@ function EarnPage() {
                     <Play className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <h3 className="font-black text-white text-sm tracking-wider uppercase">Watch Ads</h3>
+                    <div className="flex items-center gap-2">
+                  <h3 className="font-black text-white text-sm tracking-wider uppercase">Watch Ads</h3>
+                  {isAdmin && (
+                    <button
+                      onClick={() => window.location.href = '/admin/ads'}
+                      className="w-5 h-5 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center transition-all"
+                      title="Add Sponsored Video (Admin)"
+                    >
+                      <span className="text-white font-black text-xs leading-none">+</span>
+                    </button>
+                  )}
+                </div>
                     <p className="text-gray-400 text-[10px]">Quick rewards</p>
                   </div>
                 </div>

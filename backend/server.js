@@ -41,8 +41,9 @@ app.use(session({
   store: new PrismaSessionStore(prisma),
   secret: process.env.SESSION_SECRET || 'mazebids-secret',
   proxy: true,
-  resave: false,
-  saveUninitialized: false, // Avoid creating anonymous DB sessions on every request
+  resave: true,
+  saveUninitialized: false,
+  rolling: true,
   cookie: {
     secure: isProduction,
     sameSite: 'lax',

@@ -259,6 +259,72 @@ router.post('/redeem-code', async (req, res) => {
   }
 });
 
+// Redeem a referral code from another user
+router.post('/redeem-referral', async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ message: 'Referral code is required' });
+
+  try {
+    // Cannot redeem your own referral code
+    if (req.user.referralCode === code.toUpperCase()) {
+      return res.status(400).json({ message: 'You cannot redeem your own referral code' });
+    }
+
+    // Check if user already used a referral code
+    if (req.user.referredById) {
+      return res.status(400).json({ message: 'You have already used a referral code' });
+    }
+
+    // Find the referrer
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode: code.toUpperCase() }
+    });
+
+    if (!referrer) {
+      return res.status(404).json({ message: 'Invalid referral code' });
+    }
+
+    const REFERRAL_REWARD = 100; // coins for both users
+
+    // Update the referred user - set referredById and give coins
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { referredById: referrer.id }
+    });
+
+    // Give coins to the person redeeming
+    const coinResult = await updateUserCoins(req.user.id, REFERRAL_REWARD, `Referral bonus: used code ${code.toUpperCase()}`);
+
+    // Give coins to the referrer
+    await updateUserCoins(referrer.id, REFERRAL_REWARD, `Referral bonus: ${req.user.username} used your code`);
+
+    // Clear profile cache
+    const cacheKey = `profile-${req.user.id}`;
+    profileCache.delete(cacheKey);
+    profileCache.delete(`profile-${referrer.id}`);
+
+    // Create notifications
+    try {
+      await createNotification(req.user.id, 'REWARD', `+${REFERRAL_REWARD} coins for using referral code!`, { amount: REFERRAL_REWARD });
+      await createNotification(referrer.id, 'REWARD', `+${REFERRAL_REWARD} coins! ${req.user.username} used your referral code!`, { amount: REFERRAL_REWARD });
+    } catch (err) {
+      console.error('Referral notification error:', err.message);
+    }
+
+    res.json({
+      message: `Referral code redeemed! +${REFERRAL_REWARD} coins added!`,
+      reward: REFERRAL_REWARD,
+      coins: coinResult.newBalance
+    });
+
+  } catch (err) {
+    console.error('[Referral] Redeem error:', err);
+    res.status(500).json({ message: 'Failed to redeem referral code' });
+  }
+});
+
 // Get user transactions (paginated) with lazy daily reset check
 router.get('/transactions', async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });

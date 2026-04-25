@@ -38,6 +38,12 @@ module.exports = {
     const reward = interaction.options.getInteger('reward');
     const uses = interaction.options.getInteger('uses') || 1;
 
+    if (!code || !code.trim()) {
+      return await interaction.editReply({
+        embeds: [errorEmbed('❌ Error', 'Code cannot be empty.')]
+      });
+    }
+
     try {
       console.log('[GenBonus] Creating code:', code.toUpperCase(), 'reward:', reward, 'uses:', uses);
       
