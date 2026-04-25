@@ -13,7 +13,6 @@ import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
 import EmojiHitGame from "@/components/games/EmojiHitGame";
 import AdPlayer from "@/components/AdPlayer";
-import AdManager from "@/components/AdManager";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { playCoinSound } from "@/lib/sounds";
@@ -129,7 +128,6 @@ function EarnPage() {
 
   // Admin ad form state
   const [showAdForm, setShowAdForm] = useState(false);
-  const [showAdManager, setShowAdManager] = useState(false);
   const [adForm, setAdForm] = useState({
     title: '',
     thumbnailUrl: '',
@@ -198,7 +196,7 @@ function EarnPage() {
     }
   };
 
-  // Handle game completion - receives actual reward from game (score * 10)
+  // Handle game completion
   const handleGameComplete = async (reward: number) => {
     updateCoins((user?.coins || 0) + reward);
     updateBalance(reward);
@@ -226,12 +224,9 @@ function EarnPage() {
     setMounted(true);
     refreshState();
     
-    // Check if user is admin
     const checkAdmin = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/auth/me`, { withCredentials: true });
-        // Admin is determined by discordId being in ADMIN_IDS env var (handled on backend)
-        // We'll check role for now, but backend validates properly
         setIsAdmin(res.data?.role === 'ADMIN' || false);
       } catch (err) {
         setIsAdmin(false);
@@ -243,12 +238,11 @@ function EarnPage() {
     return () => clearTimeout(timer);
   }, [refreshState]);
 
-  // Live earnings feed generator (simulated with realistic data)
+  // Live earnings feed generator
   useEffect(() => {
     if (!mounted) return;
 
     const avatarStyles = ['adventurer', 'avataaars', 'bottts', 'croodles', 'fun-emoji', 'icons', 'lorelei', 'micah', 'miniavs', 'open-peeps', 'personas', 'pixel-art'];
-
     const usernames = [
       "Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP",
       "PlayMaster99", "CoinHunter", "SpeedDemon", "LuckyStrike", "ProGamer",
@@ -265,25 +259,13 @@ function EarnPage() {
       "ZephyrQ", "BlazeFX", "NovaStar", "OmegaX", "PhoenixRise",
       "DeltaForce", "GammaByte", "AlphaWolf", "BetaRush", "ThetaKing"
     ];
-
     const activities = [
-      "completed Speed Clicker",
-      "won Memory Match",
-      "hit streak in Emoji Hit",
-      "claimed daily bonus",
-      "watched sponsored ad",
-      "redeemed bonus code",
-      "won auction bid",
-      "claimed referral reward",
-      "completed daily check-in",
-      "hit top score in Speed Clicker",
-      "matched all pairs in Memory Match",
-      "earned streak bonus",
-      "redeemed promo code",
-      "completed challenge",
-      "won jackpot reward"
+      "completed Speed Clicker", "won Memory Match", "hit streak in Emoji Hit",
+      "claimed daily bonus", "watched sponsored ad", "redeemed bonus code",
+      "won auction bid", "claimed referral reward", "completed daily check-in",
+      "hit top score in Speed Clicker", "matched all pairs in Memory Match",
+      "earned streak bonus", "redeemed promo code", "completed challenge", "won jackpot reward"
     ];
-
     const coinAmounts = [25, 40, 50, 60, 75, 87, 100, 111, 125, 147, 150, 166, 174, 176, 200, 202, 250, 300, 400, 500];
 
     const generateEarning = (): EarningActivity => {
@@ -302,7 +284,6 @@ function EarnPage() {
 
     setEarnings(Array.from({ length: 6 }, () => generateEarning()));
 
-    // Fast updates: every 1-2 seconds
     const scheduleNext = () => {
       const delay = 1000 + Math.random() * 1000;
       return setTimeout(() => {
@@ -316,7 +297,6 @@ function EarnPage() {
     };
 
     const intervalRef = { current: scheduleNext() };
-
     return () => clearTimeout(intervalRef.current);
   }, [mounted]);
 
@@ -347,10 +327,7 @@ function EarnPage() {
     const updateCountdown = () => {
       const now = new Date();
       const nextMidnightUTC = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() + 1,
-        0, 0, 0
+        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
       ));
       const diff = nextMidnightUTC.getTime() - now.getTime();
       if (diff <= 0) {
@@ -384,12 +361,9 @@ function EarnPage() {
       const res = await axios.post(`${API_URL}/api/users/redeem-code`, { code: redeemCode }, { withCredentials: true });
       setRedeemMessage({ text: res.data.message, type: 'success' });
       setRedeemCode("");
-      
-      // Use centralized coin update (same as games/ads/daily)
       if (res.data.coins !== undefined && updateCoins) {
         updateCoins(res.data.coins);
       }
-      
       triggerConfetti();
       showToast(`+${res.data.reward || 0} coins from code!`, 'success');
       refreshUser();
@@ -448,13 +422,11 @@ function EarnPage() {
     }
   };
 
-  // Secret admin: Reset coins to 0
   const handleResetCoins = async () => {
     if (!confirm('WARNING: This will reset ALL your coins to 0. Are you sure?')) return;
     try {
       const res = await axios.post(`${API_URL}/api/users/admin/reset-my-coins`, {}, { withCredentials: true });
       if (res.data.success) {
-        // Force refresh all contexts
         await refreshUser();
         refreshState();
         showToast('Coins reset to 0!', 'success');
@@ -515,7 +487,6 @@ function EarnPage() {
               <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
             </div>
 
-            {/* Display User's Referral Code */}
             {user?.referralCode && (
               <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
@@ -565,9 +536,9 @@ function EarnPage() {
           </div>
         </motion.div>
 
-        {/* SECTION 2: Priority Large - Games (60%) + Watch Ads (40%) */}
+        {/* SECTION 2: Games (60%) + Watch Ads (40%) */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Games Section - 60% Width */}
+          {/* Games Section */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -620,7 +591,7 @@ function EarnPage() {
             </div>
           </motion.div>
 
-          {/* Watch Ads Section - 40% Width */}
+          {/* Watch Ads Section */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -636,17 +607,17 @@ function EarnPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                  <h3 className="font-black text-white text-sm tracking-wider uppercase">Watch Ads</h3>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setShowAdManager(true)}
-                      className="w-5 h-5 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center transition-all"
-                      title="Create Ad Campaign (Admin)"
-                    >
-                      <span className="text-white font-black text-xs leading-none">+</span>
-                    </button>
-                  )}
-                </div>
+                      <h3 className="font-black text-white text-sm tracking-wider uppercase">Watch Ads</h3>
+                      {isAdmin && (
+                        <button
+                          onClick={() => setShowAdForm(true)}
+                          className="w-5 h-5 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center transition-all"
+                          title="Create Ad Campaign (Admin)"
+                        >
+                          <span className="text-white font-black text-xs leading-none">+</span>
+                        </button>
+                      )}
+                    </div>
                     <p className="text-gray-400 text-[10px]">Quick rewards</p>
                   </div>
                 </div>
@@ -655,75 +626,6 @@ function EarnPage() {
                   <span className="text-[9px] text-red-400 font-mono">{offerTimer}</span>
                 </div>
               </div>
-
-              {/* Admin Ad Form Overlay */}
-              {showAdForm && (
-                <div className="absolute inset-0 bg-[#0f0f18]/95 z-20 flex items-center justify-center p-4">
-                  <div className="w-full max-w-md bg-[#1a1a24] border border-purple-500/30 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-black text-white text-sm">Create Ad Campaign</h4>
-                      <button onClick={() => setShowAdForm(false)} className="text-gray-400 hover:text-white">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <form onSubmit={handleAdFormSubmit} className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Title *"
-                        value={adForm.title}
-                        onChange={(e) => setAdForm({ ...adForm, title: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Thumbnail URL"
-                        value={adForm.thumbnailUrl}
-                        onChange={(e) => setAdForm({ ...adForm, thumbnailUrl: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
-                      />
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          type="number"
-                          placeholder="Coins per user *"
-                          value={adForm.coinsPerUser}
-                          onChange={(e) => setAdForm({ ...adForm, coinsPerUser: e.target.value })}
-                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Total budget *"
-                          value={adForm.totalBudget}
-                          onChange={(e) => setAdForm({ ...adForm, totalBudget: e.target.value })}
-                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Duration (days) *"
-                          value={adForm.campaignDuration}
-                          onChange={(e) => setAdForm({ ...adForm, campaignDuration: e.target.value })}
-                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowAdForm(false)}
-                          className="flex-1 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-black text-xs transition-all"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={submittingAd}
-                          className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg text-white font-black text-xs transition-all flex items-center justify-center gap-1"
-                        >
-                          {submittingAd ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Create'}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
 
               {isLoading ? (
                 <div className="space-y-3 flex-1">
@@ -763,7 +665,7 @@ function EarnPage() {
           </motion.div>
         </div>
 
-        {/* SECTION 3: Redeem Code - Medium Centered */}
+        {/* SECTION 3: Redeem Code */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -803,7 +705,7 @@ function EarnPage() {
           </div>
         </motion.div>
 
-        {/* SECTION 4: Live Earnings - Full Width with Social Proof */}
+        {/* SECTION 4: Live Earnings */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -863,7 +765,7 @@ function EarnPage() {
           </div>
         </motion.div>
 
-        {/* Daily Check-In Card - Compact below */}
+        {/* SECTION 5: Daily Check-In */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -880,11 +782,11 @@ function EarnPage() {
                 <div>
                   <h3 className="font-black text-white text-base">Daily Check-In</h3>
                   <p className="text-orange-300 text-xs">
-  Day {state.streak}/7 • Next: +{getDailyReward(state.streak)} coins
-  {!state.canClaimDaily && dailyCountdown && (
-    <span className="ml-2 text-gray-400 font-mono">• Resets in {dailyCountdown}</span>
-  )}
-</p>
+                    Day {state.streak}/7 • Next: +{getDailyReward(state.streak)} coins
+                    {!state.canClaimDaily && dailyCountdown && (
+                      <span className="ml-2 text-gray-400 font-mono">• Resets in {dailyCountdown}</span>
+                    )}
+                  </p>
                 </div>
               </div>
               
@@ -920,7 +822,7 @@ function EarnPage() {
 
       </div>
 
-      {/* Game Modals - NOW USES ACTUAL REWARD FROM GAMES (score * 10) */}
+      {/* Game Modals */}
       {activeGame && activeGame.id === "1" && (
         <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(actualReward) => handleGameComplete(actualReward)} onCancel={() => setActiveGame(null)} />
       )}
@@ -934,14 +836,91 @@ function EarnPage() {
         <AdPlayer taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleAdComplete(25)} onCancel={() => setActiveGame(null)} />
       )}
 
-      {/* AdManager Modal - Only for Admins */}
-      {showAdManager && user?.role === 'ADMIN' && (
-        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl">
-            <AdManager />
-          </div>
-        </div>
-      )}
+      {/* Ad Campaign Popup - Full Screen Overlay (Admin Only) */}
+      <AnimatePresence>
+        {showAdForm && isAdmin && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowAdForm(false); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md bg-[#1a1a24] border border-purple-500/30 rounded-2xl p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="font-black text-white text-base">Create Ad Campaign</h4>
+                <button
+                  onClick={() => setShowAdForm(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleAdFormSubmit} className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Title *"
+                  value={adForm.title}
+                  onChange={(e) => setAdForm({ ...adForm, title: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="Thumbnail URL"
+                  value={adForm.thumbnailUrl}
+                  onChange={(e) => setAdForm({ ...adForm, thumbnailUrl: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="number"
+                    placeholder="Coins/user *"
+                    value={adForm.coinsPerUser}
+                    onChange={(e) => setAdForm({ ...adForm, coinsPerUser: e.target.value })}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Budget *"
+                    value={adForm.totalBudget}
+                    onChange={(e) => setAdForm({ ...adForm, totalBudget: e.target.value })}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Days *"
+                    value={adForm.campaignDuration}
+                    onChange={(e) => setAdForm({ ...adForm, campaignDuration: e.target.value })}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all"
+                  />
+                </div>
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdForm(false)}
+                    className="flex-1 py-3 bg-white/10 hover:bg-white/15 rounded-xl text-white font-black text-sm transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingAd}
+                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl text-white font-black text-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    {submittingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Campaign'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
