@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "MazeBids - Gamified Auctions",
   description: "Experience the ultimate gamified auction platform. Bid, win, and earn rewards in real-time.",
   icons: {
-    icon: "https://media.discordapp.net/attachments/1495155538886135889/1496103125944111104/MazeBids.png?ex=69e8aa1d&is=69e7589d&hm=b7a98d13f49a2d46c9167bcc58f850507494c85ac82e93cec62993473526ba3c&=&format=webp&quality=lossless&width=561&height=561",
+    icon: "/icons/icon-192.png",
   },
 };
 

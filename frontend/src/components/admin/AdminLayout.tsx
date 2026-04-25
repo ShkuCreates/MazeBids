@@ -58,9 +58,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <div className="p-6 border-b border-white/5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
-                    </div>
+                    <img src="/icons/icon-192.png" alt="MazeBids Logo" className="w-10 h-10" />
                     <div>
                       <h1 className="font-black text-white text-lg">MAZEBIDS</h1>
                       <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Admin Panel</p>

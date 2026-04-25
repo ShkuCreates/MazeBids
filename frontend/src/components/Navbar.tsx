@@ -61,7 +61,7 @@ const Navbar = memo(() => {
             <div className="relative">
               <div className="absolute inset-0 bg-purple-600/10 blur-2xl rounded-full group-hover:bg-purple-600/30 transition-all" />
               <img 
-                src="https://media.discordapp.net/attachments/1495155538886135889/1496103125944111104/MazeBids.png?ex=69e8aa1d&is=69e7589d&hm=b7a98d13f49a2d46c9167bcc58f850507494c85ac82e93cec62993473526ba3c&=&format=webp&quality=lossless&width=561&height=561" 
+                src="/icons/icon-192.png" 
                 alt="MazeBids Logo" 
                 className="w-12 h-12 relative z-10 opacity-80 group-hover:opacity-100 transition-all drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] object-contain" 
               />
