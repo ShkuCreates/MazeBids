@@ -405,13 +405,17 @@ function EarnPage() {
     }
     setSubmittingAd(true);
     try {
-      await axios.post(`${API_URL}/api/ads`, {
-        title: adForm.title,
-        thumbnailUrl: adForm.thumbnailUrl,
-        videoUrl: adForm.videoUrl,
-        coinsPerUser: parseInt(adForm.coinsPerUser),
-        campaignDuration: parseInt(adForm.campaignDuration)
-      }, { withCredentials: true });
+await axios.post(`${API_URL}/api/ads`, {
+  title: adForm.title,
+  type: adForm.videoUrl ? 'VIDEO' : 'IMAGE',
+  contentUrl: adForm.videoUrl || adForm.thumbnailUrl,
+  targetUrl: adForm.thumbnailUrl || 'https://mazebids.com',
+  placement: 'WATCH_ADS',
+  position: 'TOP',
+  size: 'MEDIUM',
+  reward: parseInt(adForm.coinsPerUser),
+  duration: parseInt(adForm.campaignDuration),
+}, { withCredentials: true });
       showToast('Ad campaign created successfully!', 'success');
       setShowAdForm(false);
       setAdForm({ title: '', thumbnailUrl: '', videoUrl: '', coinsPerUser: '', campaignDuration: '' });
