@@ -180,22 +180,24 @@ function EarnPage() {
 
   // Handle game completion - receives actual reward from game (score * 10)
   const handleGameComplete = async (reward: number) => {
+    updateCoins((user?.coins || 0) + reward);
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
     showToast(`+${reward} coins earned!`, 'success');
     setActiveGame(null);
-    await refreshUser();
+    refreshUser();
   };
 
   // Handle ad completion
   const handleAdComplete = async (reward: number) => {
+    updateCoins((user?.coins || 0) + reward);
     updateBalance(reward);
     addToTodayProgress(reward);
     triggerConfetti();
     showToast(`+${reward} coins earned!`, 'success');
     setActiveGame(null);
-    await refreshUser();
+    refreshUser();
   };
 
   useEffect(() => {

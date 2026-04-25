@@ -26,6 +26,7 @@ interface Emoji {
 const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
+  const claimDoneRef = useRef<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const [emojis, setEmojis] = useState<Emoji[]>([]);
@@ -47,8 +48,9 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
     const calculatedReward = scoreRef.current * 10; // Hits * 10 coins
+    claimDoneRef.current = null;
     const traceId = Date.now();
-    const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`; // Unique claim ID for idempotency
+    const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`;
 
     console.log("CLAIM START", { traceId, claimId, reward: calculatedReward, game: "EmojiHitGame" });
 
@@ -62,7 +64,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
       console.log("CLAIM RESPONSE", { traceId, claimId, data: res.data });
 
       if (res.data.success === true && !res.data.alreadyClaimed) {
-        await refreshUser();
+        claimDoneRef.current = calculatedReward;
       }
     } catch (error) {
       console.error('Failed to save score', error);
@@ -210,7 +212,7 @@ const EmojiHitGame: React.FC<EmojiHitGameProps> = ({ taskId, reward, onComplete,
               <p className="text-yellow-300 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={() => onComplete(score * 10)}
+              onClick={() => onComplete(claimDoneRef.current ?? score * 10)}
               className="w-full py-4 bg-white text-purple-600 hover:bg-gray-100 rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD

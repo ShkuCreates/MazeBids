@@ -16,6 +16,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCancel }) => {
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
+  const claimDoneRef = useRef<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'FINISHED'>('IDLE');
   const { user, refreshUser, updateCoins } = useAuth();
@@ -23,8 +24,9 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
   const finishGame = useCallback(async () => {
     setGameState('FINISHED');
     const calculatedReward = scoreRef.current * 10; // Clicks * 10 coins
+    claimDoneRef.current = null;
     const traceId = Date.now();
-    const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`; // Unique claim ID for idempotency
+    const claimId = `${traceId}-${Math.random().toString(36).substr(2, 9)}`;
 
     console.log("CLAIM START", { traceId, claimId, reward: calculatedReward, game: "ClickGame" });
 
@@ -38,7 +40,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
       console.log("CLAIM RESPONSE", { traceId, claimId, data: res.data });
 
       if (res.data.success === true && !res.data.alreadyClaimed) {
-        await refreshUser();
+        claimDoneRef.current = calculatedReward;
       }
     } catch (error) {
       console.error('Failed to save score', error);
@@ -130,7 +132,7 @@ const ClickGame: React.FC<ClickGameProps> = ({ taskId, reward, onComplete, onCan
               <p className="text-green-400 font-bold">+{score * 10} Coins earned!</p>
             </div>
             <button 
-              onClick={() => onComplete(score * 10)}
+              onClick={() => onComplete(claimDoneRef.current ?? score * 10)}
               className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black text-lg transition-all"
             >
               COLLECT REWARD
