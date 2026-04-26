@@ -57,9 +57,12 @@ export default function AuctionsPage() {
     description: '',
     product: '',
     image: '',
+    startTime: '',
     endTime: '',
     startingBid: '',
-    minBidIncrement: '100'
+    minBidIncrement: '100',
+    tag: '',
+    notifyUsers: true
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -115,9 +118,19 @@ export default function AuctionsPage() {
 
   const handleCreateAuction = async () => {
     if (!createForm.title || !createForm.description || !createForm.product || !createForm.image || !createForm.endTime) {
-      setCreateError('Please fill in all required fields.');
+      setCreateError('Please fill in all required fields (Title, Description, Product, Image, End Time).');
       return;
     }
+
+    // Convert datetime-local string to ISO string properly
+    const endTimeISO = new Date(createForm.endTime).toISOString();
+    const startTimeISO = createForm.startTime ? new Date(createForm.startTime).toISOString() : new Date().toISOString();
+
+    if (new Date(endTimeISO) <= new Date()) {
+      setCreateError('End time must be in the future.');
+      return;
+    }
+
     setCreating(true);
     setCreateError(null);
     try {
@@ -126,12 +139,15 @@ export default function AuctionsPage() {
         description: createForm.description,
         product: createForm.product,
         image: createForm.image,
-        endTime: createForm.endTime,
+        startTime: startTimeISO,
+        endTime: endTimeISO,
         startingBid: parseInt(createForm.startingBid) || 0,
         minBidIncrement: parseInt(createForm.minBidIncrement) || 100,
+        tag: createForm.tag || null,
+        notifyUsers: createForm.notifyUsers,
       }, { withCredentials: true });
       setShowCreateForm(false);
-      setCreateForm({ title: '', description: '', product: '', image: '', endTime: '', startingBid: '', minBidIncrement: '100' });
+      setCreateForm({ title: '', description: '', product: '', image: '', startTime: '', endTime: '', startingBid: '', minBidIncrement: '100', tag: '', notifyUsers: true });
       fetchAuctions();
     } catch (err: any) {
       setCreateError(err.response?.data?.message || 'Failed to create auction.');
@@ -346,8 +362,12 @@ export default function AuctionsPage() {
                     <input type="url" value={createForm.image} onChange={e => setCreateForm({...createForm, image: e.target.value})} placeholder="https://..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
                   </div>
                   <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Start Time <span className="text-gray-600 normal-case font-normal">(leave blank = now)</span></label>
+                    <input type="datetime-local" value={createForm.startTime} onChange={e => setCreateForm({...createForm, startTime: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm [color-scheme:dark]" />
+                  </div>
+                  <div>
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">End Time *</label>
-                    <input type="datetime-local" value={createForm.endTime} onChange={e => setCreateForm({...createForm, endTime: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                    <input type="datetime-local" value={createForm.endTime} onChange={e => setCreateForm({...createForm, endTime: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm [color-scheme:dark]" />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Starting Bid</label>
@@ -356,6 +376,30 @@ export default function AuctionsPage() {
                   <div>
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Min Bid Increment</label>
                     <input type="number" value={createForm.minBidIncrement} onChange={e => setCreateForm({...createForm, minBidIncrement: e.target.value})} placeholder="100" min="1" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Tag <span className="text-gray-600 normal-case font-normal">(optional)</span></label>
+                    <select value={createForm.tag} onChange={e => setCreateForm({...createForm, tag: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm [color-scheme:dark]">
+                      <option value="">None</option>
+                      <option value="HOT">🔥 HOT</option>
+                      <option value="NEW">✨ NEW</option>
+                      <option value="TRENDING">📈 TRENDING</option>
+                      <option value="LATEST">🆕 LATEST</option>
+                      <option value="LIMITED">⚡ LIMITED</option>
+                      <option value="EXCLUSIVE">💎 EXCLUSIVE</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 pt-6">
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({...createForm, notifyUsers: !createForm.notifyUsers})}
+                      className={`relative w-12 h-6 rounded-full transition-all ${createForm.notifyUsers ? 'bg-purple-600' : 'bg-white/10'}`}
+                    >
+                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${createForm.notifyUsers ? 'left-7' : 'left-1'}`} />
+                    </button>
+                    <label className="text-sm text-white font-bold cursor-pointer" onClick={() => setCreateForm({...createForm, notifyUsers: !createForm.notifyUsers})}>
+                      Notify subscribed users via Discord DM
+                    </label>
                   </div>
                 </div>
                 {createError && (
