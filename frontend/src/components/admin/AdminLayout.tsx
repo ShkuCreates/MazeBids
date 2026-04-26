@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, Users, Coins, Gavel, BarChart3, Shield, 
   Image as ImageIcon, Bell, Settings, Menu, X, ChevronRight,
-  LogOut, Search, Activity, Zap
+  LogOut, Search, Activity, Zap, Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,6 +24,7 @@ const sidebarItems = [
   { icon: Shield, label: "Moderation", path: "/admin/moderation" },
   { icon: ImageIcon, label: "Ads", path: "/admin/ads" },
   { icon: Bell, label: "Notifications", path: "/admin/notifications" },
+  { icon: Sparkles, label: "Content Studio", path: "/admin/content" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];
 
