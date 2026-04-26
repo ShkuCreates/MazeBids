@@ -444,6 +444,8 @@ function EarnPage() {
     { id: "1", title: "Speed Clicker", reward: 50, type: "GAME", icon: Target, desc: "Click as fast as you can in 10 seconds!", color: "from-purple-500 to-indigo-600", thumbnail: "🎯" },
     { id: "2", title: "Memory Match", reward: 75, type: "GAME", icon: Brain, desc: "Find all matching pairs quickly.", color: "from-blue-500 to-cyan-600", thumbnail: "🧠" },
     { id: "3", title: "Emoji Hit", reward: 100, type: "GAME", icon: Flame, desc: "Hit as many emojis as you can!", color: "from-rose-500 to-pink-600", thumbnail: "🔥" },
+    { id: "4", title: "Number Rush", reward: 60, type: "GAME", icon: TrendingUp, desc: "Tap numbers 1–9 in order as fast as you can!", color: "from-yellow-500 to-orange-500", thumbnail: "🔢" },
+    { id: "5", title: "Color Match", reward: 80, type: "GAME", icon: Eye, desc: "Match the color shown before time runs out!", color: "from-teal-500 to-green-500", thumbnail: "🎨" },
   ];
 
   return (
@@ -453,73 +455,134 @@ function EarnPage() {
 
       <div className="max-w-5xl mx-auto py-6 px-4 space-y-5">
 
-        {/* SECTION 1: Referral System */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="bg-[#0f0f18] border border-purple-500/20 rounded-xl p-4 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-white" />
+        {/* ROW 1: Referral + Live Earnings */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {/* Referral System — small left box */}
+          <div className="lg:col-span-2">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-[#0f0f18] border border-purple-500/20 rounded-xl p-4 relative overflow-hidden h-full"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-white text-xs tracking-wider uppercase">Referral System</h3>
+                      <p className="text-purple-300 text-[10px]">{state.referralsInvited}/{state.referralsGoal} invites</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
                 </div>
-                <div>
-                  <h3 className="font-black text-white text-xs tracking-wider uppercase">Referral System</h3>
-                  <p className="text-purple-300 text-[10px]">{state.referralsInvited}/{state.referralsGoal} invites</p>
-                </div>
-              </div>
-              <span className="text-[10px] text-purple-400 font-black">+500 bonus</span>
-            </div>
-            {user?.referralCode && (
-              <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
-                <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
-                <div className="flex items-center justify-between">
-                  <code className="text-sm font-mono font-bold text-purple-300 tracking-wider">{user.referralCode}</code>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(user.referralCode!); showToast("Referral code copied!", "success"); }}
-                    className="text-[10px] text-purple-400 hover:text-purple-300 underline cursor-pointer"
-                  >
-                    Copy
-                  </button>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <input
-                    type="text"
-                    placeholder="Enter friend's referral code..."
-                    value={referralRedeemCode}
-                    onChange={(e) => setReferralRedeemCode(e.target.value.toUpperCase())}
-                    className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-lg px-3 py-2 text-xs font-mono tracking-widest outline-none transition-all placeholder:text-gray-600"
-                  />
-                  <button
-                    onClick={handleReferralRedeem}
-                    disabled={redeemingReferral || !referralRedeemCode}
-                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-black text-xs transition-all flex items-center gap-1"
-                  >
-                    {redeemingReferral ? <Loader2 className="w-3 h-3 animate-spin" /> : "USE"}
-                  </button>
-                </div>
-                {referralRedeemMessage && (
-                  <p className={`text-[10px] font-bold mt-1 ${referralRedeemMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
-                    {referralRedeemMessage.text}
-                  </p>
+                {user?.referralCode && (
+                  <div className="mb-3 p-2 bg-white/5 rounded-lg border border-purple-500/20">
+                    <p className="text-[10px] text-gray-400 mb-1">Your Referral Code:</p>
+                    <div className="flex items-center justify-between">
+                      <code className="text-sm font-mono font-bold text-purple-300 tracking-wider">{user.referralCode}</code>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(user.referralCode!); showToast("Referral code copied!", "success"); }}
+                        className="text-[10px] text-purple-400 hover:text-purple-300 underline cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        placeholder="Enter friend's referral code..."
+                        value={referralRedeemCode}
+                        onChange={(e) => setReferralRedeemCode(e.target.value.toUpperCase())}
+                        className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-lg px-3 py-2 text-xs font-mono tracking-widest outline-none transition-all placeholder:text-gray-600"
+                      />
+                      <button
+                        onClick={handleReferralRedeem}
+                        disabled={redeemingReferral || !referralRedeemCode}
+                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-black text-xs transition-all flex items-center gap-1"
+                      >
+                        {redeemingReferral ? <Loader2 className="w-3 h-3 animate-spin" /> : "USE"}
+                      </button>
+                    </div>
+                    {referralRedeemMessage && (
+                      <p className={`text-[10px] font-bold mt-1 ${referralRedeemMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                        {referralRedeemMessage.text}
+                      </p>
+                    )}
+                  </div>
                 )}
+                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(state.referralsInvited / state.referralsGoal) * 100}%` }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                  />
+                </div>
               </div>
-            )}
-            <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(state.referralsInvited / state.referralsGoal) * 100}%` }}
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-              />
-            </div>
+            </motion.div>
           </div>
-        </motion.div>
+          {/* Live Earnings — wide right bar */}
+          <div className="lg:col-span-3">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-[#0f0f18] border border-white/10 rounded-xl p-5 relative overflow-hidden h-full"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 pointer-events-none" />
+              <div className="relative z-10 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/20">
+                      <Activity className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-white text-sm tracking-wider uppercase">Live Earnings</h3>
+                      <p className="text-gray-400 text-[10px]">Over {hourlyTotal.toLocaleString()} coins earned by users in the last hour</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20">
+                    <Clock className="w-3 h-3 text-red-400" />
+                    <span className="text-[9px] text-red-400 font-mono">{offerTimer}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
+                  <AnimatePresence mode="popLayout">
+                    {earnings.slice(0, 6).map((earning) => (
+                      <motion.div
+                        key={earning.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/[0.08] border border-white/5 hover:border-purple-500/20 rounded-xl transition-all"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20 overflow-hidden">
+                          <img src={earning.avatarUrl} alt={earning.username} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-300 truncate">
+                            <span className="font-bold text-white">{earning.username}</span>
+                          </p>
+                          <p className="text-[10px] text-gray-500 truncate">{earning.action}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-yellow-400 shrink-0">
+                          <Coins className="w-3.5 h-3.5" />
+                          <span className="text-xs font-black">+{earning.coins}</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
 
-        {/* SECTION 2: Games + Watch Ads */}
+        {/* ROW 2: Games + Watch Ads */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Games Section */}
           <motion.div
@@ -662,6 +725,25 @@ function EarnPage() {
                       >
                         <Play className="w-3 h-3" /> WATCH
                       </button>
+                      {/* Delete Button — Admin Only */}
+                      {isAdmin && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete "${ad.title}"?`)) return;
+                            try {
+                              await axios.delete(`${API_URL}/api/ads/${ad.id}`, { withCredentials: true });
+                              setWatchAds((prev) => prev.filter((a) => a.id !== ad.id));
+                              showToast("Ad campaign deleted!", "success");
+                            } catch (err: any) {
+                              showToast(err.response?.data?.message || "Failed to delete ad", "error");
+                            }
+                          }}
+                          className="p-2 bg-red-600/20 hover:bg-red-600 border border-red-500/30 hover:border-red-500 text-red-400 hover:text-white rounded-xl transition-all shrink-0"
+                          title="Delete Campaign (Admin)"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -687,155 +769,102 @@ function EarnPage() {
           </motion.div>
         </div>
 
-        {/* SECTION 3: Redeem Code */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="max-w-lg mx-auto bg-[#0f0f18] border border-purple-500/20 rounded-xl p-5 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                <Ticket className="w-5 h-5 text-purple-400" />
-              </div>
-              <h3 className="font-black text-white text-sm tracking-wider uppercase">Redeem Code</h3>
-            </div>
-            <form onSubmit={handleRedeem} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="ENTER CODE..."
-                value={redeemCode}
-                onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl px-4 py-3 text-center font-black tracking-widest outline-none transition-all placeholder:text-gray-600 text-sm"
-              />
-              <button
-                disabled={redeeming || !redeemCode}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-sm transition-all flex items-center gap-2"
-              >
-                {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM"}
-              </button>
-            </form>
-            {redeemMessage && (
-              <p className={`text-center text-xs font-bold mt-3 ${redeemMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
-                {redeemMessage.text}
-              </p>
-            )}
-          </div>
-        </motion.div>
-
-        {/* SECTION 4: Live Earnings */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-[#0f0f18] border border-white/10 rounded-xl overflow-hidden"
-        >
-          <div className="p-4 border-b border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                <Activity className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-black text-white text-sm tracking-wider">Live Earnings</h3>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                    <span className="text-[10px] font-black text-red-400 uppercase">LIVE</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-green-400 font-bold">Over {hourlyTotal.toLocaleString()} coins earned by users in the last hour</p>
-              </div>
-            </div>
-          </div>
-          <div className="p-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <AnimatePresence mode="popLayout">
-                {earnings.slice(0, 6).map((earning) => (
-                  <motion.div
-                    key={earning.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/[0.08] border border-white/5 hover:border-purple-500/20 rounded-xl transition-all"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20 overflow-hidden">
-                      <img src={earning.avatarUrl} alt={earning.username} className="w-full h-full object-cover" />
+        {/* ROW 3: Daily Check-In + Redeem Code */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Daily Check-In — left */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-[#0f0f18] border border-orange-500/20 rounded-xl p-4 relative overflow-hidden h-full"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-300 truncate">
-                        <span className="font-bold text-white">{earning.username}</span>
+                    <div>
+                      <h3 className="font-black text-white text-base">Daily Check-In</h3>
+                      <p className="text-orange-300 text-xs">
+                        Day {state.streak}/7 • Next: +{getDailyReward(state.streak)} coins
+                        {!state.canClaimDaily && dailyCountdown && (
+                          <span className="ml-2 text-gray-400 font-mono">• Resets in {dailyCountdown}</span>
+                        )}
                       </p>
-                      <p className="text-[10px] text-gray-500 truncate">{earning.action}</p>
                     </div>
-                    <div className="flex items-center gap-1 text-yellow-400 shrink-0">
-                      <Coins className="w-3.5 h-3.5" />
-                      <span className="text-xs font-black">+{earning.coins}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* SECTION 5: Daily Check-In */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-[#0f0f18] border border-orange-500/20 rounded-xl p-4 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <button
+                    onClick={handleClaimDaily}
+                    disabled={!state.canClaimDaily || state.isLoading}
+                    className={`px-6 py-3 rounded-xl font-black text-sm tracking-wider transition-all ${
+                      state.canClaimDaily
+                        ? "bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20"
+                        : "bg-white/5 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    {state.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : state.canClaimDaily ? `CLAIM +${getDailyReward(state.streak)}` : dailyCountdown ? dailyCountdown : "CLAIMED"}
+                  </button>
                 </div>
-                <div>
-                  <h3 className="font-black text-white text-base">Daily Check-In</h3>
-                  <p className="text-orange-300 text-xs">
-                    Day {state.streak}/7 • Next: +{getDailyReward(state.streak)} coins
-                    {!state.canClaimDaily && dailyCountdown && (
-                      <span className="ml-2 text-gray-400 font-mono">• Resets in {dailyCountdown}</span>
-                    )}
-                  </p>
+                <div className="flex gap-1 mt-4">
+                  {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                    const isCompleted = day < state.streak || (day === state.streak && !state.canClaimDaily);
+                    const isCurrentClaimable = day === state.streak && state.canClaimDaily;
+                    return (
+                      <div
+                        key={day}
+                        className={`flex-1 h-2 rounded-full transition-all ${
+                          isCompleted ? "bg-green-500" : isCurrentClaimable ? "bg-orange-500 animate-pulse" : "bg-white/10"
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
               </div>
-              <button
-                onClick={handleClaimDaily}
-                disabled={!state.canClaimDaily || state.isLoading}
-                className={`px-6 py-3 rounded-xl font-black text-sm tracking-wider transition-all ${
-                  state.canClaimDaily
-                    ? "bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20"
-                    : "bg-white/5 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                {state.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : state.canClaimDaily ? `CLAIM +${getDailyReward(state.streak)}` : dailyCountdown ? dailyCountdown : "CLAIMED"}
-              </button>
-            </div>
-            <div className="flex gap-1 mt-4">
-              {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                const isCompleted = day < state.streak || (day === state.streak && !state.canClaimDaily);
-                const isCurrentClaimable = day === state.streak && state.canClaimDaily;
-                return (
-                  <div
-                    key={day}
-                    className={`flex-1 h-2 rounded-full transition-all ${
-                      isCompleted ? "bg-green-500" : isCurrentClaimable ? "bg-orange-500 animate-pulse" : "bg-white/10"
-                    }`}
-                  />
-                );
-              })}
-            </div>
+            </motion.div>
           </div>
-        </motion.div>
+          {/* Redeem Code — right */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-[#0f0f18] border border-purple-500/20 rounded-xl p-5 relative overflow-hidden h-full"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                    <Ticket className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <h3 className="font-black text-white text-sm tracking-wider uppercase">Redeem Code</h3>
+                </div>
+                <form onSubmit={handleRedeem} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="ENTER CODE..."
+                    value={redeemCode}
+                    onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                    className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl px-4 py-3 text-center font-black tracking-widest outline-none transition-all placeholder:text-gray-600 text-sm"
+                  />
+                  <button
+                    disabled={redeeming || !redeemCode}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-sm transition-all flex items-center gap-2"
+                  >
+                    {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "REDEEM"}
+                  </button>
+                </form>
+                {redeemMessage && (
+                  <p className={`text-center text-xs font-bold mt-3 ${redeemMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                    {redeemMessage.text}
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
 
       </div>
 
@@ -848,6 +877,12 @@ function EarnPage() {
       )}
       {activeGame && activeGame.id === "3" && (
         <EmojiHitGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
+      )}
+      {activeGame && activeGame.id === "4" && activeGame.type === "GAME" && (
+        <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
+      )}
+      {activeGame && activeGame.id === "5" && activeGame.type === "GAME" && (
+        <MemoryMatchGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.type === "AD" && (
         <AdPlayer taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleAdComplete(25)} onCancel={() => setActiveGame(null)} />
