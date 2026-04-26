@@ -38,19 +38,6 @@ interface Auction {
   bids: Bid[];
 }
 
-interface Activity {
-  id: string;
-  username: string;
-  action: string;
-  item?: string;
-  timestamp: Date;
-}
-
-interface Popup {
-  id: string;
-  icon: React.ReactNode;
-  message: string;
-}
 
 export default function AuctionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -63,25 +50,30 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [showFundsError, setShowFundsError] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Live Popups State
-  const [popups, setPopups] = useState<Popup[]>([]);
-
-  // Live Activity Feed State
-  const [activities, setActivities] = useState<Activity[]>([]);
+  // Admin state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creatingAuction, setCreatingAuction] = useState(false);
+  const [auctionForm, setAuctionForm] = useState({
+    title: "",
+    image: "",
+    adVideoUrl: "",
+    startTime: "",
+    endTime: "",
+    startingBid: "",
+    bidIncrementPercent: "",
+    notifyUsers: true,
+    tag: "NEW" as "HOT" | "NEW" | "PREMIUM" | "EXCLUSIVE",
+    description: "",
+    product: "",
+  });
 
   // Upcoming Auctions Timers
   const [upcomingTimers, setUpcomingTimers] = useState<Record<string, string>>({});
 
-  // Featured Auction State
-  const [featuredTimer, setFeaturedTimer] = useState("00:00:00");
-  const [featuredBidCount, setFeaturedBidCount] = useState(127);
 
-  // Mock upcoming auctions with censored images - use static timestamps
-  const upcomingAuctions = [
-    { id: "up-1", title: "Mystery Reward 🔒", startTime: "2024-12-25T10:00:00.000Z", isPremium: true },
-    { id: "up-2", title: "Premium Drop (Hidden)", startTime: "2024-12-25T13:00:00.000Z", isPremium: true },
-    { id: "up-3", title: "Mystery Reward 🔒", startTime: "2024-12-25T16:00:00.000Z", isPremium: false },
-  ];
+  // Upcoming Auctions from backend
+  const [upcomingAuctions, setUpcomingAuctions] = useState<any[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -100,6 +92,16 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       }
     };
     fetchAuction();
+
+    // Fetch upcoming auctions
+    axios.get(`${API_URL}/api/auctions/upcoming`)
+      .then(res => setUpcomingAuctions(res.data))
+      .catch(() => setUpcomingAuctions([]));
+
+    // Check admin role
+    axios.get(`${API_URL}/api/auth/me`, { withCredentials: true })
+      .then(res => setIsAdmin(res.data?.role === "ADMIN"))
+      .catch(() => setIsAdmin(false));
 
     socket.emit("joinAuction", id);
 
@@ -145,34 +147,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     return () => clearInterval(timer);
   }, [auction]);
 
-  // Featured auction timer
-  useEffect(() => {
-    if (!mounted) return;
-    const endTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const diff = endTime.getTime() - now;
-      if (diff <= 0) {
-        setFeaturedTimer("00:00:00");
-        clearInterval(timer);
-      } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setFeaturedTimer(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [mounted]);
 
-  // Featured auction bid count
-  useEffect(() => {
-    if (!mounted) return;
-    const interval = setInterval(() => {
-      setFeaturedBidCount((prev) => prev + Math.floor(Math.random() * 3));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [mounted]);
 
   // Upcoming auctions timers
   useEffect(() => {
@@ -197,56 +172,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     return () => clearInterval(interval);
   }, [upcomingAuctions, mounted]);
 
-  // Live Popups generator
-  useEffect(() => {
-    if (!mounted) return;
-    const messages = [
-      { icon: <Eye className="w-4 h-4 text-blue-400" />, template: () => `👀 ${Math.floor(Math.random() * 450) + 50} users are watching right now` },
-      { icon: <Coins className="w-4 h-4 text-yellow-400" />, template: () => `💰 ${(Math.floor(Math.random() * 4500) + 500).toLocaleString()} coins just farmed` },
-      { icon: <Flame className="w-4 h-4 text-orange-400" />, template: () => `🔥 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} joined an auction` },
-      { icon: <Trophy className="w-4 h-4 text-purple-400" />, template: () => `🏆 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} won ${["iPhone 13", "AirPods Pro", "MacBook Air", "PS5"][Math.floor(Math.random() * 4)]}` },
-    ];
 
-    const addPopup = () => {
-      const msg = messages[Math.floor(Math.random() * messages.length)];
-      const newPopup = { id: `popup-${Date.now()}-${Math.random()}`, icon: msg.icon, message: msg.template() };
-      setPopups((prev) => [newPopup, ...prev.slice(0, 1)]);
-    };
-
-    addPopup();
-    const interval = setInterval(addPopup, 3500 + Math.random() * 2000);
-    return () => clearInterval(interval);
-  }, [mounted]);
-
-  // Live Activity Feed generator
-  useEffect(() => {
-    if (!mounted) return;
-    const usernames = ["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"];
-    const actions = ["placed a bid on", "joined auction for", "won", "is watching"];
-    const items = ["iPhone 15", "MacBook Air", "PS5", "AirPods Pro", "Samsung Galaxy", "iPad Pro"];
-
-    const generateActivity = (): Activity => {
-      const action = actions[Math.floor(Math.random() * actions.length)];
-      return {
-        id: `activity-${Date.now()}-${Math.random()}`,
-        username: usernames[Math.floor(Math.random() * usernames.length)],
-        action,
-        item: action !== "joined auction for" && action !== "is watching" ? items[Math.floor(Math.random() * items.length)] : undefined,
-        timestamp: new Date(),
-      };
-    };
-
-    setActivities(Array.from({ length: 5 }, () => generateActivity()));
-
-    const interval = setInterval(() => {
-      setActivities((prev) => {
-        const newActivity = generateActivity();
-        return [newActivity, ...prev.slice(0, 6)];
-      });
-    }, 4000 + Math.random() * 2000);
-
-    return () => clearInterval(interval);
-  }, [mounted]);
 
   const handleBid = () => {
     if (!user) return alert("Please login to bid");
@@ -255,14 +181,6 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     const amount = auction.currentBid + auction.minBidIncrement;
     socket.emit("placeBid", { auctionId: auction.id, userId: user.id, amount });
     setTimeout(() => setIsBidding(false), 500);
-  };
-
-  const getTimeAgo = (timestamp: Date): string => {
-    if (!mounted) return "Loading...";
-    const seconds = Math.floor((Date.now() - timestamp.getTime()) / 1000);
-    if (seconds < 60) return "just now";
-    if (seconds < 120) return "1 min ago";
-    return `${Math.floor(seconds / 60)} min ago`;
   };
 
   return (
@@ -275,122 +193,31 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
         <div className="py-20 text-center text-white">Auction not found.</div>
       ) : (
         <>
-      {/* Live Popups */}
-      <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
-        <AnimatePresence mode="popLayout">
-          {popups.map((popup) => (
-            <motion.div
-              key={popup.id}
-              initial={{ opacity: 0, x: -50, scale: 0.8 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -20, scale: 0.9 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="bg-[#0f0f18]/95 backdrop-blur-md border border-purple-500/30 rounded-2xl px-4 py-3 shadow-2xl shadow-purple-500/20 flex items-center gap-3 pointer-events-auto"
-            >
-              {popup.icon}
-              <span className="text-white text-xs font-bold">{popup.message}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
 
       <div className="max-w-7xl mx-auto py-8 px-4 space-y-8 relative">
         <AdBanner placement="AUCTIONS" />
 
-        {/* Featured Mega Auction */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl shadow-purple-500/30"
-        >
-          <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-30 animate-pulse blur-sm" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                  <Flame className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-black text-white text-xl tracking-wider">🔥 MEGA AUCTION</h2>
-                  <p className="text-purple-300 text-xs font-medium">Premium Drop • Limited Time</p>
-                </div>
-              </div>
-              <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40">
-                <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">Live Now</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl mb-3">💻</div>
-                  <h3 className="font-black text-white text-2xl">MacBook Air M2</h3>
-                  <p className="text-purple-300 text-sm mt-1">Space Gray • 256GB SSD</p>
-                </div>
-                <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40">
-                  <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">💎 Premium</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                      <Coins className="w-5 h-5 text-yellow-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">Entry Coins</p>
-                      <p className="font-black text-white text-xl">500</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">Live Bids</p>
-                      <p className="font-black text-white text-xl">{featuredBidCount}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">Time Left</p>
-                      <p className="font-black text-white text-xl font-mono">{featuredTimer}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="#auction-details"
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg tracking-wider transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] flex items-center justify-center gap-2"
-                >
-                  <Gavel className="w-5 h-5" />
-                  JOIN AUCTION
-                </Link>
-              </div>
-            </div>
-          </div>
-        </motion.div>
 
         {/* Back Button */}
-        <Link
-          href="/auctions"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors group"
-        >
-          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
-            <ArrowLeft className="w-4 h-4" />
-          </div>
-          <span className="text-xs font-black tracking-widest uppercase">Back to Marketplace</span>
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/auctions"
+            className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-black tracking-widest uppercase">Back to Marketplace</span>
+          </Link>
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-sm transition-all"
+            >
+              <span className="text-lg leading-none">+</span> New Auction
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Content: Auction Info & Bidding */}
@@ -501,64 +328,6 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </motion.div>
 
-            {/* Live Activity Feed */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-purple-500/5 relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-
-              <div className="p-6 border-b border-white/5 flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                    <Bell className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-white text-sm tracking-wider">LIVE ACTIVITY</h3>
-                    <p className="text-[10px] text-gray-500 font-medium">Real-time platform updates</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                  <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">LIVE</span>
-                </div>
-              </div>
-
-              <div className="h-[400px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
-                <AnimatePresence mode="popLayout">
-                  {activities.map((activity, index) => (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3 }}
-                      className="p-4 border-b border-white/5 hover:bg-white/[0.02] transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20">
-                          <span className="text-sm font-black text-purple-300">{activity.username.charAt(0)}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-300">
-                            <span className="font-bold text-white">{activity.username}</span>
-                            <span className="text-gray-500"> {activity.action} </span>
-                            {activity.item && <span className="text-purple-400 font-bold">{activity.item}</span>}
-                          </p>
-                          <p className="text-[10px] text-gray-500">{getTimeAgo(activity.timestamp)}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </motion.div>
           </div>
 
           {/* Right Sidebar */}
@@ -768,6 +537,150 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                   </button>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Create Auction Modal */}
+        <AnimatePresence>
+          {showCreateForm && isAdmin && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={(e) => { if (e.target === e.currentTarget) setShowCreateForm(false); }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="w-full max-w-lg bg-[#1a1a24] border border-purple-500/30 rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-white text-base">Create Auction</h4>
+                  <button onClick={() => setShowCreateForm(false)} className="text-gray-400 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <input type="text" placeholder="Auction Title *" value={auctionForm.title}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, title: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+
+                  <input type="text" placeholder="Thumbnail URL *" value={auctionForm.image}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, image: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+
+                  <input type="text" placeholder="Auction Ad Video URL (shown during auction)" value={auctionForm.adVideoUrl}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, adVideoUrl: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+
+                  <input type="text" placeholder="Description *" value={auctionForm.description}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, description: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+
+                  <input type="text" placeholder="Product Name *" value={auctionForm.product}
+                    onChange={(e) => setAuctionForm({ ...auctionForm, product: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider mb-1 block">Start Date & Time *</label>
+                      <input type="datetime-local" value={auctionForm.startTime}
+                        onChange={(e) => setAuctionForm({ ...auctionForm, startTime: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white outline-none focus:border-purple-500/50 transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider mb-1 block">End Date & Time *</label>
+                      <input type="datetime-local" value={auctionForm.endTime}
+                        onChange={(e) => setAuctionForm({ ...auctionForm, endTime: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white outline-none focus:border-purple-500/50 transition-all" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="number" placeholder="Starting Bid (coins) *" value={auctionForm.startingBid}
+                      onChange={(e) => setAuctionForm({ ...auctionForm, startingBid: e.target.value })}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+                    <input type="number" placeholder="Bid Increase % per bid *" value={auctionForm.bidIncrementPercent}
+                      onChange={(e) => setAuctionForm({ ...auctionForm, bidIncrementPercent: e.target.value })}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-purple-500/50 transition-all" />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-gray-400 uppercase tracking-wider mb-1 block">Tag</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {(["HOT", "NEW", "PREMIUM", "EXCLUSIVE"] as const).map((tag) => (
+                        <button key={tag} type="button"
+                          onClick={() => setAuctionForm({ ...auctionForm, tag })}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all border ${
+                            auctionForm.tag === tag
+                              ? "bg-purple-600 border-purple-500 text-white"
+                              : "bg-white/5 border-white/10 text-gray-400 hover:border-purple-500/30"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={auctionForm.notifyUsers}
+                      onChange={(e) => setAuctionForm({ ...auctionForm, notifyUsers: e.target.checked })}
+                      className="w-4 h-4 accent-purple-600" />
+                    <span className="text-sm text-gray-300 font-medium">Notify subscribed users on Discord</span>
+                  </label>
+
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={() => setShowCreateForm(false)}
+                      className="flex-1 py-3 bg-white/10 hover:bg-white/15 rounded-xl text-white font-black text-sm transition-all">
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={creatingAuction}
+                      onClick={async () => {
+                        if (!auctionForm.title || !auctionForm.image || !auctionForm.endTime || !auctionForm.startingBid) {
+                          alert("Please fill all required fields (*)");
+                          return;
+                        }
+                        setCreatingAuction(true);
+                        try {
+                          const startBid = parseInt(auctionForm.startingBid);
+                          const incrementPercent = parseFloat(auctionForm.bidIncrementPercent) || 10;
+                          const minBidIncrement = Math.max(1, Math.round(startBid * (incrementPercent / 100)));
+                          await axios.post(`${API_URL}/api/auctions`, {
+                            title: auctionForm.title,
+                            description: auctionForm.description || auctionForm.title,
+                            product: auctionForm.product || auctionForm.title,
+                            image: auctionForm.image,
+                            adVideoUrl: auctionForm.adVideoUrl,
+                            startTime: auctionForm.startTime ? new Date(auctionForm.startTime).toISOString() : new Date().toISOString(),
+                            endTime: new Date(auctionForm.endTime).toISOString(),
+                            startingBid: startBid,
+                            minBidIncrement: minBidIncrement,
+                            tag: auctionForm.tag,
+                            notifyUsers: auctionForm.notifyUsers,
+                          }, { withCredentials: true });
+                          setShowCreateForm(false);
+                          setAuctionForm({ title: "", image: "", adVideoUrl: "", startTime: "", endTime: "", startingBid: "", bidIncrementPercent: "", notifyUsers: true, tag: "NEW", description: "", product: "" });
+                          alert("Auction created successfully!");
+                        } catch (err: any) {
+                          alert(err.response?.data?.message || "Failed to create auction");
+                        } finally {
+                          setCreatingAuction(false);
+                        }
+                      }}
+                      className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl text-white font-black text-sm transition-all flex items-center justify-center gap-2"
+                    >
+                      {creatingAuction ? <span className="animate-spin">⏳</span> : "Create Auction"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -76,6 +76,8 @@ model Auction {
   description     String
   product         String         @default("Digital Product")
   image           String?
+  adVideoUrl      String?
+  tag             String?        @default("NEW")
   startTime       DateTime
   endTime         DateTime
   status          String         @default("UPCOMING") // UPCOMING, ACTIVE, ENDED, CANCELLED

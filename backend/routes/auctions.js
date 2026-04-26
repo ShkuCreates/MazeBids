@@ -226,52 +226,51 @@ router.post('/', async (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).json({ message: 'Forbidden' });
   }
-  const { title, description, product, image, endTime, startingBid, minBidIncrement } = req.body;
-  
-  // Input validation
-  if (!title || !description || !product || !image) {
+  const { title, description, product, image, adVideoUrl, startTime, endTime, startingBid, minBidIncrement, tag, notifyUsers } = req.body;
+
+  if (!title || !image || !endTime || startingBid === undefined) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
-  
+
   const endDate = new Date(endTime);
   if (isNaN(endDate.getTime()) || endDate <= new Date()) {
     return res.status(400).json({ message: 'End time must be a valid future date' });
   }
-  
+
+  const startDate = startTime ? new Date(startTime) : new Date();
+  const isUpcoming = startDate > new Date();
   const bid = parseInt(startingBid) || 0;
-  const increment = parseInt(minBidIncrement) || 100;
-  if (bid < 0 || increment < 0) {
-    return res.status(400).json({ message: 'Bid amounts must be non-negative' });
-  }
-  
+  const increment = parseInt(minBidIncrement) || Math.max(1, Math.round(bid * 0.1));
+
   try {
     const auction = await prisma.auction.create({
       data: {
         title,
-        description,
-        product,
+        description: description || title,
+        product: product || title,
         image,
-        startTime: new Date(),
+        adVideoUrl: adVideoUrl || null,
+        startTime: startDate,
         endTime: endDate,
         startingBid: bid,
         currentBid: bid,
         minBidIncrement: increment,
-        status: 'ACTIVE'
+        tag: tag || 'NEW',
+        status: isUpcoming ? 'UPCOMING' : 'ACTIVE',
       }
     });
 
-    // Clear cache
     cache.del('auctions:active');
 
-    const usersToNotify = await prisma.user.findMany({
-      where: { notifications: true }
-    });
-
-    usersToNotify.forEach(user => {
-      sendAuctionNotification(user.discordId, auction).catch(err => {
-        console.error(`Failed to notify user ${user.discordId}:`, err.message);
+    // Only notify if notifyUsers is true
+    if (notifyUsers !== false) {
+      const usersToNotify = await prisma.user.findMany({ where: { notifications: true } });
+      usersToNotify.forEach(user => {
+        sendAuctionNotification(user.discordId, auction).catch(err => {
+          console.error(`Failed to notify ${user.discordId}:`, err.message);
+        });
       });
-    });
+    }
 
     res.json(auction);
   } catch (err) {
