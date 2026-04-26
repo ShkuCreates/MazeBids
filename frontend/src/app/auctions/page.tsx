@@ -1,13 +1,11 @@
 "use client";
 import { useEffect, useState, useCallback, lazy, Suspense, useRef } from "react";
 import { io } from "socket.io-client";
-import { Gavel, Clock, Users, ChevronRight, Bell, BellRing, Coins, ShoppingBag, Trophy, ArrowUpRight, Flame, Diamond, Eye, Zap, Plus, Trash2, Play, Square, Loader2, X } from "lucide-react";
+import { Gavel, Clock, Users, ChevronRight, Bell, BellRing, Coins, ShoppingBag, Trophy, ArrowUpRight, Eye, Zap, Plus, Trash2, Play, Square, Loader2, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
-import AdBanner from "@/components/AdBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Skeleton } from "@/components/Skeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -73,19 +71,6 @@ export default function AuctionsPage() {
   // Live Activity Feed State
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // Upcoming Auctions Timers
-  const [upcomingTimers, setUpcomingTimers] = useState<Record<string, string>>({});
-
-  // Featured Auction State
-  const [featuredTimer, setFeaturedTimer] = useState("00:00:00");
-  const [featuredBidCount, setFeaturedBidCount] = useState(127);
-
-  // Mock upcoming auctions with censored images - use static timestamps
-  const upcomingAuctions = [
-    { id: "up-1", title: "Mystery Reward 🔒", startTime: "2024-12-25T10:00:00.000Z", isPremium: true },
-    { id: "up-2", title: "Premium Drop (Hidden)", startTime: "2024-12-25T13:00:00.000Z", isPremium: true },
-    { id: "up-3", title: "Mystery Reward 🔒", startTime: "2024-12-25T16:00:00.000Z", isPremium: false },
-  ];
 
   const fetchAuctions = useCallback(async () => {
     try {
@@ -125,6 +110,59 @@ export default function AuctionsPage() {
       alert("Failed to update notification settings. Please try again.");
     } finally {
       setNotifying(false);
+    }
+  };
+
+  const handleCreateAuction = async () => {
+    if (!createForm.title || !createForm.description || !createForm.product || !createForm.image || !createForm.endTime) {
+      setCreateError('Please fill in all required fields.');
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await axios.post(`${API_URL}/api/auctions`, {
+        title: createForm.title,
+        description: createForm.description,
+        product: createForm.product,
+        image: createForm.image,
+        endTime: createForm.endTime,
+        startingBid: parseInt(createForm.startingBid) || 0,
+        minBidIncrement: parseInt(createForm.minBidIncrement) || 100,
+      }, { withCredentials: true });
+      setShowCreateForm(false);
+      setCreateForm({ title: '', description: '', product: '', image: '', endTime: '', startingBid: '', minBidIncrement: '100' });
+      fetchAuctions();
+    } catch (err: any) {
+      setCreateError(err.response?.data?.message || 'Failed to create auction.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteAuction = async (id: string) => {
+    if (!confirm('Delete this auction? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      await axios.delete(`${API_URL}/api/auctions/${id}`, { withCredentials: true });
+      setAuctions(prev => prev.filter(a => a.id !== id));
+    } catch (err) {
+      alert('Failed to delete auction.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleEndAuction = async (id: string) => {
+    if (!confirm('End this auction now?')) return;
+    setActioningId(id);
+    try {
+      await axios.post(`${API_URL}/api/auctions/${id}/end`, {}, { withCredentials: true });
+      fetchAuctions();
+    } catch (err) {
+      alert('Failed to end auction.');
+    } finally {
+      setActioningId(null);
     }
   };
 
@@ -189,57 +227,6 @@ export default function AuctionsPage() {
     return () => clearInterval(interval);
   }, [auctions, getTimeLeft]);
 
-  // Featured auction timer
-  useEffect(() => {
-    if (!mounted) return;
-    const endTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const diff = endTime.getTime() - now;
-      if (diff <= 0) {
-        setFeaturedTimer("00:00:00");
-        clearInterval(timer);
-      } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setFeaturedTimer(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [mounted]);
-
-  // Featured auction bid count
-  useEffect(() => {
-    if (!mounted) return;
-    const interval = setInterval(() => {
-      setFeaturedBidCount((prev) => prev + Math.floor(Math.random() * 3));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [mounted]);
-
-  // Upcoming auctions timers
-  useEffect(() => {
-    if (!mounted) return;
-    const interval = setInterval(() => {
-      const t: Record<string, string> = {};
-      upcomingAuctions.forEach((a) => {
-        const now = Date.now();
-        const start = new Date(a.startTime).getTime();
-        const diff = start - now;
-        if (diff <= 0) {
-          t[a.id] = "Starting soon";
-        } else {
-          const hours = Math.floor(diff / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          t[a.id] = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-      });
-      setUpcomingTimers(t);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [upcomingAuctions, mounted]);
 
   // Live Popups generator
   useEffect(() => {
@@ -247,7 +234,7 @@ export default function AuctionsPage() {
     const messages = [
       { icon: <Eye className="w-4 h-4 text-blue-400" />, template: () => `👀 ${Math.floor(Math.random() * 450) + 50} users are watching right now` },
       { icon: <Coins className="w-4 h-4 text-yellow-400" />, template: () => `💰 ${(Math.floor(Math.random() * 4500) + 500).toLocaleString()} coins just farmed` },
-      { icon: <Flame className="w-4 h-4 text-orange-400" />, template: () => `🔥 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} joined an auction` },
+      { icon: <Trophy className="w-4 h-4 text-purple-400" />, template: () => `🔥 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} joined an auction` },
       { icon: <Trophy className="w-4 h-4 text-purple-400" />, template: () => `🏆 ${["Rahul_23", "SnehaX", "CryptoKing", "AryanLive", "NehaOP"][Math.floor(Math.random() * 5)]} won ${["iPhone 13", "AirPods Pro", "MacBook Air", "PS5"][Math.floor(Math.random() * 4)]}` },
     ];
 
@@ -388,7 +375,7 @@ export default function AuctionsPage() {
       )}
       {loading ? (
         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -412,7 +399,6 @@ export default function AuctionsPage() {
           </div>
 
           <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 relative">
-            <AdBanner placement="AUCTIONS" />
 
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -472,73 +458,6 @@ export default function AuctionsPage() {
               </div>
             </div>
 
-            {/* Upcoming Auctions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-[#0f0f18] border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-
-              <h3 className="font-black text-white text-lg tracking-wider uppercase mb-4 flex items-center gap-2 relative z-10">
-                <Clock className="w-5 h-5 text-purple-400" />
-                Upcoming Auctions
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
-                {upcomingAuctions.map((auction, index) => (
-                  <motion.div
-                    key={auction.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="relative group"
-                  >
-                    <div className="relative h-48 rounded-2xl overflow-hidden border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-blue-500/5 group-hover:border-purple-500/40 transition-all duration-300 shadow-lg shadow-purple-500/10 group-hover:shadow-purple-500/20">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black/60 backdrop-blur-md group-hover:backdrop-blur-[4px] transition-all duration-300" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f18] via-[#0f0f18]/80 to-transparent opacity-90" />
-
-                      <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-full">
-                        <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest flex items-center gap-1">
-                          🔒 Locked
-                        </span>
-                      </div>
-
-                      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-2">
-                        <div className="px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30">
-                          <Flame className="w-3 h-3 text-orange-400" />
-                        </div>
-                        {auction.isPremium && (
-                          <div className="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
-                            <Diamond className="w-3 h-3 text-blue-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-4xl mb-2 animate-pulse">🔮</div>
-                          <p className="text-white font-black text-sm">{auction.title}</p>
-                        </div>
-                      </div>
-
-                      <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
-                        <span className="text-[11px] font-black text-white">
-                          {upcomingTimers[auction.id] || "00:00:00"}
-                        </span>
-                      </div>
-
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <p className="text-[10px] text-purple-300 uppercase tracking-wider">
-                          Starts in {upcomingTimers[auction.id] || "00:00:00"}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
 
             {/* Live Activity Feed - MOCK DATA ONLY (Frontend Generated) */}
             <motion.div
@@ -609,12 +528,12 @@ export default function AuctionsPage() {
                   >
                     <div className="flex flex-col md:flex-row min-h-[300px] sm:min-h-[400px]">
                       <div className="md:w-[45%] relative overflow-hidden bg-[#0a0a0f]">
-                        <Skeleton className="w-full h-full" />
+                        <div className="w-full h-full bg-white/5 animate-pulse" />
                       </div>
                       <div className="md:w-[55%] p-4 sm:p-10 flex flex-col justify-center space-y-4 sm:space-y-8 relative">
-                        <Skeleton className="h-8 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-20 w-full" />
+                        <div className="h-8 w-3/4 bg-white/5 rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-white/5 rounded animate-pulse" />
+                        <div className="h-20 w-full bg-white/5 rounded animate-pulse" />
                       </div>
                     </div>
                   </div>
@@ -737,89 +656,6 @@ export default function AuctionsPage() {
               </div>
             )}
 
-            {/* Featured Mega Auction - Moved below Live Auctions */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 border-2 border-purple-500 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl shadow-purple-500/30"
-            >
-              <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 opacity-30 animate-pulse blur-sm" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                      <Flame className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="font-black text-white text-xl tracking-wider">🔥 MEGA AUCTION</h2>
-                      <p className="text-purple-300 text-xs font-medium">Premium Drop • Limited Time</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40">
-                    <span className="text-purple-300 text-[10px] font-black uppercase tracking-widest">Live Now</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-6xl mb-3">💻</div>
-                      <h3 className="font-black text-white text-2xl">MacBook Air M2</h3>
-                      <p className="text-purple-300 text-sm mt-1">Space Gray • 256GB SSD</p>
-                    </div>
-                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40">
-                      <span className="text-yellow-300 text-[10px] font-black uppercase tracking-widest">💎 Premium</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col justify-center space-y-4">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                          <Coins className="w-5 h-5 text-yellow-400" />
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Entry Coins</p>
-                          <p className="font-black text-white text-xl">500</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Live Bids</p>
-                          <p className="font-black text-white text-xl">{featuredBidCount}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-red-400" />
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Time Left</p>
-                          <p className="font-black text-white text-xl font-mono">{featuredTimer}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Link
-                      href="/auctions"
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg tracking-wider transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] flex items-center justify-center gap-2"
-                    >
-                      <Gavel className="w-5 h-5" />
-                      JOIN AUCTION
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
           </div>
         </>
       )}

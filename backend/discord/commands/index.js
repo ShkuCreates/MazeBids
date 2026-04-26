@@ -7,6 +7,8 @@ const leaderboard = require('./leaderboard');
 const add = require('./add');
 const remove = require('./remove');
 const bonuscode = require('./bonuscode');
+const auth = require('./auth');
+const authinfo = require('./authinfo');
 
 module.exports = [
   daily,
@@ -17,5 +19,7 @@ module.exports = [
   leaderboard,
   add,
   remove,
-  bonuscode
+  bonuscode,
+  auth,
+  authinfo
 ];
