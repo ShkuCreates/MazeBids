@@ -14,6 +14,36 @@ interface AdPlayerProps {
   onCancel: () => void;
 }
 
+type VideoType = 'youtube' | 'instagram' | 'direct' | 'none';
+
+function detectVideoType(url?: string): VideoType {
+  if (!url) return 'none';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+  if (url.includes('instagram.com')) return 'instagram';
+  return 'direct';
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  let videoId = '';
+  if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0];
+  } else if (url.includes('youtube.com/watch')) {
+    videoId = new URLSearchParams(url.split('?')[1]).get('v') || '';
+  } else if (url.includes('youtube.com/embed/')) {
+    videoId = url.split('youtube.com/embed/')[1]?.split('?')[0];
+  }
+  return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0`;
+}
+
+function getInstagramEmbedUrl(url: string): string {
+  // Extract post/reel ID from Instagram URL
+  const match = url.match(/instagram\.com\/(p|reel|tv)\/([^/?]+)/);
+  if (match) {
+    return `https://www.instagram.com/${match[1]}/${match[2]}/embed/`;
+  }
+  return url;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, videoUrl, onComplete, onCancel }) => {
@@ -146,25 +176,54 @@ const AdPlayer: React.FC<AdPlayerProps> = ({ taskId, reward, videoUrl, onComplet
               exit={{ opacity: 0, scale: 0.9 }}
               className="flex flex-col items-center space-y-6 w-full h-full"
             >
-              {videoUrl ? (
-                <video
-                  src={videoUrl}
-                  autoPlay
-                  muted
-                  className="w-full h-full object-cover rounded-2xl"
-                  onEnded={() => setIsFinished(true)}
-                />
-              ) : (
-                <>
-                  <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(139,92,246,0.5)]">
-                    <Play className="w-10 h-10 text-white fill-white" />
-                  </div>
-                  <div className="text-center space-y-2 relative z-10">
-                    <h3 className="text-2xl font-bold text-white">Watching Rewarded Ad</h3>
-                    <p className="text-gray-400">Do not close this window to receive your coins.</p>
-                  </div>
-                </>
-              )}
+              {(() => {
+  const videoType = detectVideoType(videoUrl);
+  if (videoType === 'youtube') {
+    return (
+      <iframe
+        src={getYouTubeEmbedUrl(videoUrl!)}
+        className="w-full h-full rounded-2xl"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        frameBorder="0"
+      />
+    );
+  }
+  if (videoType === 'instagram') {
+    return (
+      <iframe
+        src={getInstagramEmbedUrl(videoUrl!)}
+        className="w-full h-full rounded-2xl"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        frameBorder="0"
+        scrolling="no"
+      />
+    );
+  }
+  if (videoType === 'direct') {
+    return (
+      <video
+        src={videoUrl}
+        autoPlay
+        muted
+        className="w-full h-full object-cover rounded-2xl"
+        onEnded={() => setIsFinished(true)}
+      />
+    );
+  }
+  return (
+    <>
+      <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+        <Play className="w-10 h-10 text-white fill-white" />
+      </div>
+      <div className="text-center space-y-2 relative z-10">
+        <h3 className="text-2xl font-bold text-white">Watching Rewarded Ad</h3>
+        <p className="text-gray-400">Do not close this window to receive your coins.</p>
+      </div>
+    </>
+  );
+})()}
             </motion.div>
           ) : claimSuccess ? (
             <motion.div
