@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, lazy, Suspense, useRef } from "react";
 import { io } from "socket.io-client";
-import { Gavel, Clock, Users, ChevronRight, Bell, BellRing, Coins, ShoppingBag, Trophy, ArrowUpRight, Flame, Diamond, Eye, Zap } from "lucide-react";
+import { Gavel, Clock, Users, ChevronRight, Bell, BellRing, Coins, ShoppingBag, Trophy, ArrowUpRight, Flame, Diamond, Eye, Zap, Plus, Trash2, Play, Square, Loader2, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import AdBanner from "@/components/AdBanner";
@@ -51,6 +51,21 @@ export default function AuctionsPage() {
   const [recentBids, setRecentBids] = useState<{ [key: string]: boolean }>({});
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
+  const [createForm, setCreateForm] = useState({
+    title: '',
+    description: '',
+    product: '',
+    image: '',
+    endTime: '',
+    startingBid: '',
+    minBidIncrement: '100'
+  });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const isAdmin = user?.role === 'ADMIN';
 
   // Live Popups State
   const [popups, setPopups] = useState<Popup[]>([]);
@@ -295,6 +310,82 @@ export default function AuctionsPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative">
+      {/* Admin Panel - Only for Admins */}
+      {isAdmin && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-white font-black text-lg flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              Admin Controls
+            </h2>
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Create Auction
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {showCreateForm && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-[#0f0f18] border border-purple-500/30 rounded-2xl p-6 mb-4"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white font-black">New Auction</h3>
+                  <button onClick={() => setShowCreateForm(false)} className="text-gray-500 hover:text-white">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Title *</label>
+                    <input type="text" value={createForm.title} onChange={e => setCreateForm({...createForm, title: e.target.value})} placeholder="Auction title..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Product *</label>
+                    <input type="text" value={createForm.product} onChange={e => setCreateForm({...createForm, product: e.target.value})} placeholder="e.g. Discord Nitro" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Description *</label>
+                    <textarea value={createForm.description} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="Auction description..." rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm resize-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Image URL *</label>
+                    <input type="url" value={createForm.image} onChange={e => setCreateForm({...createForm, image: e.target.value})} placeholder="https://..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">End Time *</label>
+                    <input type="datetime-local" value={createForm.endTime} onChange={e => setCreateForm({...createForm, endTime: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Starting Bid</label>
+                    <input type="number" value={createForm.startingBid} onChange={e => setCreateForm({...createForm, startingBid: e.target.value})} placeholder="0" min="0" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Min Bid Increment</label>
+                    <input type="number" value={createForm.minBidIncrement} onChange={e => setCreateForm({...createForm, minBidIncrement: e.target.value})} placeholder="100" min="1" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 text-sm" />
+                  </div>
+                </div>
+                {createError && (
+                  <p className="text-red-400 text-sm font-bold mt-3">{createError}</p>
+                )}
+                <button
+                  onClick={handleCreateAuction}
+                  disabled={creating}
+                  className="mt-4 w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-black transition-all flex items-center justify-center gap-2"
+                >
+                  {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : <><Plus className="w-4 h-4" /> Create Auction</>}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
       {loading ? (
         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
           <Skeleton className="h-12 w-12 rounded-full" />
@@ -603,16 +694,40 @@ export default function AuctionsPage() {
                                 <p className="text-white font-bold text-sm sm:text-base">{auction.highestBidder?.username || "No bids yet"}</p>
                               </div>
                             </div>
-                            <Link
-                              href={`/auctions/${auction.id}`}
-                              className="group/btn relative px-6 sm:px-8 py-3 sm:py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30 w-full sm:w-auto text-center"
-                            >
-                              <span className="relative z-10 flex items-center gap-2 uppercase">
-                                {auction.status === 'ACTIVE' ? 'Bid Now' : 'View Details'}
-                                <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-                              </span>
-                              <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity blur-lg" />
-                            </Link>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <Link
+                                href={`/auctions/${auction.id}`}
+                                className="group/btn relative px-6 sm:px-8 py-3 sm:py-5 rounded-2xl font-black text-sm tracking-widest transition-all shadow-2xl active:scale-95 bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/30 flex-1 sm:flex-none text-center"
+                              >
+                                <span className="relative z-10 flex items-center gap-2 uppercase">
+                                  {auction.status === 'ACTIVE' ? 'Bid Now' : 'View Details'}
+                                  <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                                </span>
+                                <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity blur-lg" />
+                              </Link>
+                              {isAdmin && (
+                                <div className="flex items-center gap-1">
+                                  {auction.status === 'ACTIVE' && (
+                                    <button
+                                      onClick={(e) => { e.preventDefault(); handleEndAuction(auction.id); }}
+                                      disabled={actioningId === auction.id}
+                                      title="End Auction Now"
+                                      className="p-3 bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/30 rounded-xl transition-all disabled:opacity-50"
+                                    >
+                                      {actioningId === auction.id ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin" /> : <Square className="w-4 h-4 text-orange-400" />}
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); handleDeleteAuction(auction.id); }}
+                                    disabled={deletingId === auction.id}
+                                    title="Delete Auction"
+                                    className="p-3 bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 rounded-xl transition-all disabled:opacity-50"
+                                  >
+                                    {deletingId === auction.id ? <Loader2 className="w-4 h-4 text-red-400 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
