@@ -14,6 +14,8 @@ import {
 import ClickGame from "@/components/games/ClickGame";
 import MemoryMatchGame from "@/components/games/MemoryMatchGame";
 import EmojiHitGame from "@/components/games/EmojiHitGame";
+import NumberRushGame from "@/components/games/NumberRushGame";
+import ColorMatchGame from "@/components/games/ColorMatchGame";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { playCoinSound } from "@/lib/sounds";
@@ -444,8 +446,8 @@ function EarnPage() {
     { id: "1", title: "Speed Clicker", reward: 50, type: "GAME", icon: Target, desc: "Click as fast as you can in 10 seconds!", color: "from-purple-500 to-indigo-600", thumbnail: "🎯" },
     { id: "2", title: "Memory Match", reward: 75, type: "GAME", icon: Brain, desc: "Find all matching pairs quickly.", color: "from-blue-500 to-cyan-600", thumbnail: "🧠" },
     { id: "3", title: "Emoji Hit", reward: 100, type: "GAME", icon: Flame, desc: "Hit as many emojis as you can!", color: "from-rose-500 to-pink-600", thumbnail: "🔥" },
-    { id: "4", title: "Number Rush", reward: 60, type: "GAME", icon: TrendingUp, desc: "Tap numbers 1–9 in order as fast as you can!", color: "from-yellow-500 to-orange-500", thumbnail: "🔢" },
-    { id: "5", title: "Color Match", reward: 80, type: "GAME", icon: Eye, desc: "Match the color shown before time runs out!", color: "from-teal-500 to-green-500", thumbnail: "🎨" },
+    { id: "4", title: "Number Rush", reward: 65, type: "GAME", icon: TrendingUp, desc: "Tap numbers 1–9 in order as fast as you can!", color: "from-yellow-500 to-orange-500", thumbnail: "🔢" },
+    { id: "5", title: "Color Match", reward: 85, type: "GAME", icon: Eye, desc: "Match the color shown before time runs out!", color: "from-teal-500 to-green-500", thumbnail: "🎨" },
   ];
 
   return (
@@ -879,10 +881,10 @@ function EarnPage() {
         <EmojiHitGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.id === "4" && activeGame.type === "GAME" && (
-        <ClickGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
+        <NumberRushGame taskId={activeGame.id} reward={65} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.id === "5" && activeGame.type === "GAME" && (
-        <MemoryMatchGame taskId={activeGame.id} reward={activeGame.reward} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
+        <ColorMatchGame taskId={activeGame.id} reward={85} onComplete={(r) => handleGameComplete(r)} onCancel={() => setActiveGame(null)} />
       )}
       {activeGame && activeGame.type === "AD" && (
         <AdPlayer taskId={activeGame.id} reward={activeGame.reward} onComplete={() => handleAdComplete(25)} onCancel={() => setActiveGame(null)} />
