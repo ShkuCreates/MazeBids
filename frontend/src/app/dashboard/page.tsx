@@ -20,6 +20,7 @@ import ActiveAuctionsPanel from "@/components/ActiveAuctionsPanel";
 import UpcomingAuctionsPanel from "@/components/UpcomingAuctionsPanel";
 import { Skeleton, CardSkeleton } from "@/components/Skeleton";
 import { cache } from "@/lib/cache";
+import { TutorialPopup, useTutorial } from "@/components/TutorialPopup";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -35,6 +36,7 @@ export default function Dashboard() {
     activeUsers: 0,
   });
   const [mounted, setMounted] = useState(false);
+  const { show: showTutorial, close: closeTutorial } = useTutorial();
 
   useEffect(() => {
     setMounted(true);
@@ -267,6 +269,7 @@ export default function Dashboard() {
       </div>
         </>
       )}
+      <TutorialPopup show={showTutorial} onClose={closeTutorial} />
     </div>
   );
 }
