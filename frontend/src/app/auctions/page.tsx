@@ -117,8 +117,20 @@ export default function AuctionsPage() {
   };
 
   const handleCreateAuction = async () => {
-    if (!createForm.title || !createForm.description || !createForm.product || !createForm.image || !createForm.endTime) {
-      setCreateError('Please fill in all required fields (Title, Description, Product, Image, End Time).');
+    const trimmedTitle = createForm.title?.trim();
+    const trimmedDescription = createForm.description?.trim();
+    const trimmedProduct = createForm.product?.trim();
+    const trimmedImage = createForm.image?.trim();
+    const trimmedEndTime = createForm.endTime?.trim();
+
+    if (!trimmedTitle || !trimmedDescription || !trimmedProduct || !trimmedImage || !trimmedEndTime) {
+      const missingFields = [];
+      if (!trimmedTitle) missingFields.push('Title');
+      if (!trimmedDescription) missingFields.push('Description');
+      if (!trimmedProduct) missingFields.push('Product');
+      if (!trimmedImage) missingFields.push('Image URL');
+      if (!trimmedEndTime) missingFields.push('End Time');
+      setCreateError(`Missing required fields: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -135,10 +147,10 @@ export default function AuctionsPage() {
     setCreateError(null);
     try {
       await axios.post(`${API_URL}/api/auctions`, {
-        title: createForm.title,
-        description: createForm.description,
-        product: createForm.product,
-        image: createForm.image,
+        title: trimmedTitle,
+        description: trimmedDescription,
+        product: trimmedProduct,
+        image: trimmedImage,
         startTime: startTimeISO,
         endTime: endTimeISO,
         startingBid: parseInt(createForm.startingBid) || 0,
